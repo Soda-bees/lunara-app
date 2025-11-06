@@ -7,7 +7,6 @@ const styles = StyleSheet.create({
   containerMain: {
     flex: 1,
     backgroundColor: 'white',
-    justifyContent: 'space-between',
   },
 
   flatList: {
@@ -55,7 +54,8 @@ const styles = StyleSheet.create({
   },
 
   lastView: {
-    marginBottom: sizes.screenHeight * 0.03,
+    position: 'absolute',
+    bottom: sizes.screenHeight * 0.05,
     width: sizes.screenWidth,
   },
 

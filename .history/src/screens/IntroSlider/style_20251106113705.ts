@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
   },
 
   lastView: {
-    marginBottom: sizes.screenHeight * 0.03,
+    marginBottom: sizes.screenHeight * 0.04,
     width: sizes.screenWidth,
   },
 

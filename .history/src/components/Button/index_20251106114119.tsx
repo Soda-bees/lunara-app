@@ -15,7 +15,6 @@ type Props = {
   onPress: () => void;
   loader?: boolean;
   disabled?: boolean;
-  small?: boolean;
 };
 
 export default function Button({
@@ -23,7 +22,6 @@ export default function Button({
   onPress,
   loader = false,
   disabled = false,
-  small = false, // <-- default false
 }: Props) {
   return (
     <TouchableOpacity
@@ -36,11 +34,7 @@ export default function Button({
         colors={['#E4AF5D', '#E799AD']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
-        style={[
-          styles.button,
-          small && { width: sizes.screenWidth * 0.82 }, // <-- apply small width override
-          disabled && styles.disabled,
-        ]}
+        style={[styles.button, disabled && styles.disabled]}
       >
         {loader ? (
           <ActivityIndicator size={24} color={colors.white} />
@@ -59,7 +53,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    width: sizes.screenWidth * 0.9,
+    width: sizes.screenWidth * 0.82,
   },
   disabled: {
     opacity: 0.5,

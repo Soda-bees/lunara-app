@@ -109,13 +109,13 @@ export default function IntroSlider() {
           </Text>
           <Text style={styles.desc}>{introSlides[currentIndex].desc}</Text>
         </View>
-      </View>
 
-      <View style={styles.lastView}>
-        <View style={styles.dotContainer}>
-          {introSlides.map((_, i) => (
-            <SliderDot key={i} active={i === currentIndex} />
-          ))}
+        <View style={styles.lastView}>
+          <View style={styles.dotContainer}>
+            {introSlides.map((_, i) => (
+              <SliderDot key={i} active={i === currentIndex} />
+            ))}
+          </View>
         </View>
 
         <View style={styles.btnContainer}>

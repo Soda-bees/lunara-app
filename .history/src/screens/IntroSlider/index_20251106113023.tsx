@@ -63,52 +63,50 @@ export default function IntroSlider() {
       style={styles.containerMain}
       edges={Platform.OS === 'ios' ? ['top'] : ['top', 'bottom']}
     >
-      <View>
-        <StatusBar
-          translucent
-          backgroundColor="transparent"
-          barStyle="dark-content"
-        />
-        <FlatList
-          horizontal
-          data={introSlides}
-          ref={flatListRef}
-          pagingEnabled
-          scrollEventThrottle={16}
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={handleScroll}
-          keyExtractor={(_, i) => String(i)}
-          renderItem={({ item, index }) => (
-            <ImageBackground
-              source={item.image}
-              style={{
-                width: sizes.screenWidth,
-                height: sizes.screenWidth * (782 / 804),
-              }}
-              resizeMode="contain"
-            >
-              {index === currentIndex && (
-                <Animated.View
-                  style={[
-                    styles.imgContainer,
-                    { transform: [{ translateX: slideAnim }] },
-                  ]}
-                >
-                  <Image source={item.smallImg} style={styles.img} />
-                </Animated.View>
-              )}
-            </ImageBackground>
-          )}
-        />
-
-        <View style={styles.textView}>
-          <Text
-            style={[styles.title, { color: introSlides[currentIndex].color }]}
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
+      <FlatList
+        horizontal
+        data={introSlides}
+        ref={flatListRef}
+        pagingEnabled
+        scrollEventThrottle={16}
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={handleScroll}
+        keyExtractor={(_, i) => String(i)}
+        renderItem={({ item, index }) => (
+          <ImageBackground
+            source={item.image}
+            style={{
+              width: sizes.screenWidth,
+              height: sizes.screenWidth * (782 / 804),
+            }}
+            resizeMode="contain"
           >
-            {introSlides[currentIndex].title}
-          </Text>
-          <Text style={styles.desc}>{introSlides[currentIndex].desc}</Text>
-        </View>
+            {index === currentIndex && (
+              <Animated.View
+                style={[
+                  styles.imgContainer,
+                  { transform: [{ translateX: slideAnim }] },
+                ]}
+              >
+                <Image source={item.smallImg} style={styles.img} />
+              </Animated.View>
+            )}
+          </ImageBackground>
+        )}
+      />
+
+      <View style={styles.textView}>
+        <Text
+          style={[styles.title, { color: introSlides[currentIndex].color }]}
+        >
+          {introSlides[currentIndex].title}
+        </Text>
+        <Text style={styles.desc}>{introSlides[currentIndex].desc}</Text>
       </View>
 
       <View style={styles.lastView}>
