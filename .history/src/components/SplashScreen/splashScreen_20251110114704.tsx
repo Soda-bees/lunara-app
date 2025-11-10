@@ -14,7 +14,7 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onFinish }) => {
 
     const timer = setTimeout(() => {
       onFinish();
-    }, 4000);
+    }, 400000);
 
     return () => clearTimeout(timer);
   }, [onFinish]);
@@ -39,7 +39,7 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onFinish }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: '#FDCDDB',
+    backgroundColor: '#FDCDDB',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -47,6 +47,7 @@ const styles = StyleSheet.create({
   lottie: {
     height: sizes.screenHeight,
     width: sizes.screenWidth,
+    backgroundColor: '#FDCDDB',
   },
 });
 

@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: sizes.screenWidth * 0.05,
     alignSelf: 'center',
-    marginVertical: sizes.screenHeight * 0.03,
+    marginVertical: sizes.screenHeight * 0.04,
   },
 
   row2: {

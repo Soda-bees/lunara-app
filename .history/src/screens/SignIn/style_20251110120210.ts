@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: sizes.screenHeight * 0.04,
+    marginTop: sizes.screenHeight * 0.03,
     width: sizes.screenWidth * 0.86,
     alignSelf: 'center',
   },

@@ -14,7 +14,7 @@ const styles = StyleSheet.create({
     marginTop: sizes.screenHeight * 0.08,
     flex: 1,
     justifyContent: 'space-between',
-    paddingBottom: sizes.screenHeight * 0.08,
+    paddingBottom: sizes.screenHeight * 0.06,
   },
 
   heading: {
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: sizes.screenWidth * 0.05,
     alignSelf: 'center',
-    marginVertical: sizes.screenHeight * 0.04,
+    marginVertical: sizes.screenHeight * 0.03,
   },
 
   row2: {
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   inputContainer: {
-    paddingVertical: 5,
+    paddingVertical: 4,
     flexDirection: 'row',
     backgroundColor: colors.white,
     alignItems: 'center',
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   },
 
   textContainer: {
-    marginTop: sizes.screenHeight * 0.08,
+    marginTop: sizes.screenHeight * 0.06,
     marginBottom: sizes.screenHeight * 0.05,
   },
 });

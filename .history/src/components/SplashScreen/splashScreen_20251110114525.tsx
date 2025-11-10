@@ -14,7 +14,7 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onFinish }) => {
 
     const timer = setTimeout(() => {
       onFinish();
-    }, 4000);
+    }, 400000);
 
     return () => clearTimeout(timer);
   }, [onFinish]);

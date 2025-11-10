@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, StatusBar } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import LottieView from 'lottie-react-native';
 import SplashScreen from 'react-native-splash-screen';
 import { sizes } from '../../constants/sizes';
@@ -21,11 +21,6 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onFinish }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        translucent
-        backgroundColor="transparent"
-        barStyle="dark-content"
-      />
       <LottieView
         source={require('../../assets/animations/animatedSplashScreen.json')}
         autoPlay
@@ -51,3 +46,4 @@ const styles = StyleSheet.create({
 });
 
 export default AnimatedSplash;
+
