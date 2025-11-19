@@ -25,6 +25,7 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onFinish }) => {
         translucent
         backgroundColor="transparent"
         barStyle="dark-content"
+        hidden
       />
       <LottieView
         source={require('../../assets/animations/animatedSplashScreen.json')}
