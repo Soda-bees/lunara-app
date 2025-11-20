@@ -1,0 +1,159 @@
+import React, { useRef, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  Animated,
+  FlatList,
+  TouchableOpacity,
+  Dimensions,
+  Platform,
+  StatusBar,
+  Vibration,
+} from 'react-native';
+import styles from './style';
+import Button from '../../components/Button';
+import BackButton from '../../components/BackButton';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const { width } = Dimensions.get('window');
+const ITEM_WIDTH = 40; // slightly larger for better scrolling
+const VISIBLE_ITEMS = Math.floor(width / ITEM_WIDTH);
+
+const Height = () => {
+  const flatListFeetRef = useRef<FlatList>(null);
+  const flatListInchesRef = useRef<FlatList>(null);
+  const [selectedFeet, setSelectedFeet] = useState(5); // default 5 ft
+  const [selectedInches, setSelectedInches] = useState(8); // default 8 in
+
+  const feetData = Array.from({ length: 8 }, (_, i) => i); // 0-7 ft
+  const inchesData = Array.from({ length: 12 }, (_, i) => i); // 0-11 in
+
+  const onScrollFeet = Animated.event(
+    [{ nativeEvent: { contentOffset: { x: new Animated.Value(0) } } }],
+    {
+      useNativeDriver: false,
+      listener: (event: any) => {
+        const value = Math.round(
+          event.nativeEvent.contentOffset.x / ITEM_WIDTH,
+        );
+        if (value !== selectedFeet) {
+          Vibration.vibrate(10);
+          setSelectedFeet(value);
+        }
+      },
+    },
+  );
+
+  const onScrollInches = Animated.event(
+    [{ nativeEvent: { contentOffset: { x: new Animated.Value(0) } } }],
+    {
+      useNativeDriver: false,
+      listener: (event: any) => {
+        const value = Math.round(
+          event.nativeEvent.contentOffset.x / ITEM_WIDTH,
+        );
+        if (value !== selectedInches) {
+          Vibration.vibrate(10);
+          setSelectedInches(value);
+        }
+      },
+    },
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: number }) => (
+      <View style={styles.tickContainer}>
+        <Text style={styles.tickLabel}>{item}</Text>
+        <View style={styles.tick} />
+      </View>
+    ),
+    [],
+  );
+
+  const getItemLayout = useCallback(
+    (_: any, index: number) => ({
+      length: ITEM_WIDTH,
+      offset: ITEM_WIDTH * index,
+      index,
+    }),
+    [],
+  );
+
+  const handleContinue = () => {
+    const totalInches = selectedFeet * 12 + selectedInches;
+    console.log(
+      `Selected height: ${selectedFeet}' ${selectedInches}" (${totalInches} inches)`,
+    );
+    // send totalInches to backend or store locally
+  };
+
+  return (
+    <SafeAreaView
+      style={styles.container}
+      edges={Platform.OS === 'ios' ? ['top'] : ['top', 'bottom']}
+    >
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="dark-content"
+      />
+      <BackButton />
+      <View style={styles.mainContainer}>
+        <View style={styles.textContainer}>
+          <Text style={styles.forgotText}>How tall are you?</Text>
+          <Text style={styles.paraText}>
+            We use your height to help personalize your health insights.
+          </Text>
+        </View>
+
+        <View style={styles.numberSLiderContainer}>
+          <Text
+            style={styles.value}
+          >{`${selectedFeet}' ${selectedInches}"`}</Text>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+            <Animated.FlatList
+              ref={flatListFeetRef}
+              data={feetData}
+              renderItem={renderItem}
+              keyExtractor={item => item.toString()}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={ITEM_WIDTH}
+              decelerationRate="fast"
+              onScroll={onScrollFeet}
+              scrollEventThrottle={16}
+              getItemLayout={getItemLayout}
+              contentContainerStyle={{
+                paddingHorizontal: (width - ITEM_WIDTH) / 2,
+              }}
+            />
+
+            <Animated.FlatList
+              ref={flatListInchesRef}
+              data={inchesData}
+              renderItem={renderItem}
+              keyExtractor={item => item.toString()}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={ITEM_WIDTH}
+              decelerationRate="fast"
+              onScroll={onScrollInches}
+              scrollEventThrottle={16}
+              getItemLayout={getItemLayout}
+              contentContainerStyle={{
+                paddingHorizontal: (width - ITEM_WIDTH) / 2,
+              }}
+            />
+          </View>
+        </View>
+
+        <View style={styles.bottomButton}>
+          <Button title="CONTINUE" onPress={handleContinue} />
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+};
+
+export default Height;

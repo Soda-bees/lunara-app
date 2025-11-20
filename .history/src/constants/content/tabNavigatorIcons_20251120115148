@@ -1,0 +1,8 @@
+import images from '../images';
+
+const ICONS = {
+  Home: { focused: images.btHomeActive, unfocused: images.btHome },
+  Cycle: { focused: images.btCycleActive, unfocused: images.btCycle },
+  Track: { focused: images.btTrackActive, unfocused: images.btTrack },
+  More: { focused: images.btMoreActive, unfocused: images.btMore },
+};
