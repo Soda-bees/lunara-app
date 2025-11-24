@@ -20,17 +20,44 @@ export const configureGoogleSignIn = () => {
 
 // com.googleusercontent.apps.991528142293-n4vruv8gehi741v8behd4gflj064sr3v ios-id
 
+// export const signInWithGoogle = async (): Promise<void> => {
+//     try {
+//         await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+//         const result: SignInResponse = await GoogleSignin.signIn();
+//         // console.log('after result', result);
+
+//         const idToken = result?.data?.idToken;
+
+//         if (!idToken) {
+//             throw new Error('Google Sign-In failed: Missing idToken');
+//         }
+
+//         const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+//         await auth().signInWithCredential(googleCredential);
+
+//         Alert.alert('Success', 'Signed in with Google!');
+//     } catch (error: any) {
+//         console.error('Google Sign-In error:', error);
+
+//         Alert.alert('Error', error.message || 'Google sign-in failed');
+//     }
+// };
+
 export const signInWithGoogle = async (): Promise<void> => {
     try {
         await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+        const result = await GoogleSignin.signIn();
 
-        const result: SignInResponse = await GoogleSignin.signIn();
-        // console.log('after result', result);
+        if (result?.type === 'cancelled') {
+            console.log('User cancelled Google login');
+            return;
+        }
 
         const idToken = result?.data?.idToken;
-
         if (!idToken) {
-            throw new Error('Google Sign-In failed: Missing idToken');
+            console.log('No idToken — probably cancelled');
+            return;
         }
 
         const googleCredential = auth.GoogleAuthProvider.credential(idToken);
@@ -39,10 +66,15 @@ export const signInWithGoogle = async (): Promise<void> => {
         Alert.alert('Success', 'Signed in with Google!');
     } catch (error: any) {
         console.error('Google Sign-In error:', error);
+        if (error?.code === statusCodes.SIGN_IN_CANCELLED) {
+            console.log('User cancelled Google Sign-In');
+            return;
+        }
 
         Alert.alert('Error', error.message || 'Google sign-in failed');
     }
 };
+
 
 export async function onAppleButtonPress() {
     if (Platform.OS !== 'ios') return;
