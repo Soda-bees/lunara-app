@@ -10,11 +10,14 @@
     "test": "jest"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@react-native-community/datetimepicker": "^8.5.0",
+=======
     "@invertase/react-native-apple-authentication": "^2.5.0",
     "@react-native-firebase/app": "^23.5.0",
     "@react-native-firebase/auth": "^23.5.0",
     "@react-native-google-signin/google-signin": "^16.0.0",
+>>>>>>> a49e2e922afe21eedc765c861ad0b92ff4bebd4f
     "@react-native-masked-view/masked-view": "^0.3.2",
     "@react-native-vector-icons/ionicons": "^12.3.0",
     "@react-native/new-app-screen": "0.82.1",
