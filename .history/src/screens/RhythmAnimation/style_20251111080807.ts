@@ -1,0 +1,110 @@
+import { StyleSheet } from 'react-native';
+import { fontSize } from '../../constants/fonts';
+import { colors } from '../../constants/colors';
+import { sizes } from '../../constants/sizes';
+const CIRCLE_SIZE = 300;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: sizes.screenWidth * 0.05,
+    backgroundColor: 'white',
+  },
+
+  mainContainer: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: sizes.screenHeight * 0.18,
+  },
+
+  resetSuccess: {
+    height: sizes.screenHeight * 0.28,
+    width: sizes.screenHeight * 0.28,
+    resizeMode: 'contain',
+  },
+
+  textContainer: {
+    marginTop: sizes.screenHeight * 0.05,
+    marginBottom: sizes.screenHeight * 0.08,
+    alignItems: 'center',
+  },
+
+  forgotText: {
+    color: colors.heading,
+    fontFamily: 'PlayfairDisplay-Medium',
+    fontSize: 22,
+  },
+
+  paraText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: colors.disabledText,
+    marginTop: 6,
+    textAlign: 'center',
+    maxWidth: sizes.screenWidth * 0.7,
+  },
+
+  bottomButton: {
+    position: 'absolute',
+    bottom: sizes.screenWidth * 0.05,
+    alignSelf: 'center',
+  },
+
+  microscopePivot: {
+    position: 'absolute',
+    top: sizes.screenHeight * 0.28,
+    left: sizes.screenWidth * 0.28,
+  },
+
+  microscopeImg: {
+    width: sizes.screenWidth * 0.35,
+    height: sizes.screenWidth * 0.35,
+    resizeMode: 'contain',
+  },
+
+  heading: {
+    color: colors.black,
+    textAlign: 'center',
+    fontSize: fontSize.h4,
+    fontFamily: 'MP-Semibold',
+  },
+
+  text: {
+    color: colors.disabledText,
+    textAlign: 'center',
+    width: sizes.screenWidth * 0.8,
+    alignSelf: 'center',
+    fontSize: fontSize.medium,
+    // marginTop: sizes.screenHeight * 0.03,
+    fontFamily: 'HBG-Medium',
+    marginBottom: sizes.screenHeight * 0.2,
+  },
+
+  circleContainer: {
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginTop: sizes.screenHeight * 0.15,
+    marginBottom: sizes.screenHeight * 0.05,
+  },
+  staticImage: {
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    position: 'absolute',
+  },
+  rotatingLayer: {
+    position: 'absolute',
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+  },
+  icon: {
+    resizeMode: 'contain',
+    width: sizes.screenWidth * 0.14,
+    height: sizes.screenWidth * 0.14,
+    position: 'absolute',
+  },
+});
+
+export default styles;

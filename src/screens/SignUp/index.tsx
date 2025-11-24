@@ -12,20 +12,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import LinearGradient from 'react-native-linear-gradient';
-import MaskedView from '@react-native-masked-view/masked-view';
-
 import Button from '../../components/Button';
 import styles from './style';
 import images from '../../constants/images';
 import { colors } from '../../constants/colors';
-import { sizes } from '../../constants/sizes';
-
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import {
   configureGoogleSignIn,
-  signInWithApple,
+  onAppleButtonPress,
   signInWithGoogle,
 } from '../../services/auth/socialAuth';
 
@@ -52,7 +47,7 @@ export default function SignUp() {
     // TODO sign-Up API call
 
     setLoader(false);
-    navigation.navigate('NameInput');
+    navigation.navigate('PrivacyConsent');
   };
 
   useEffect(() => {
@@ -142,7 +137,8 @@ export default function SignUp() {
               <View style={styles.hr}></View>
             </View>
             <View style={styles.row}>
-              <TouchableOpacity style={styles.button} onPress={signInWithApple}>
+              {/* <TouchableOpacity style={styles.button} onPress={logoutFromGoogle}> */}
+              <TouchableOpacity style={styles.button} onPress={onAppleButtonPress}>
                 <Image style={styles.buttonIcon} source={images.appleIcon} />
               </TouchableOpacity>
               <TouchableOpacity
