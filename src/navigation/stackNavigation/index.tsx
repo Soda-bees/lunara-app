@@ -64,7 +64,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function MainStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="TabNavigator" component={TabNavigator} />
+      {/* <Stack.Screen name="TabNavigator" component={TabNavigator} /> */}
 
       <Stack.Screen name="IntroSlider" component={IntroSlider} />
       <Stack.Screen name="SignIn" component={SignIn} />
