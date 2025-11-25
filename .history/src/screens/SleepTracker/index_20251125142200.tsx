@@ -1,0 +1,241 @@
+import React, { JSX, useState } from 'react';
+import {
+  Image,
+  Keyboard,
+  Platform,
+  ScrollView,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import styles from './style';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { RootStackParamList } from '../../navigation/stackNavigation';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
+import Header from '../../components/Header';
+import GradientWrapper from '../../components/GradientWrapper';
+import images from '../../constants/images';
+import LinearGradient from 'react-native-linear-gradient';
+import GradientText from '../../components/GradientText';
+import { gradients } from '../../constants/gradientColors';
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
+
+export default function SleepTracker() {
+  const navigation = useNavigation<NavigationProp>();
+  const emojis = ['😄', '🙂', '😐', '😞'];
+  const energyEmojis = [
+    images.energizedEmoji,
+    images.highEmoji,
+    images.mediumEmoji,
+  ];
+
+  return (
+    <SafeAreaView style={styles.mainContainer} edges={['top', 'bottom']}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="dark-content"
+      />
+
+      <Header />
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={{ gap: 16 }}>
+          <GradientWrapper variant="basic">
+            <View style={styles.phaseBody}>
+              <View style={styles.rowBetween}>
+                <Text style={styles.heading}>Sleep Tracking</Text>
+                <TouchableOpacity style={styles.plusBtn}>
+                  <Text style={styles.textMaroon}>+</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.textBlackNormal}>
+                Your most important recovery tool
+              </Text>
+              <View style={styles.rowFlexBox}>
+                <View style={styles.flexBox}>
+                  <View style={styles.row}>
+                    <Image source={images.energyHigh} style={styles.icon} />
+                    <Text style={styles.greenText}>Energy Level</Text>
+                  </View>
+                  <Text style={styles.heading}>8.2</Text>
+                </View>
+                <View style={styles.flexBox}>
+                  <View style={styles.row}>
+                    <Image source={images.energyHigh} style={styles.icon} />
+                    <Text style={styles.greenText}>Best For</Text>
+                  </View>
+                  <Text style={styles.heading}>3.9/5</Text>
+                </View>
+              </View>
+            </View>
+          </GradientWrapper>
+
+          <View style={styles.container2}>
+            <Text style={styles.sectionTitle}>Today's Tracking</Text>
+            <View>
+              <View style={styles.row}>
+                <Image source={images.movementIcon} style={styles.icon} />
+                <Text style={styles.label}>How are you feeling?</Text>
+              </View>
+              <View style={styles.row2}>
+                {['Great', 'Good', 'Okay', 'Low'].map((mood, index) => (
+                  <TouchableOpacity key={index} style={styles.optionBox}>
+                    <Text style={styles.optionEmojiText}>{emojis[index]}</Text>
+                    <Text style={styles.optionText}>{mood}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View>
+              <View style={styles.row}>
+                <Image source={images.energyIcon} style={styles.icon} />
+                <Text style={[styles.label]}>Energy Level</Text>
+              </View>
+              <View style={styles.row2}>
+                {['High', 'Medium', 'Low'].map((level, index) => (
+                  <TouchableOpacity key={index} style={styles.optionBox}>
+                    <Image
+                      source={energyEmojis[index]}
+                      style={styles.optionEmoji}
+                    />
+                    <Text style={styles.optionText}>{level}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+            <View>
+              <View style={styles.row}>
+                <Image source={images.sleepQualityIcon} style={styles.icon} />
+                <Text style={styles.label}>How was your sleep quality?</Text>
+              </View>
+              <View style={styles.row2}>
+                {['Great', 'Good', 'Okay', 'Poor'].map((mood, index) => (
+                  <TouchableOpacity key={index} style={styles.optionBox}>
+                    <Text style={styles.optionEmojiText}>{emojis[index]}</Text>
+                    <Text style={styles.optionText}>{mood}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+            <TouchableOpacity style={styles.linkRow}>
+              <Text style={styles.link}>View Sleep Details </Text>
+              <Image source={images.arrow} style={styles.arrow} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.container2}>
+            <Text style={styles.sectionTitle}>Cycle Insights</Text>
+
+            <View style={styles.insightRow}>
+              <View style={styles.insightCard}>
+                <View style={styles.row}>
+                  <Image source={images.energyHigh} style={styles.icon} />
+                  <Text style={styles.insightLabel}>Cycle Length</Text>
+                </View>
+                <Text style={styles.insightValue}>28 days avg</Text>
+                <Text style={styles.insightStatus}>Consistent</Text>
+              </View>
+
+              <View style={styles.insightCard}>
+                <View style={styles.row}>
+                  <Image source={images.sleepQualityIcon} style={styles.icon} />
+                  <Text style={styles.insightLabel}>Sleep Quality</Text>
+                </View>
+                <Text style={styles.insightValue}>7.8 hrs</Text>
+                <Text style={styles.insightStatus}>Improving</Text>
+              </View>
+            </View>
+
+            <View style={styles.insightRow}>
+              <View style={styles.insightCard}>
+                <View style={styles.row}>
+                  <Image source={images.hydrationIcon} style={styles.icon} />
+                  <Text style={styles.insightLabel}>Hydration</Text>
+                </View>
+                <Text style={styles.insightValue}>85%</Text>
+                <Text style={styles.insightStatus}>Great</Text>
+              </View>
+
+              <View style={styles.insightCard}>
+                <View style={styles.row}>
+                  <Image source={images.energyIcon} style={styles.icon} />
+                  <Text style={styles.insightLabel}>Energy Level</Text>
+                </View>
+                <Text style={styles.insightValue}>High</Text>
+                <Text style={styles.insightStatus}>Peak phase</Text>
+              </View>
+            </View>
+
+            <View style={styles.softCopyContainer}>
+              <Text style={styles.textDarkGrey}>
+                💡 You've had reduced bloating for two cycles since adding daily
+                sauna use
+              </Text>
+            </View>
+          </View>
+          <GradientWrapper variant="basic">
+            <View style={styles.container}>
+              <Text style={styles.sectionTitleGreen}>Active Challenge</Text>
+
+              <Text style={styles.challengeTitle}>21-Day Detox Reset</Text>
+              <Text style={styles.challengeDisclaimer}>
+                Day 8 — You're glowing from the inside out.
+              </Text>
+
+              <TouchableOpacity style={styles.updateButton}>
+                <LinearGradient
+                  colors={gradients.primary}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.updateButtonGradient}
+                >
+                  <Text style={styles.updateButtonText}>View Challenge</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </GradientWrapper>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const RitualItem = ({
+  title,
+  tag,
+  description,
+  actionLabel,
+}: {
+  title: string;
+  tag: string;
+  description: string;
+  actionLabel?: string;
+}) => {
+  return (
+    <View style={styles.itemContainer}>
+      <View style={styles.itemHeaderRow}>
+        <TouchableOpacity>
+          <Image source={images.circleUnchecked} style={styles.checkIcon} />
+        </TouchableOpacity>
+        <View>
+          <Text style={styles.itemTitle}>{title}</Text>
+          <View style={styles.tagRow}>
+            <Text style={styles.tagText}>● {tag}</Text>
+          </View>
+        </View>
+        {/* {actionLabel && (
+          <TouchableOpacity>
+            <Text style={styles.actionLabel}>{actionLabel} →</Text>
+          </TouchableOpacity>
+        )} */}
+      </View>
+
+      <Text style={styles.itemDescription}>{description}</Text>
+    </View>
+  );
+};

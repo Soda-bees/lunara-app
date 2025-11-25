@@ -1,0 +1,373 @@
+import React, { JSX, useState } from 'react';
+import {
+  Image,
+  Keyboard,
+  Platform,
+  ScrollView,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import styles from './style';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { RootStackParamList } from '../../navigation/stackNavigation';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
+import Header from '../../components/Header';
+import GradientWrapper from '../../components/GradientWrapper';
+import images from '../../constants/images';
+import LinearGradient from 'react-native-linear-gradient';
+import GradientText from '../../components/GradientText';
+import { gradients } from '../../constants/gradientColors';
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
+
+export default function Home() {
+  const navigation = useNavigation<NavigationProp>();
+
+  return (
+    <SafeAreaView style={styles.mainContainer} edges={['top']}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="dark-content"
+      />
+
+      <Header />
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <GradientWrapper variant="basic">
+          <View style={styles.phaseBody}>
+            <View style={styles.row}>
+              <Image
+                style={styles.currentPhaseIconMain}
+                source={images.currentPhaseIconMain}
+              />
+              <Text style={styles.heading}>Current Phase</Text>
+            </View>
+            <View style={styles.phaseTextContainer}>
+              <Text style={styles.textPrimary}>Foliicular - Day 8</Text>
+            </View>
+            <View style={styles.colCenter}>
+              <Text style={styles.spacedText}>TODAY</Text>
+              <Text style={styles.textBlackMedium}>Tuesday, October 28</Text>
+            </View>
+            <View style={styles.cyclePhaseCard}>
+              <Text style={styles.spacedText}>CYCLE PROGRESS</Text>
+
+              <View style={styles.rowFull}>
+                <View style={styles.rowBottom}>
+                  <GradientText fontSize={46} fontFamily="Inter-Regular">
+                    8
+                  </GradientText>
+                  <Text style={[styles.numberTextMedium, { top: 8 }]}>
+                    / 28
+                  </Text>
+                </View>
+                <View style={styles.dayTextContainer}>
+                  <Text style={styles.textBlackNormal}>Day 8</Text>
+                </View>
+              </View>
+              <View style={styles.progressIndicator}>
+                <LinearGradient
+                  style={styles.progress}
+                  colors={['#E4AF5D', '#E799AD']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                ></LinearGradient>
+              </View>
+              <View style={styles.rowFull}>
+                <View>
+                  <Text style={styles.spacedText}>CURRENT PHASE</Text>
+                  <GradientText
+                    fontSize={24}
+                    fontFamily="PlayfairDisplay-SemiBold"
+                  >
+                    Luteal
+                  </GradientText>
+                </View>
+                <Image source={images.lutealIcon} style={styles.lutealIcon} />
+              </View>
+
+              <Text style={styles.textDarkGrey}>
+                Energy rising _ perfect for new beginnings
+              </Text>
+            </View>
+
+            <View style={styles.softCopyContainer}>
+              <Text style={styles.textDarkGrey}>
+                Energy is rising! This is your spring—time for new beginnings,
+                creativity, and planning.
+              </Text>
+            </View>
+
+            <TouchableOpacity style={styles.sliderRow}>
+              <Image source={images.slideDown} style={styles.slideIcon} />
+              <Text style={styles.greenText}>Tap to see detailed insights</Text>
+            </TouchableOpacity>
+
+            <View style={styles.rowFlexBox}>
+              <View style={styles.flexBox}>
+                <Image source={images.energyHigh} style={styles.icon} />
+                <Text style={styles.greenText}>Energy Level</Text>
+                <Text style={styles.textBlackSmall}>Rising - High</Text>
+              </View>
+              <View style={styles.flexBox}>
+                <Image source={images.sparkle} style={styles.icon} />
+                <Text style={styles.greenText}>Best For</Text>
+                <Text style={styles.textBlackSmall}>
+                  New projects, socializing, challenging workouts
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.thisPhaseDataContainer}>
+              <View style={styles.section}>
+                <View style={styles.row}>
+                  <Image source={images.nutritionIcon} style={styles.icon} />
+                  <Text style={styles.textBlackBold}>Nutrition This Phase</Text>
+                </View>
+                <View>
+                  <View style={styles.row}>
+                    <View style={styles.bulletPoint}></View>
+                    <Text style={styles.textBlackNormal}>
+                      Fresh, light foods
+                    </Text>
+                  </View>
+                  <View style={styles.row}>
+                    <View style={styles.bulletPoint}></View>
+                    <Text style={styles.textBlackNormal}>
+                      Fermented foods for gut health
+                    </Text>
+                  </View>
+                  <View style={styles.row}>
+                    <View style={styles.bulletPoint}></View>
+
+                    <Text style={styles.textBlackNormal}>Lean proteins</Text>
+                  </View>
+                  <View style={styles.row}>
+                    <View style={styles.bulletPoint}></View>
+                    <Text style={styles.textBlackNormal}>
+                      Complex carbs for energy
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.section}>
+                <View style={styles.row}>
+                  <Image source={images.movementIcon} style={styles.icon} />
+                  <Text style={styles.textBlackBold}>Movement This Phase</Text>
+                </View>
+                <View>
+                  <View style={styles.row}>
+                    <View style={styles.bulletPoint}></View>
+                    <Text style={styles.textBlackNormal}>HIIT workouts</Text>
+                  </View>
+                  <View style={styles.row}>
+                    <View style={styles.bulletPoint}></View>
+                    <Text style={styles.textBlackNormal}>
+                      Strength training
+                    </Text>
+                  </View>
+                  <View style={styles.row}>
+                    <View style={styles.bulletPoint}></View>
+
+                    <Text style={styles.textBlackNormal}>Dance or cardio</Text>
+                  </View>
+                  <View style={styles.row}>
+                    <View style={styles.bulletPoint}></View>
+                    <Text style={styles.textBlackNormal}>
+                      Try new activities
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.section}>
+                <View style={styles.row}>
+                  <Image source={images.mondsetIcon} style={styles.icon} />
+                  <Text style={styles.textBlackBold}>Mindset & Focus</Text>
+                </View>
+                <View>
+                  <View style={styles.row}>
+                    <View style={styles.bulletPoint}></View>
+                    <Text style={styles.textBlackNormal}>
+                      Start new projects
+                    </Text>
+                  </View>
+                  <View style={styles.row}>
+                    <View style={styles.bulletPoint}></View>
+                    <Text style={styles.textBlackNormal}>
+                      Network and socialize
+                    </Text>
+                  </View>
+                  <View style={styles.row}>
+                    <View style={styles.bulletPoint}></View>
+
+                    <Text style={styles.textBlackNormal}>
+                      Take on challenges
+                    </Text>
+                  </View>
+                  <View style={styles.row}>
+                    <View style={styles.bulletPoint}></View>
+                    <Text style={styles.textBlackNormal}>
+                      Think big and plan
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            <LinearGradient
+              colors={gradients.pinkish}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.pinkishGradient}
+            >
+              <View style={styles.row}>
+                <Image source={images.sparkle} style={styles.icon} />
+                <Text style={styles.textBlackBold}>
+                  Understanding This Phase
+                </Text>
+              </View>
+              <Text style={styles.textBlackSmall}>
+                Rising estrogen brings mental clarity and physical energy. This
+                is when you naturally feel most optimistic and capable. Use this
+                window for things that require focus, creativity, and social
+                connection.
+              </Text>
+            </LinearGradient>
+          </View>
+        </GradientWrapper>
+
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.headerRow}>
+            <Text style={styles.headerTitle}>Today’s Rituals</Text>
+            <Text style={styles.headerProgress}>0/9 Complete</Text>
+          </View>
+
+          {/* MORNING */}
+          <Text style={styles.sectionHeading}>MORNING</Text>
+          <View style={styles.ritualsSection}>
+            <RitualItem
+              title="Log last night’s sleep"
+              tag="Rest"
+              description="Tracking sleep patterns helps identify what supports your best rest"
+              actionLabel="Log Sleep"
+            />
+
+            <RitualItem
+              title="Hydrate with minerals + morning light"
+              tag="Nourish"
+              description="Morning light sets your circadian rhythm and hormone balance"
+              actionLabel="View Guide"
+            />
+
+            <RitualItem
+              title="5-min breathwork practice"
+              tag="Mindful"
+              description="Breathwork activates your parasympathetic nervous system"
+              actionLabel="Practice"
+            />
+
+            <RitualItem
+              title="Protein-rich breakfast (20–30g)"
+              tag="Nourish"
+              description="Protein stabilizes blood sugar and supports hormone production"
+              actionLabel="View Guide"
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* MIDDAY */}
+          <Text style={styles.sectionHeading}>MIDDAY</Text>
+          <View style={styles.ritualsSection}>
+            <RitualItem
+              title="Movement session (any time)"
+              tag="Move"
+              description="Exercise when it fits your schedule and energy levels"
+            />
+
+            <RitualItem
+              title="Protein at lunch (20–30g)"
+              tag="Nourish"
+              description="Consistent protein supports metabolic health and satiety"
+              actionLabel="View Guide"
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* EVENING */}
+          <Text style={styles.sectionHeading}>EVENING</Text>
+          <View style={styles.ritualsSection}>
+            <RitualItem
+              title="Gentle stretching or walk"
+              tag="Move"
+              description="Light movement aids digestion and circulation"
+            />
+
+            <RitualItem
+              title="Wind-down ritual"
+              tag="Mindful"
+              description="Creating separation from day helps cortisol naturally decline"
+              actionLabel="Practice"
+            />
+
+            <RitualItem
+              title="Magnesium supplement (evening)"
+              tag="Rest"
+              description="Evening magnesium supports deep sleep and muscle recovery"
+            />
+          </View>
+
+          {/* Bottom Gradient Button */}
+          <TouchableOpacity style={styles.updateButton}>
+            <LinearGradient
+              colors={['#E4AF5D', '#E799AD']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.updateButtonGradient}
+            >
+              <Text style={styles.updateButtonText}>Update Rituals</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const RitualItem = ({
+  title,
+  tag,
+  description,
+  actionLabel,
+}: {
+  title: string;
+  tag: string;
+  description: string;
+  actionLabel?: string;
+}) => {
+  return (
+    <View style={styles.itemContainer}>
+      <View style={styles.itemHeaderRow}>
+        <Image source={images.circleUnchecked} style={styles.checkIcon} />
+        <Text style={styles.itemTitle}>{title}</Text>
+        {actionLabel && (
+          <TouchableOpacity>
+            <Text style={styles.actionLabel}>{actionLabel} →</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <View style={styles.tagRow}>
+        <Text style={styles.tagText}>● {tag}</Text>
+      </View>
+
+      <Text style={styles.itemDescription}>{description}</Text>
+    </View>
+  );
+};
