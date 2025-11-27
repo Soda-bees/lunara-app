@@ -15,6 +15,7 @@ import {
   TabRouteName,
 } from '../../constants/content/tabNavigatorIcons';
 import AnimatedTabIcon from '../../components/AnimatedTabIcon/indes';
+import CycleInsight from '../../screens/CycleInsight';
 const Tab = createBottomTabNavigator();
 export default function TabNavigator() {
   const insets = useSafeAreaInsets();
@@ -83,7 +84,7 @@ export default function TabNavigator() {
       />
       <Tab.Screen
         name="Cycle"
-        component={Cycle}
+        component={CycleInsight}
         options={{ tabBarLabel: 'Cycle' }}
       />
       <Tab.Screen

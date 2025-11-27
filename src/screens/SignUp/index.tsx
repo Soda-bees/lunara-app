@@ -54,7 +54,6 @@ export default function SignUp() {
     configureGoogleSignIn();
   }, []);
 
-
   return (
     <SafeAreaView
       style={styles.container}
