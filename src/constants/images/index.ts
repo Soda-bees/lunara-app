@@ -59,6 +59,17 @@ import menstrualIcon from '../../assets/images/menstrualIcon.png';
 import lutealIcon from '../../assets/images/lutealIcon.png';
 import ovulationIcon from '../../assets/images/ovulationIcon.png';
 import follicularIcon from '../../assets/images/follicularIcon.png';
+import phasesImage from '../../assets/images/phasesImage.png';
+import logWaterDrop from '../../assets/images/logWaterDrop.png';
+import pregnancyHeart from '../../assets/images/pregnancyHeart.png';
+import informationIcon from '../../assets/images/informationIcon.png';
+import periodCalender from '../../assets/images/periodCalender.png';
+import leftArrow from '../../assets/images/leftArrow.png';
+import rightArrow from '../../assets/images/rightArrow.png';
+import mentalImage from '../../assets/images/mentalImage.png';
+import ideaBulb from '../../assets/images/ideaBulb.png';
+import journal from '../../assets/images/journal.png';
+import crossButton from '../../assets/images/crossButton.png';
 
 const images: { [key: string]: any } = {
   googleIcon,
@@ -122,6 +133,17 @@ const images: { [key: string]: any } = {
   lutealIcon,
   ovulationIcon,
   follicularIcon,
+  phasesImage,
+  logWaterDrop,
+  pregnancyHeart,
+  informationIcon,
+  periodCalender,
+  leftArrow,
+  rightArrow,
+  mentalImage,
+  ideaBulb,
+  journal,
+  crossButton,
 };
 
 export default images;

@@ -28,6 +28,7 @@ import CyclePattern from '../../screens/CyclePattern';
 import QuickTracking from '../../screens/QuickTracking';
 import TabNavigator from '../tabNavigator';
 import { TabRouteName } from '../../constants/content/tabNavigatorIcons';
+import CycleInsight from '../../screens/CycleInsight';
 
 export type RootStackParamList = {
   SignIn: any;
@@ -57,6 +58,7 @@ export type RootStackParamList = {
   CyclePattern: any;
   QuickTracking: any;
   TabNavigator: any;
+  CycleInsight: any;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -64,7 +66,8 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function MainStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {/* <Stack.Screen name="TabNavigator" component={TabNavigator} /> */}
+      <Stack.Screen name="TabNavigator" component={TabNavigator} />
+      <Stack.Screen name="CycleInsight" component={CycleInsight} />
 
       <Stack.Screen name="IntroSlider" component={IntroSlider} />
       <Stack.Screen name="SignIn" component={SignIn} />

@@ -53,4 +53,5 @@ export const colors: { [key: string]: string } = {
   background: '#fff',
   green: '#7DA38D',
   darkGrey: '#7D7D7D',
+  borderPink: '#F7DEE7',
 };
