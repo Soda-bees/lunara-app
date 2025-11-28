@@ -68,7 +68,6 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function MainStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="UploadProfile" component={UploadProfile} />
       <Stack.Screen name="TabNavigator" component={TabNavigator} />
       <Stack.Screen name="CycleInsight" component={CycleInsight} />
       <Stack.Screen name="IntroSlider" component={IntroSlider} />
@@ -81,7 +80,7 @@ export default function MainStack() {
       <Stack.Screen name="PrivacyConsent" component={PrivacyConsent} />
       <Stack.Screen name="NameInput" component={NameInput} />
       <Stack.Screen name="GetToKnow" component={GetToKnow} />
-      {/* <Stack.Screen name="UploadProfile" component={UploadProfile} /> */}
+      <Stack.Screen name="UploadProfile" component={UploadProfile} />
       <Stack.Screen name="WhoIsTheUser" component={WhoIsTheUser} />
       <Stack.Screen name="AboutYouTransition" component={AboutYouTransition} />
       <Stack.Screen name="BirthdayInput" component={BirthdayInput} />
