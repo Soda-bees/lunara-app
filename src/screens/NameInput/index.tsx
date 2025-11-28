@@ -6,6 +6,7 @@ import {
   StatusBar,
   Text,
   TextInput,
+  TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
@@ -18,6 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import images from '../../constants/images';
 import { colors } from '../../constants/colors';
 import Button from '../../components/Button';
+
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 
 export default function NameInput() {

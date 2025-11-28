@@ -96,6 +96,8 @@ const styles = StyleSheet.create({
     bottom: sizes.screenWidth * 0.05,
     alignSelf: 'center',
   },
+
+
 });
 
 export default styles;

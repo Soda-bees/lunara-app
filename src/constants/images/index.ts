@@ -84,6 +84,7 @@ import mentalImage from '../../assets/images/mentalImage.png';
 import ideaBulb from '../../assets/images/ideaBulb.png';
 import journal from '../../assets/images/journal.png';
 import crossButton from '../../assets/images/crossButton.png';
+import cameraIconTwo from '../../assets/images/cameraIconTwo.png';
 
 const images: { [key: string]: any } = {
   googleIcon,
@@ -172,6 +173,7 @@ const images: { [key: string]: any } = {
   ideaBulb,
   journal,
   crossButton,
+  cameraIconTwo,
 };
 
 export default images;

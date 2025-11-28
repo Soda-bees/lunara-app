@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
+  Animated,
   Image,
   Keyboard,
+  KeyboardAvoidingView,
   PermissionsAndroid,
   Platform,
+  ScrollView,
   StatusBar,
   Text,
+  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
@@ -20,12 +24,27 @@ import images from '../../constants/images';
 import Button from '../../components/Button';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { colors } from '../../constants/colors';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { sizes } from '../../constants/sizes';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 
 export default function UploadProfile() {
   const navigation = useNavigation<NavigationProp>();
   const [imageUri, setImageUri] = useState<string | undefined>('');
+  const [uploading, setUploading] = useState<boolean>(false);
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const animationRef = useRef<Animated.CompositeAnimation | null>(null);
+  const [name, setName] = useState('');
+  const [showPicker, setShowPicker] = useState(false);
+  const [date, setDate] = useState<Date | null>(null);
+
+  const onChange = (event: any, selectedDate: Date | undefined) => {
+    setShowPicker(false);
+    if (selectedDate) {
+      setDate(selectedDate);
+    }
+  };
 
   const requestCameraPermission = async () => {
     if (Platform.OS === 'android') {
@@ -69,8 +88,25 @@ export default function UploadProfile() {
 
   const handlePress = () => {
     navigation.navigate('AboutYouTransition', {
-      profileImage: imageUri, // pass forward
+      profileImage: imageUri,
     });
+  };
+
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const startRotation = () => {
+    rotateAnim.setValue(0);
+    animationRef.current = Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 7000,
+        useNativeDriver: true,
+      }),
+    );
+    animationRef.current.start();
   };
 
   return (
@@ -86,60 +122,108 @@ export default function UploadProfile() {
       <BackButton />
       <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
         <View style={styles.mainContainer}>
-          <View>
-            <View style={styles.textContainer}>
-              <Text style={styles.forgotText}>Upload Your Profile</Text>
-              <Text style={styles.paraText}>
-                Add a profile picture to make your{'\n'}Lunara experience more
-                personal. Don’t{'\n'}worry — it’s just for you.
-              </Text>
-            </View>
-
-            <View style={{ alignItems: 'center', marginTop: 30 }}>
-              <TouchableOpacity
-                onPress={openLibrary}
-                style={styles.imageWrapper}
-              >
-                {imageUri ? (
-                  <Image source={{ uri: imageUri }} style={styles.profileImg} />
-                ) : (
-                  <>
-                    <Image source={images.uploadImage} style={styles.images} />
-                    <Text style={{ color: colors.black, marginTop: 6 }}>
-                      Upload Photo
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <Text style={{ color: colors.gray, marginVertical: 12 }}>or</Text>
-
-              <TouchableOpacity
-                onPress={openCamera}
-                style={{ flexDirection: 'row', alignItems: 'center' }}
-              >
-                <Image
-                  source={images.cameraIcon}
+          <KeyboardAvoidingView
+            contentContainerStyle={{ flexGrow: 1 }}
+            // style={{ flex: 1}}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 120}
+          >
+            <ScrollView>
+              <View>
+                <View
                   style={{
-                    width: 22,
-                    height: 22,
-                    marginRight: 4,
-                    resizeMode: 'contain',
+                    alignItems: 'center',
                   }}
-                />
-                <Text style={{ color: colors.primary }}>
-                  Launch Camera for a New Photo
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+                >
+                  <View style={styles.outerContainer}>
+                    <Animated.View
+                      style={[
+                        styles.rotatingBorder,
+                        uploading && { transform: [{ rotate: spin }] },
+                      ]}
+                    />
+                    <TouchableOpacity
+                      style={styles.imageView}
+                      onPress={openLibrary}
+                    >
+                      {imageUri ? (
+                        <Image
+                          source={{ uri: imageUri }}
+                          style={styles.uploadedImage}
+                        />
+                      ) : (
+                        <>
+                          <Image
+                            source={images.uploadImage}
+                            style={styles.images}
+                          />
+                          <Text style={styles.imageText}>Upload Photo</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.dividerRow}>
+                    <View style={styles.line} />
+                    <Text style={styles.orText}>or</Text>
+                    <View style={styles.line} />
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={openCamera}
+                    style={styles.openCameraRow}
+                  >
+                    <Image
+                      source={images.cameraIconTwo}
+                      style={styles.cameraIcon}
+                    />
+                    <Text style={styles.cameraText}>
+                      Launch Camera for a New Photo
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <View style={styles.nameBirthdayView}>
+                <Text style={styles.namePlaceholder}>Enter Your name</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    value={name}
+                    onChangeText={setName}
+                    style={styles.input}
+                    placeholder="Your Name"
+                    placeholderTextColor={colors.placeHolderGray}
+                  />
+                </View>
+                <TouchableOpacity
+                  style={styles.birthdayContainer}
+                  onPress={() => setShowPicker(true)}
+                >
+                  <Text style={styles.dateText}>
+                    {date
+                      ? date.toLocaleDateString()
+                      : 'Choose your date of birth'}
+                  </Text>
+                  <Image
+                    source={images.periodCalender}
+                    style={styles.profileproIconStyle}
+                  />
+                </TouchableOpacity>
+
+                {showPicker && (
+                  <DateTimePicker
+                    value={date || new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={onChange}
+                    maximumDate={new Date()}
+                  />
+                )}
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
 
           <View style={styles.bottomButton}>
-            <Button
-              title="Continue"
-              onPress={handlePress}
-              // disabled={!imageUri}
-            />
+            <Button title="Continue" onPress={handlePress} />
           </View>
         </View>
       </TouchableWithoutFeedback>

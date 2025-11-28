@@ -3,6 +3,8 @@ import { fontSize } from '../../constants/fonts';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 
+const SIZE = sizes.screenWidth * 0.45;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -14,22 +16,83 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  textContainer: {
-    marginTop: sizes.screenHeight * 0.05,
-    marginBottom: sizes.screenHeight * 0.08,
+  outerContainer: {
+    width: SIZE + 20,
+    height: SIZE + 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rotatingBorder: {
+    position: 'absolute',
+    width: SIZE + 20,
+    height: SIZE + 20,
+    borderRadius: 200,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: '#A1CBD4',
+  },
+  imageView: {
+    width: SIZE,
+    height: SIZE,
+    borderRadius: SIZE / 2,
+    backgroundColor: colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.borderColor,
   },
 
-  forgotText: {
-    color: colors.heading,
-    fontFamily: 'PlayfairDisplay-Medium',
-    fontSize: 22,
+  images: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
   },
-
-  paraText: {
+  imageText: {
+    marginTop: 9,
+    color: colors.black,
+    fontSize: 16,
     fontFamily: 'Inter-Regular',
-    fontSize: 14,
+  },
+  uploadedImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 30,
+  },
+  line: {
+    height: 1,
+    width: sizes.screenWidth * 0.35,
+    backgroundColor: '#CCCCCC',
+    marginTop: 5,
+  },
+  orText: {
+    marginHorizontal: 10,
+    fontSize: fontSize.large,
     color: colors.disabledText,
-    marginTop: 6,
+    fontFamily: 'Inter-Regular',
+  },
+  openCameraRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  cameraIcon: {
+    width: 18,
+    height: 18,
+    marginRight: 5,
+    resizeMode: 'contain',
+    tintColor: colors.black,
+  },
+  cameraText: {
+    color: colors.black,
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    marginLeft: 4,
   },
 
   inputContainer: {
@@ -47,75 +110,58 @@ const styles = StyleSheet.create({
 
   input: {
     fontFamily: 'Inter-Regular',
-    fontSize: fontSize.regular,
+    fontSize: 16,
     color: colors.disabledText,
     width: sizes.screenWidth * 0.64,
     marginLeft: 3,
   },
 
-  inputIcon: {
-    height: 15,
-    width: 15,
-    resizeMode: 'contain',
+  namePlaceholder: {
+    color: colors.disabledText,
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    marginBottom: 5,
   },
 
-  emailIconStyle: {
-    resizeMode: 'contain',
-    width: sizes.screenWidth * 0.05,
-    height: sizes.screenWidth * 0.05,
-    // backgroundColor:'red'
+  nameBirthdayView: {
+    marginTop: sizes.screenHeight * 0.06,
+    // flex:1
   },
 
-  textInput: {
-    marginLeft: 5,
-    width: sizes.screenWidth * 0.7,
-    fontSize: fontSize.smallM,
-    color: colors.black,
-    fontFamily: 'MP-Medium',
-
-    // backgroundColor:'red'
-  },
-
-  iconInputView: {
+  birthdayContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     backgroundColor: colors.white,
-    height: sizes.screenHeight * 0.07,
     alignItems: 'center',
-    paddingHorizontal: sizes.screenWidth * 0.04,
-    borderRadius: sizes.screenWidth * 0.1,
+    paddingHorizontal: sizes.screenWidth * 0.03,
+    borderRadius: 16,
     width: sizes.screenWidth * 0.9,
-    marginVertical: 4,
+    alignSelf: 'center',
     borderWidth: 1,
-    borderColor: colors.inputBorderGray,
-    marginTop: sizes.screenHeight * 0.04,
+    borderColor: colors.borderColor,
+    paddingVertical: 16,
+    marginTop:10
+  },
+
+  profileproIconStyle: {
+    resizeMode: 'contain',
+    height: 17,
+    width: 17,
+    marginLeft: 4,
+    marginRight: 3,
+  },
+
+  dateText: {
+    marginLeft: 10,
     color: colors.black,
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
   },
 
   bottomButton: {
     position: 'absolute',
     bottom: sizes.screenWidth * 0.05,
     alignSelf: 'center',
-  },
-
-  imageWrapper: {
-    width: 140,
-    height: 140,
-    borderRadius: 100,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  profileImg: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 100,
-  },
-  images: {
-    width: 30,
-    height: 30,
-    resizeMode: 'contain',
   },
 });
 
