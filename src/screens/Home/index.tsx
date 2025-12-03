@@ -26,6 +26,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 
 export default function Home() {
   const navigation = useNavigation<NavigationProp>();
+  const [showInsightDetails, setShowInsightDetails] = useState<Boolean>(false);
   const emojis = ['😄', '🙂', '😐', '😞'];
   const energyEmojis = [
     images.energizedEmoji,
@@ -113,149 +114,182 @@ export default function Home() {
                 </Text>
               </View>
 
-              <TouchableOpacity style={styles.sliderRow}>
-                <Image source={images.slideDown} style={styles.slideIcon} />
+              <TouchableOpacity
+                style={
+                  showInsightDetails
+                    ? [styles.sliderRow, { marginBottom: 15 }]
+                    : styles.sliderRow
+                }
+                // onPress={() => setShowInsightDetails(true)}
+                onPress={() => setShowInsightDetails(prev => !prev)}
+              >
+                <Image
+                  source={images.slideDown}
+                  style={
+                    showInsightDetails
+                      ? styles.slideActiveIcon
+                      : styles.slideIcon
+                  }
+                />
                 <Text style={styles.greenText}>
-                  Tap to see detailed insights
+                  Tap to {showInsightDetails ? 'hide' : 'see'} detailed insights
                 </Text>
               </TouchableOpacity>
+              {showInsightDetails && (
+                <>
+                  <View style={styles.rowFlexBox}>
+                    <View style={styles.flexBox}>
+                      <Image source={images.energyHigh} style={styles.icon} />
+                      <Text style={styles.greenText}>Energy Level</Text>
+                      <Text style={styles.textBlackSmall}>Rising - High</Text>
+                    </View>
+                    <View style={styles.flexBox}>
+                      <Image source={images.sparkle} style={styles.icon} />
+                      <Text style={styles.greenText}>Best For</Text>
+                      <Text style={styles.textBlackSmall}>
+                        New projects, socializing, challenging workouts
+                      </Text>
+                    </View>
+                  </View>
 
-              <View style={styles.rowFlexBox}>
-                <View style={styles.flexBox}>
-                  <Image source={images.energyHigh} style={styles.icon} />
-                  <Text style={styles.greenText}>Energy Level</Text>
-                  <Text style={styles.textBlackSmall}>Rising - High</Text>
-                </View>
-                <View style={styles.flexBox}>
-                  <Image source={images.sparkle} style={styles.icon} />
-                  <Text style={styles.greenText}>Best For</Text>
-                  <Text style={styles.textBlackSmall}>
-                    New projects, socializing, challenging workouts
-                  </Text>
-                </View>
-              </View>
+                  <View style={styles.thisPhaseDataContainer}>
+                    <View style={styles.section}>
+                      <View style={styles.row}>
+                        <Image
+                          source={images.nutritionIcon}
+                          style={styles.icon}
+                        />
+                        <Text style={styles.textBlackBold}>
+                          Nutrition This Phase
+                        </Text>
+                      </View>
+                      <View>
+                        <View style={styles.row}>
+                          <View style={styles.bulletPoint}></View>
+                          <Text style={styles.textBlackNormal}>
+                            Fresh, light foods
+                          </Text>
+                        </View>
+                        <View style={styles.row}>
+                          <View style={styles.bulletPoint}></View>
+                          <Text style={styles.textBlackNormal}>
+                            Fermented foods for gut health
+                          </Text>
+                        </View>
+                        <View style={styles.row}>
+                          <View style={styles.bulletPoint}></View>
 
-              <View style={styles.thisPhaseDataContainer}>
-                <View style={styles.section}>
-                  <View style={styles.row}>
-                    <Image source={images.nutritionIcon} style={styles.icon} />
-                    <Text style={styles.textBlackBold}>
-                      Nutrition This Phase
+                          <Text style={styles.textBlackNormal}>
+                            Lean proteins
+                          </Text>
+                        </View>
+                        <View style={styles.row}>
+                          <View style={styles.bulletPoint}></View>
+                          <Text style={styles.textBlackNormal}>
+                            Complex carbs for energy
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                    <View style={styles.section}>
+                      <View style={styles.row}>
+                        <Image
+                          source={images.movementIcon}
+                          style={styles.icon}
+                        />
+                        <Text style={styles.textBlackBold}>
+                          Movement This Phase
+                        </Text>
+                      </View>
+                      <View>
+                        <View style={styles.row}>
+                          <View style={styles.bulletPoint}></View>
+                          <Text style={styles.textBlackNormal}>
+                            HIIT workouts
+                          </Text>
+                        </View>
+                        <View style={styles.row}>
+                          <View style={styles.bulletPoint}></View>
+                          <Text style={styles.textBlackNormal}>
+                            Strength training
+                          </Text>
+                        </View>
+                        <View style={styles.row}>
+                          <View style={styles.bulletPoint}></View>
+
+                          <Text style={styles.textBlackNormal}>
+                            Dance or cardio
+                          </Text>
+                        </View>
+                        <View style={styles.row}>
+                          <View style={styles.bulletPoint}></View>
+                          <Text style={styles.textBlackNormal}>
+                            Try new activities
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                    <View style={styles.section}>
+                      <View style={styles.row}>
+                        <Image
+                          source={images.mondsetIcon}
+                          style={styles.icon}
+                        />
+                        <Text style={styles.textBlackBold}>
+                          Mindset & Focus
+                        </Text>
+                      </View>
+                      <View>
+                        <View style={styles.row}>
+                          <View style={styles.bulletPoint}></View>
+                          <Text style={styles.textBlackNormal}>
+                            Start new projects
+                          </Text>
+                        </View>
+                        <View style={styles.row}>
+                          <View style={styles.bulletPoint}></View>
+                          <Text style={styles.textBlackNormal}>
+                            Network and socialize
+                          </Text>
+                        </View>
+                        <View style={styles.row}>
+                          <View style={styles.bulletPoint}></View>
+
+                          <Text style={styles.textBlackNormal}>
+                            Take on challenges
+                          </Text>
+                        </View>
+                        <View style={styles.row}>
+                          <View style={styles.bulletPoint}></View>
+                          <Text style={styles.textBlackNormal}>
+                            Think big and plan
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+
+                  <LinearGradient
+                    colors={gradients.pinkish}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.pinkishGradient}
+                  >
+                    <View style={styles.row}>
+                      <Image source={images.sparkle} style={styles.icon} />
+                      <Text style={styles.textBlackBold}>
+                        Understanding This Phase
+                      </Text>
+                    </View>
+                    <Text style={styles.textBlackSmall}>
+                      Rising estrogen brings mental clarity and physical energy.
+                      This is when you naturally feel most optimistic and
+                      capable. Use this window for things that require focus,
+                      creativity, and social connection.
                     </Text>
-                  </View>
-                  <View>
-                    <View style={styles.row}>
-                      <View style={styles.bulletPoint}></View>
-                      <Text style={styles.textBlackNormal}>
-                        Fresh, light foods
-                      </Text>
-                    </View>
-                    <View style={styles.row}>
-                      <View style={styles.bulletPoint}></View>
-                      <Text style={styles.textBlackNormal}>
-                        Fermented foods for gut health
-                      </Text>
-                    </View>
-                    <View style={styles.row}>
-                      <View style={styles.bulletPoint}></View>
-
-                      <Text style={styles.textBlackNormal}>Lean proteins</Text>
-                    </View>
-                    <View style={styles.row}>
-                      <View style={styles.bulletPoint}></View>
-                      <Text style={styles.textBlackNormal}>
-                        Complex carbs for energy
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-                <View style={styles.section}>
-                  <View style={styles.row}>
-                    <Image source={images.movementIcon} style={styles.icon} />
-                    <Text style={styles.textBlackBold}>
-                      Movement This Phase
-                    </Text>
-                  </View>
-                  <View>
-                    <View style={styles.row}>
-                      <View style={styles.bulletPoint}></View>
-                      <Text style={styles.textBlackNormal}>HIIT workouts</Text>
-                    </View>
-                    <View style={styles.row}>
-                      <View style={styles.bulletPoint}></View>
-                      <Text style={styles.textBlackNormal}>
-                        Strength training
-                      </Text>
-                    </View>
-                    <View style={styles.row}>
-                      <View style={styles.bulletPoint}></View>
-
-                      <Text style={styles.textBlackNormal}>
-                        Dance or cardio
-                      </Text>
-                    </View>
-                    <View style={styles.row}>
-                      <View style={styles.bulletPoint}></View>
-                      <Text style={styles.textBlackNormal}>
-                        Try new activities
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-                <View style={styles.section}>
-                  <View style={styles.row}>
-                    <Image source={images.mondsetIcon} style={styles.icon} />
-                    <Text style={styles.textBlackBold}>Mindset & Focus</Text>
-                  </View>
-                  <View>
-                    <View style={styles.row}>
-                      <View style={styles.bulletPoint}></View>
-                      <Text style={styles.textBlackNormal}>
-                        Start new projects
-                      </Text>
-                    </View>
-                    <View style={styles.row}>
-                      <View style={styles.bulletPoint}></View>
-                      <Text style={styles.textBlackNormal}>
-                        Network and socialize
-                      </Text>
-                    </View>
-                    <View style={styles.row}>
-                      <View style={styles.bulletPoint}></View>
-
-                      <Text style={styles.textBlackNormal}>
-                        Take on challenges
-                      </Text>
-                    </View>
-                    <View style={styles.row}>
-                      <View style={styles.bulletPoint}></View>
-                      <Text style={styles.textBlackNormal}>
-                        Think big and plan
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-
-              <LinearGradient
-                colors={gradients.pinkish}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.pinkishGradient}
-              >
-                <View style={styles.row}>
-                  <Image source={images.sparkle} style={styles.icon} />
-                  <Text style={styles.textBlackBold}>
-                    Understanding This Phase
-                  </Text>
-                </View>
-                <Text style={styles.textBlackSmall}>
-                  Rising estrogen brings mental clarity and physical energy.
-                  This is when you naturally feel most optimistic and capable.
-                  Use this window for things that require focus, creativity, and
-                  social connection.
-                </Text>
-              </LinearGradient>
+                  </LinearGradient>
+                </>
+              )}
             </View>
           </GradientWrapper>
 

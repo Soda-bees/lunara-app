@@ -129,7 +129,7 @@ export default function CycleInsight() {
             visible={showModal}
             onClose={() => setShowModal(false)}
             onSelectDate={date => {
-              setPeriodStart(date); // <-- You get selected date here
+              setPeriodStart(date);
               console.log('SELECTED:', date.toString());
             }}
           />

@@ -15,86 +15,117 @@ const styles = StyleSheet.create({
   },
 
   textContainer: {
-    marginTop: sizes.screenHeight * 0.05,
-    marginBottom: sizes.screenHeight * 0.08,
+    alignItems: 'center',
   },
 
   forgotText: {
     color: colors.heading,
     fontFamily: 'PlayfairDisplay-Medium',
     fontSize: 22,
+    textAlign: 'center',
   },
 
   paraText: {
     fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    color: colors.disabledText,
-    marginTop: 6,
+    fontSize: 12,
+    color: colors.green,
+    textAlign: 'center',
+    marginTop: 5,
   },
 
-  inputContainer: {
-    paddingVertical: 5,
-    flexDirection: 'row',
+  mainHeading: {
+    color: colors.green,
+    fontSize: 16,
+    fontFamily: 'PlayfairDisplay-Medium',
+    marginTop: 15,
+  },
+
+  featuresView: {
     backgroundColor: colors.white,
-    alignItems: 'center',
-    paddingHorizontal: sizes.screenWidth * 0.03,
-    borderRadius: 16,
-    width: sizes.screenWidth * 0.9,
-    alignSelf: 'center',
+    padding: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.borderColor,
+    borderColor: '#f2f2f2',
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 
-  input: {
-    fontFamily: 'Inter-Regular',
-    fontSize: fontSize.regular,
-    color: colors.disabledText,
-    width: sizes.screenWidth * 0.64,
-    marginLeft: 3,
+  imageMainView: {
+    backgroundColor: colors.lightOranger,
+    borderRadius: 10,
+    width: sizes.screenWidth * 0.1,
+    height: sizes.screenWidth * 0.1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
-  inputIcon: {
-    height: 15,
-    width: 15,
-    resizeMode: 'contain',
-  },
-
-  emailIconStyle: {
+  imageView: {
     resizeMode: 'contain',
     width: sizes.screenWidth * 0.05,
     height: sizes.screenWidth * 0.05,
-    // backgroundColor:'red'
   },
 
-  textInput: {
-    marginLeft: 5,
-    width: sizes.screenWidth * 0.7,
-    fontSize: fontSize.smallM,
+  heading: {
     color: colors.black,
-    fontFamily: 'MP-Medium',
-
-    // backgroundColor:'red'
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
   },
 
-  iconInputView: {
-    flexDirection: 'row',
-    backgroundColor: colors.white,
-    height: sizes.screenHeight * 0.07,
+  subHeading: {
+    color: colors.green,
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+  },
+
+  arrowImage: {
+    tintColor: colors.green,
+    resizeMode: 'contain',
+    width: sizes.screenWidth * 0.03,
+    height: sizes.screenWidth * 0.03,
+  },
+
+  phaseBody: {
+    width: sizes.screenWidth * 0.82,
     alignItems: 'center',
-    paddingHorizontal: sizes.screenWidth * 0.04,
-    borderRadius: sizes.screenWidth * 0.1,
-    width: sizes.screenWidth * 0.9,
-    marginVertical: 4,
-    borderWidth: 1,
-    borderColor: colors.inputBorderGray,
-    marginTop: sizes.screenHeight * 0.04,
-    color: colors.black,
+    flexDirection: 'row',
   },
 
-  bottomButton: {
-    position: 'absolute',
-    bottom: sizes.screenWidth * 0.05,
+  settingImageView: {
+    resizeMode: 'contain',
+    width: sizes.screenWidth * 0.08,
+    height: sizes.screenWidth * 0.08,
+  },
+
+  settingMainHeading: {
+    color: colors.heading,
+    fontFamily: 'PlayfairDisplay-Medium',
+    fontSize: 16,
+  },
+
+  settingSubHeading: {
+    color: colors.disabledText,
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+  },
+
+  updateButton: {
+    marginTop: 20,
     alignSelf: 'center',
+    width: sizes.screenWidth * 0.82,
+  },
+
+  updateButtonGradient: {
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+
+  updateButtonText: {
+    color: 'white',
+    textAlign: 'center',
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
   },
 });
 

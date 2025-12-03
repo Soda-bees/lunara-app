@@ -30,6 +30,8 @@ import TabNavigator from '../tabNavigator';
 import { TabRouteName } from '../../constants/content/tabNavigatorIcons';
 import SleepTracker from '../../screens/SleepTracker';
 import CycleInsight from '../../screens/CycleInsight';
+import Workouts from '../../screens/Workouts';
+import FounderStory from '../../screens/FounderStory';
 
 export type RootStackParamList = {
   SignIn: any;
@@ -61,6 +63,8 @@ export type RootStackParamList = {
   TabNavigator: any;
   SleepTracker: any;
   CycleInsight: any;
+  Workouts: any;
+  FounderStory: any;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -106,6 +110,8 @@ export default function MainStack() {
       <Stack.Screen name="CyclePattern" component={CyclePattern} />
       <Stack.Screen name="QuickTracking" component={QuickTracking} />
       <Stack.Screen name="SleepTracker" component={SleepTracker} />
+      <Stack.Screen name="Workouts" component={Workouts} />
+      <Stack.Screen name="FounderStory" component={FounderStory} />
     </Stack.Navigator>
   );
 }

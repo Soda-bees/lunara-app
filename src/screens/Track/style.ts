@@ -31,15 +31,13 @@ const styles = StyleSheet.create({
 
   categoryContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around', // Distribute buttons evenly
+    justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#E8F5E9', // Light background for the overall bar (optional, based on image)
-    borderRadius: 30, // Rounded container
-    padding: 4, // Inner padding to make the selector bar thicker
-    marginVertical: 20, // Space below the paragraph text
+    backgroundColor: '#E8F5E9',
+    borderRadius: 20,
+    padding: 4,
+    marginTop: 20,
   },
-
-  // Base style for each button
 });
 
 export default styles;

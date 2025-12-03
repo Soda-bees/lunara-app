@@ -1,9 +1,10 @@
-import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { colors } from '../../constants/colors';
 
 type Category = 'Nutrition' | 'Movement' | 'Mindful';
 
 interface CategoryButtonProps {
-  icon: string;
+  icon: any;
   label: Category;
   isActive: boolean;
   onPress: (category: Category) => void;
@@ -19,9 +20,10 @@ export const CategoryButton: React.FC<CategoryButtonProps> = ({
     style={[styles.categoryButton, isActive && styles.activeCategoryButton]}
     onPress={() => onPress(label)}
   >
-    <Text style={[styles.categoryIcon, isActive && styles.activeCategoryText]}>
-      {icon}
-    </Text>
+    <Image
+      source={icon}
+      style={[styles.categoryIcon, isActive && styles.activeCategoryIconActive]}
+    />
     <Text style={[styles.categoryLabel, isActive && styles.activeCategoryText]}>
       {label}
     </Text>
@@ -35,7 +37,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 15,
     borderRadius: 30,
     backgroundColor: 'transparent',
   },
@@ -45,24 +46,37 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 1.5,
+    shadowRadius: 2,
     elevation: 2,
+    paddingVertical: 8,
+    borderRadius: 15,
   },
 
   categoryIcon: {
-    fontSize: 18,
+    width: 17,
+    height: 17,
     marginRight: 4,
-    color: '#388E3C',
+    resizeMode: 'contain',
   },
 
   categoryLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#388E3C',
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.green,
+    marginLeft:2
   },
 
   activeCategoryText: {
-    color: '#1B5E20',
-    fontWeight: 'bold',
+    color: colors.black,
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+  },
+
+  activeCategoryIconActive: {
+    tintColor: colors.black,
+    width: 17,
+    height: 17,
+    marginRight: 4,
+    resizeMode: 'contain',
   },
 });

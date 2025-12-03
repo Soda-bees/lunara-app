@@ -85,6 +85,21 @@ import ideaBulb from '../../assets/images/ideaBulb.png';
 import journal from '../../assets/images/journal.png';
 import crossButton from '../../assets/images/crossButton.png';
 import cameraIconTwo from '../../assets/images/cameraIconTwo.png';
+import nutritionsIcon from '../../assets/images/nutritionsIcon.png';
+import mindfulIcon from '../../assets/images/mindfulIcon.png';
+import trackMovementIcon from '../../assets/images/trackMovementIcon.png';
+import nutritionApple from '../../assets/images/nutritionApple.png';
+import orangeCheckBoxOff from '../../assets/images/orangeCheckBoxOff.png';
+import orangeCheckBoxOn from '../../assets/images/orangeCheckBoxOn.png';
+import dumbellIcon from '../../assets/images/dumbellIcon.png';
+import swapIcon from '../../assets/images/swapIcon.png';
+import userIcon from '../../assets/images/userIcon.png';
+import multipleUsers from '../../assets/images/multipleUsers.png';
+import challengesIcon from '../../assets/images/challengesIcon.png';
+import socialMediaPlan from '../../assets/images/socialMediaPlan.png';
+import settings from '../../assets/images/settings.png';
+import morningIcon from '../../assets/images/morningIcon.png';
+import bookIcon from '../../assets/images/bookIcon.png';
 
 const images: { [key: string]: any } = {
   googleIcon,
@@ -174,6 +189,21 @@ const images: { [key: string]: any } = {
   journal,
   crossButton,
   cameraIconTwo,
+  nutritionsIcon,
+  mindfulIcon,
+  trackMovementIcon,
+  nutritionApple,
+  orangeCheckBoxOff,
+  orangeCheckBoxOn,
+  dumbellIcon,
+  swapIcon,
+  userIcon,
+  multipleUsers,
+  challengesIcon,
+  socialMediaPlan,
+  settings,
+  morningIcon,
+  bookIcon,
 };
 
 export default images;

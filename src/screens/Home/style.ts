@@ -166,6 +166,13 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
 
+  slideActiveIcon: {
+    height: 16,
+    width: 16,
+    resizeMode: 'contain',
+    transform:[{rotate:'180deg'}]
+  },
+
   rowFlexBox: {
     width: sizes.screenWidth * 0.82,
     gap: 16,
