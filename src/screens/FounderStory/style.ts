@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { sizes } from '../../constants/sizes';
 import { colors } from '../../constants/colors';
+import { fontSize } from '../../constants/fonts';
 
 const styles = StyleSheet.create({
   container: {
@@ -99,12 +100,12 @@ const styles = StyleSheet.create({
   },
 
   timelineContainer: {
-    marginTop: 10,
+    marginTop: sizes.screenHeight * 0.025,
   },
 
   timelineRow: {
     flexDirection: 'row',
-    marginBottom: 28,
+    marginBottom: 20,
   },
 
   iconColumn: {
@@ -112,13 +113,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
   },
-
-  //   iconStyle: {
-  //     width: 32,
-  //     height: 32,
-  //     resizeMode: 'contain',
-  //     marginTop: 2,
-  //   },
 
   imageMainView: {
     backgroundColor: colors.lightOranger,
@@ -136,10 +130,10 @@ const styles = StyleSheet.create({
   },
 
   verticalLine: {
-    width: 2,
+    width: 1.5,
     height: sizes.screenHeight * 0.1,
     backgroundColor: '#DADADA',
-    marginTop: 5,
+    marginTop: 15,
   },
 
   textColumn: {
@@ -160,6 +154,48 @@ const styles = StyleSheet.create({
     color: colors.green,
     lineHeight: 18,
   },
+
+  yearText: {
+    color: colors.green,
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    marginTop: 20,
+  },
+
+  yearsAgoText: {
+    color: colors.disabledText,
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    lineHeight: 25,
+    // marginTop:5
+  },
+
+  logButton: {
+    backgroundColor: colors.heading,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 46,
+    borderRadius: 16,
+    marginVertical: 20,
+    width:sizes.screenWidth * 0.85
+  },
+
+  text: {
+    fontSize: fontSize.medium,
+    color: colors.white,
+    fontFamily: 'Inter-SemiBold',
+    marginLeft: 7,
+  },
+
+    bottomText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.green,
+    lineHeight: 18,
+    textAlign:'center'
+  },
+
 });
 
 export default styles;

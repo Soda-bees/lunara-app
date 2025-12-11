@@ -100,6 +100,9 @@ import socialMediaPlan from '../../assets/images/socialMediaPlan.png';
 import settings from '../../assets/images/settings.png';
 import morningIcon from '../../assets/images/morningIcon.png';
 import bookIcon from '../../assets/images/bookIcon.png';
+import flowerIcon from '../../assets/images/flowerIcon.png';
+import leaf from '../../assets/images/leaf.png';
+import starIcon from '../../assets/images/starIcon.png';
 
 const images: { [key: string]: any } = {
   googleIcon,
@@ -204,6 +207,9 @@ const images: { [key: string]: any } = {
   settings,
   morningIcon,
   bookIcon,
+  flowerIcon,
+  leaf,
+  starIcon,
 };
 
 export default images;

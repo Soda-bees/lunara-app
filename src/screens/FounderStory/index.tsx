@@ -1,4 +1,11 @@
-import { View, Text, StatusBar, Image, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StatusBar,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styles from './style';
@@ -140,10 +147,9 @@ export default function FounderStory() {
               {timelineData.map((item, index) => (
                 <View key={index} style={styles.timelineRow}>
                   <View style={styles.iconColumn}>
-                    {/* <Image source={item.icon} style={styles.iconStyle} /> */}
-                      <View style={styles.imageMainView}>
-                    <Image source={item.icon} style={styles.imageView} />
-                  </View>
+                    <View style={styles.imageMainView}>
+                      <Image source={item.icon} style={styles.imageView} />
+                    </View>
 
                     {index !== timelineData.length - 1 && (
                       <View style={styles.verticalLine} />
@@ -160,6 +166,43 @@ export default function FounderStory() {
               ))}
             </View>
           </View>
+          <View style={[styles.visionBehindView, { marginBottom: 16 }]}>
+            <Text style={[styles.mainHeading, { textAlign: 'center' }]}>
+              My Life: Then vs. Now
+            </Text>
+            <Text style={styles.yearText}>10 Years Ago</Text>
+            <Text style={styles.yearsAgoText}>
+              ❌ Debilitating cramps every month{'\n'}❌ PMS that lasted 2 weeks
+              {'\n'}❌ Brain fog I couldn't explain{'\n'}❌ Avoiding social
+              events{'\n'}❌ Frustrated with my body{'\n'}❌ Thought I was "just
+              hormonal"{'\n'}❌ Forcing the same routine daily
+            </Text>
+            <Text style={[styles.yearText, { color: colors.heading }]}>
+              Today
+            </Text>
+            <Text style={styles.yearsAgoText}>
+              ✅ Minimal period symptoms{'\n'}✅ Stable, predictable moods{'\n'}
+              ✅ Clear mind and focus{'\n'}✅ Planning life WITH my cycle{'\n'}
+              ✅ In awe of my body{'\n'}✅ Understanding my patterns{'\n'}✅
+              Syncing my life to my biology
+            </Text>
+          </View>
+          <GradientWrapper variant="basic">
+            <Text style={styles.mainHeading}>Join the Movement</Text>
+            <Text style={[styles.myStory, { textAlign: 'center' }]}>
+              Lunara is more than an app—it's a revolution in women's health. A
+              community of women who refuse to fight their bodies anymore. Who
+              understand that our cycles aren't curses—they're superpowers.
+              {'\n'}
+              {'\n'}If my story resonates with you, if you're tired of feeling
+              like your body is working against you, if you want to finally
+              understand what's happening inside you—Lunara is for you.
+            </Text>
+            <TouchableOpacity style={styles.logButton} activeOpacity={0.8}>
+              <Text style={styles.text}>Start Your Journey</Text>
+            </TouchableOpacity>
+            <Text style={styles.bottomText}>With love and lunar cycles,{'\n'}The Lunara Founder</Text>
+          </GradientWrapper>
         </ScrollView>
       </View>
     </SafeAreaView>

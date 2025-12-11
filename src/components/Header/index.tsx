@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Text,
   ActivityIndicator,
@@ -12,13 +12,25 @@ import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 import { fontSize } from '../../constants/fonts';
 import images from '../../constants/images';
+import BackButton from '../BackButton';
+import { useNavigation } from '@react-navigation/native';
 
-type Props = {};
+type HeaderProps = {
+  showBackButton?: boolean;
+};
 
-export default function Header({}: Props) {
+export default function Header({ showBackButton = false }: HeaderProps) {
+  const navigation = useNavigation();
+
   return (
     <View style={styles.header}>
-      <Image source={images.logoFull} style={styles.logoFull} />
+      {showBackButton ? (
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Image source={images.backIcon} style={styles.backIcon} />
+        </TouchableOpacity>
+      ) : (
+        <Image source={images.logoFull} style={styles.logoFull} />
+      )}
       <TouchableOpacity style={styles.button}>
         <Image source={images.profileIcon} style={styles.profileIcon} />
         <Text style={styles.text}>Profile</Text>
@@ -62,5 +74,11 @@ const styles = StyleSheet.create({
     fontSize: fontSize.Regular,
     color: colors.black,
     fontFamily: 'Inter-Regular',
+  },
+
+  backIcon: {
+    width: 46,
+    height: 46,
+    resizeMode: 'contain',
   },
 });

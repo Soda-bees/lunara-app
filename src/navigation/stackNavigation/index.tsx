@@ -32,6 +32,8 @@ import SleepTracker from '../../screens/SleepTracker';
 import CycleInsight from '../../screens/CycleInsight';
 import Workouts from '../../screens/Workouts';
 import FounderStory from '../../screens/FounderStory';
+import ChallengeHub from '../../screens/ChallengeHub';
+import DetoxChallenge from '../../screens/DetoxChallenge';
 
 export type RootStackParamList = {
   SignIn: any;
@@ -65,6 +67,8 @@ export type RootStackParamList = {
   CycleInsight: any;
   Workouts: any;
   FounderStory: any;
+  ChallengeHub: any;
+  DetoxChallenge: any;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -112,6 +116,8 @@ export default function MainStack() {
       <Stack.Screen name="SleepTracker" component={SleepTracker} />
       <Stack.Screen name="Workouts" component={Workouts} />
       <Stack.Screen name="FounderStory" component={FounderStory} />
+      <Stack.Screen name="ChallengeHub" component={ChallengeHub} />
+      <Stack.Screen name="DetoxChallenge" component={DetoxChallenge} />
     </Stack.Navigator>
   );
 }
