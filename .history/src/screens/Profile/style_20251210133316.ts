@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
 
   summaryCard: {
     width: '48%',
-    backgroundColor: '#F4F4F4',
+    backgroundColor: colors.white,
     borderRadius: 12,
     padding: 16,
   },
@@ -589,14 +589,15 @@ const styles = StyleSheet.create({
   summaryCardValue: {
     color: colors.heading,
     fontFamily: 'PlayfairDisplay-SemiBold',
-    fontSize: 24,
+    fontSize: 28,
     marginBottom: 4,
   },
 
   summaryCardLabel: {
-    color: colors.green,
+    color: colors.darkGrey,
     fontFamily: 'Inter-Regular',
-    fontSize: 12,
+    fontSize: fontSize.small,
+    textAlign: 'center',
   },
 
   // Badges

@@ -395,72 +395,47 @@ function TrackingTab() {
 
       {/* Active Tracking Section */}
       <View style={styles.section}>
-        <View style={{ gap: 12 }}>
-          <Text style={styles.sectionTitle}>Active Tracking</Text>
-          {[
-            {
-              icon: images.btCycleActive,
-              name: 'Cycle Phase',
-              frequency: 'Daily',
-            },
-            {
-              icon: images.feelingsIcon,
-              name: 'Mood & Energy',
-              frequency: 'Daily',
-            },
-            {
-              icon: images.btTrackActive,
-              name: 'Movement',
-              frequency: '5-6x/week',
-            },
-            {
-              icon: images.challengesIcon,
-              name: 'Fasting',
-              frequency: '4-5x/week',
-            },
-            { icon: images.sparkle, name: 'Nutrition', frequency: 'Daily' },
-            {
-              icon: images.mindsetIcon,
-              name: 'Mindfulness',
-              frequency: '3-4x/week',
-            },
-          ].map((item, index) => (
-            <View key={index} style={styles.activeTrackingItem}>
-              <Image source={item.icon} style={styles.activeTrackingIcon} />
-              <View style={styles.activeTrackingInfo}>
-                <Text style={styles.activeTrackingName}>{item.name}</Text>
-                <Text style={styles.activeTrackingFrequency}>
-                  {item.frequency}
-                </Text>
-              </View>
-              <View style={styles.activeTag}>
-                <Text style={styles.activeTagText}>active</Text>
-              </View>
+        <Text style={styles.sectionTitle}>Active Tracking</Text>
+        {[
+          { icon: '🌙', name: 'Cycle Phase', frequency: 'Daily' },
+          { icon: '❤️', name: 'Mood & Energy', frequency: 'Daily' },
+          { icon: '⚡', name: 'Movement', frequency: '5-6x/week' },
+          { icon: '⭕', name: 'Fasting', frequency: '4-5x/week' },
+          { icon: '✨', name: 'Nutrition', frequency: 'Daily' },
+          { icon: '🧠', name: 'Mindfulness', frequency: '3-4x/week' },
+        ].map((item, index) => (
+          <View key={index} style={styles.activeTrackingItem}>
+            <Text style={styles.activeTrackingIcon}>{item.icon}</Text>
+            <View style={styles.activeTrackingInfo}>
+              <Text style={styles.activeTrackingName}>{item.name}</Text>
+              <Text style={styles.activeTrackingFrequency}>
+                {item.frequency}
+              </Text>
             </View>
-          ))}
-        </View>
+            <View style={styles.activeTag}>
+              <Text style={styles.activeTagText}>active</Text>
+            </View>
+          </View>
+        ))}
       </View>
 
       {/* Summary Cards */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Active Tracking</Text>
-        <View style={styles.summaryCardsContainer}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>23</Text>
-            <Text style={styles.summaryCardLabel}>Days Logged</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>18h</Text>
-            <Text style={styles.summaryCardLabel}>Avg Fast</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>142</Text>
-            <Text style={styles.summaryCardLabel}>Workouts</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>4.2</Text>
-            <Text style={styles.summaryCardLabel}>Avg Energy</Text>
-          </View>
+      <View style={styles.summaryCardsContainer}>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryCardValue}>23</Text>
+          <Text style={styles.summaryCardLabel}>Days Logged</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryCardValue}>18h</Text>
+          <Text style={styles.summaryCardLabel}>Avg Fast</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryCardValue}>142</Text>
+          <Text style={styles.summaryCardLabel}>Workouts</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryCardValue}>4.2</Text>
+          <Text style={styles.summaryCardLabel}>Avg Energy</Text>
         </View>
       </View>
     </View>

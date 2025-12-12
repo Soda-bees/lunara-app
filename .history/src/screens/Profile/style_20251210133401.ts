@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
   summaryCardValue: {
     color: colors.heading,
     fontFamily: 'PlayfairDisplay-SemiBold',
-    fontSize: 24,
+    fontSize: 28,
     marginBottom: 4,
   },
 

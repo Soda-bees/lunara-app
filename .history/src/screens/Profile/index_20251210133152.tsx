@@ -442,25 +442,24 @@ function TrackingTab() {
       </View>
 
       {/* Summary Cards */}
-      <View style={styles.section}>
+      <View style={styles.summaryCardsContainer}>
         <Text style={styles.sectionTitle}>Active Tracking</Text>
-        <View style={styles.summaryCardsContainer}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>23</Text>
-            <Text style={styles.summaryCardLabel}>Days Logged</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>18h</Text>
-            <Text style={styles.summaryCardLabel}>Avg Fast</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>142</Text>
-            <Text style={styles.summaryCardLabel}>Workouts</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>4.2</Text>
-            <Text style={styles.summaryCardLabel}>Avg Energy</Text>
-          </View>
+
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryCardValue}>23</Text>
+          <Text style={styles.summaryCardLabel}>Days Logged</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryCardValue}>18h</Text>
+          <Text style={styles.summaryCardLabel}>Avg Fast</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryCardValue}>142</Text>
+          <Text style={styles.summaryCardLabel}>Workouts</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryCardValue}>4.2</Text>
+          <Text style={styles.summaryCardLabel}>Avg Energy</Text>
         </View>
       </View>
     </View>

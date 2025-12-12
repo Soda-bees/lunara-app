@@ -316,25 +316,26 @@ function TrackingTab() {
   return (
     <View style={styles.tabContent}>
       {/* Weight Tracking Section */}
-      <View style={styles.sectionHeaderWithAction}>
-        <View style={styles.sectionHeader}>
-          <Image
-            source={images.weightTrackingIcon}
-            style={styles.sectionIcon}
-          />
-
-          <View>
-            <Text style={styles.sectionTitle}>Weight Tracking</Text>
-            <Text style={styles.sectionSubtitle}>
-              Monitor your progress over time
-            </Text>
-          </View>
-        </View>
-        <TouchableOpacity style={styles.logButton}>
-          <Text style={styles.logButtonText}>+ Log</Text>
-        </TouchableOpacity>
-      </View>
       <View style={styles.section}>
+        <View style={styles.sectionHeaderWithAction}>
+          <View style={styles.sectionHeader}>
+            <Image
+              source={images.weightTrackingIcon}
+              style={styles.sectionIcon}
+            />
+
+            <View>
+              <Text style={styles.sectionTitle}>Weight Tracking</Text>
+              <Text style={styles.sectionSubtitle}>
+                Monitor your progress over time
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity style={styles.logButton}>
+            <Text style={styles.logButtonText}>+ Log</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Weight Trend */}
         <View style={styles.weightTrendCard}>
           <Text style={styles.weightTrendTitle}>Weight Trend</Text>
@@ -357,8 +358,22 @@ function TrackingTab() {
               <Text style={styles.weightChangePercent}>-1.7% loss</Text>
             </View>
           </View>
+
           {/* Simple Graph Representation */}
-          <CustomWeightGraph />
+          <View style={styles.graphContainer}>
+            <View style={styles.graphLine} />
+            <View style={styles.graphPoints}>
+              <View style={[styles.graphPoint, { left: '5%', top: '20%' }]} />
+              <View style={[styles.graphPoint, { left: '25%', top: '25%' }]} />
+              <View style={[styles.graphPoint, { left: '45%', top: '30%' }]} />
+              <View style={[styles.graphPoint, { left: '65%', top: '35%' }]} />
+              <View style={[styles.graphPoint, { left: '85%', top: '40%' }]} />
+            </View>
+            <View style={styles.graphLabels}>
+              <Text style={styles.graphLabel}>Oct 1</Text>
+              <Text style={styles.graphLabel}>Oct 23</Text>
+            </View>
+          </View>
         </View>
 
         {/* Recent Entries */}
@@ -395,72 +410,47 @@ function TrackingTab() {
 
       {/* Active Tracking Section */}
       <View style={styles.section}>
-        <View style={{ gap: 12 }}>
-          <Text style={styles.sectionTitle}>Active Tracking</Text>
-          {[
-            {
-              icon: images.btCycleActive,
-              name: 'Cycle Phase',
-              frequency: 'Daily',
-            },
-            {
-              icon: images.feelingsIcon,
-              name: 'Mood & Energy',
-              frequency: 'Daily',
-            },
-            {
-              icon: images.btTrackActive,
-              name: 'Movement',
-              frequency: '5-6x/week',
-            },
-            {
-              icon: images.challengesIcon,
-              name: 'Fasting',
-              frequency: '4-5x/week',
-            },
-            { icon: images.sparkle, name: 'Nutrition', frequency: 'Daily' },
-            {
-              icon: images.mindsetIcon,
-              name: 'Mindfulness',
-              frequency: '3-4x/week',
-            },
-          ].map((item, index) => (
-            <View key={index} style={styles.activeTrackingItem}>
-              <Image source={item.icon} style={styles.activeTrackingIcon} />
-              <View style={styles.activeTrackingInfo}>
-                <Text style={styles.activeTrackingName}>{item.name}</Text>
-                <Text style={styles.activeTrackingFrequency}>
-                  {item.frequency}
-                </Text>
-              </View>
-              <View style={styles.activeTag}>
-                <Text style={styles.activeTagText}>active</Text>
-              </View>
+        <Text style={styles.sectionTitle}>Active Tracking</Text>
+        {[
+          { icon: '🌙', name: 'Cycle Phase', frequency: 'Daily' },
+          { icon: '❤️', name: 'Mood & Energy', frequency: 'Daily' },
+          { icon: '⚡', name: 'Movement', frequency: '5-6x/week' },
+          { icon: '⭕', name: 'Fasting', frequency: '4-5x/week' },
+          { icon: '✨', name: 'Nutrition', frequency: 'Daily' },
+          { icon: '🧠', name: 'Mindfulness', frequency: '3-4x/week' },
+        ].map((item, index) => (
+          <View key={index} style={styles.activeTrackingItem}>
+            <Text style={styles.activeTrackingIcon}>{item.icon}</Text>
+            <View style={styles.activeTrackingInfo}>
+              <Text style={styles.activeTrackingName}>{item.name}</Text>
+              <Text style={styles.activeTrackingFrequency}>
+                {item.frequency}
+              </Text>
             </View>
-          ))}
-        </View>
+            <View style={styles.activeTag}>
+              <Text style={styles.activeTagText}>active</Text>
+            </View>
+          </View>
+        ))}
       </View>
 
       {/* Summary Cards */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Active Tracking</Text>
-        <View style={styles.summaryCardsContainer}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>23</Text>
-            <Text style={styles.summaryCardLabel}>Days Logged</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>18h</Text>
-            <Text style={styles.summaryCardLabel}>Avg Fast</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>142</Text>
-            <Text style={styles.summaryCardLabel}>Workouts</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>4.2</Text>
-            <Text style={styles.summaryCardLabel}>Avg Energy</Text>
-          </View>
+      <View style={styles.summaryCardsContainer}>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryCardValue}>23</Text>
+          <Text style={styles.summaryCardLabel}>Days Logged</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryCardValue}>18h</Text>
+          <Text style={styles.summaryCardLabel}>Avg Fast</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryCardValue}>142</Text>
+          <Text style={styles.summaryCardLabel}>Workouts</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryCardValue}>4.2</Text>
+          <Text style={styles.summaryCardLabel}>Avg Energy</Text>
         </View>
       </View>
     </View>
@@ -682,88 +672,3 @@ function AccountActionsSection({ navigation }: { navigation: NavigationProp }) {
     </View>
   );
 }
-
-const CustomWeightGraph = () => {
-  const data = [152.0, 151.6, 150.9, 150.2, 149.8];
-  const labels = ['Oct 1', 'Oct 5', 'Oct 10', 'Oct 15', 'Oct 23'];
-
-  const max = 154.4;
-  const min = 147.8;
-
-  const normalizeY = (value: number) => {
-    return ((max - value) / (max - min)) * 100;
-  };
-
-  return (
-    <View style={styles.graphWrapper}>
-      {/* Y-Axis */}
-      <View style={styles.yAxis}>
-        <Text style={styles.yLabel}>154.4</Text>
-        <Text style={styles.yLabel}>151.8</Text>
-        <Text style={styles.yLabel}>149.8</Text>
-        <Text style={styles.yLabel}>147.8</Text>
-      </View>
-
-      {/* Chart area */}
-      <View style={styles.graphArea}>
-        {/* Grid lines */}
-        {[0, 25, 50, 75, 100].map(p => (
-          <View key={p} style={[styles.gridLine, { top: `${p}%` }]} />
-        ))}
-
-        {/* Line segments */}
-        {data.map((v, idx) => {
-          if (idx === data.length - 1) return null;
-
-          const x1 = (idx / (data.length - 1)) * 100;
-          const x2 = ((idx + 1) / (data.length - 1)) * 100;
-
-          const y1 = normalizeY(data[idx]);
-          const y2 = normalizeY(data[idx + 1]);
-
-          const dx = x2 - x1;
-          const dy = y2 - y1;
-          const angle = Math.atan2(dy, dx) + 'rad';
-
-          return (
-            <View
-              key={idx}
-              style={[
-                styles.lineSegment,
-                {
-                  left: `${x1}%`,
-                  top: `${y1}%`,
-                  width: `${Math.sqrt(dx * dx + dy * dy)}%`,
-                  transform: [{ rotate: angle }],
-                },
-              ]}
-            />
-          );
-        })}
-
-        {/* Dots */}
-        {data.map((v, idx) => (
-          <View
-            key={idx}
-            style={[
-              styles.dot,
-              {
-                left: `${(idx / (data.length - 1)) * 100}%`,
-                top: `${normalizeY(v)}%`,
-              },
-            ]}
-          />
-        ))}
-
-        {/* X-axis labels */}
-        <View style={styles.xAxis}>
-          {labels.map(lbl => (
-            <Text key={lbl} style={styles.xLabel}>
-              {lbl}
-            </Text>
-          ))}
-        </View>
-      </View>
-    </View>
-  );
-};

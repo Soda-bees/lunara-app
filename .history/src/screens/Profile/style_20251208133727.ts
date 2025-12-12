@@ -531,7 +531,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F0E4D4',
     padding: 12,
+    marginBottom: 8,
   },
 
   activeTrackingIcon: {
@@ -566,9 +570,9 @@ const styles = StyleSheet.create({
   },
 
   activeTagText: {
-    color: '#5BCE8B',
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
+    color: colors.black,
+    fontFamily: 'Inter-Medium',
+    fontSize: fontSize.small,
   },
 
   // Summary Cards
@@ -581,22 +585,26 @@ const styles = StyleSheet.create({
 
   summaryCard: {
     width: '48%',
-    backgroundColor: '#F4F4F4',
+    backgroundColor: colors.white,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F0E4D4',
     padding: 16,
+    alignItems: 'center',
   },
 
   summaryCardValue: {
     color: colors.heading,
     fontFamily: 'PlayfairDisplay-SemiBold',
-    fontSize: 24,
+    fontSize: 28,
     marginBottom: 4,
   },
 
   summaryCardLabel: {
-    color: colors.green,
+    color: colors.darkGrey,
     fontFamily: 'Inter-Regular',
-    fontSize: 12,
+    fontSize: fontSize.small,
+    textAlign: 'center',
   },
 
   // Badges
