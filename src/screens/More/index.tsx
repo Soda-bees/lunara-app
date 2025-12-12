@@ -44,7 +44,7 @@ export default function More() {
       title: 'Challenges',
       subtitle: 'Join wellness challenges',
       icon: images.challengesIcon,
-      // navigateTo: 'Height',
+      navigateTo: 'ChallengeHub',
     },
     {
       id: 4,
