@@ -26,6 +26,16 @@ import Height from '../../screens/Height';
 import PeriodDuration from '../../screens/PeriodDuration';
 import CyclePattern from '../../screens/CyclePattern';
 import QuickTracking from '../../screens/QuickTracking';
+import TabNavigator from '../tabNavigator';
+import { TabRouteName } from '../../constants/content/tabNavigatorIcons';
+import SleepTracker from '../../screens/SleepTracker';
+import CycleInsight from '../../screens/CycleInsight';
+import Workouts from '../../screens/Workouts';
+import FounderStory from '../../screens/FounderStory';
+import HormoneResetGuide from '../../screens/HormoneResetGuide';
+import Profile from '../../screens/Profile';
+import ChallengeHub from '../../screens/ChallengeHub';
+import DetoxChallenge from '../../screens/DetoxChallenge';
 
 export type RootStackParamList = {
   SignIn: any;
@@ -54,6 +64,15 @@ export type RootStackParamList = {
   PeriodDuration: any;
   CyclePattern: any;
   QuickTracking: any;
+  TabNavigator: any;
+  SleepTracker: any;
+  CycleInsight: any;
+  Workouts: any;
+  FounderStory: any;
+  HormoneResetGuide: any;
+  Profile: any;
+  ChallengeHub: any;
+  DetoxChallenge: any;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -62,6 +81,8 @@ export default function MainStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="IntroSlider" component={IntroSlider} />
+      <Stack.Screen name="TabNavigator" component={TabNavigator} />
+      <Stack.Screen name="CycleInsight" component={CycleInsight} />
       <Stack.Screen name="SignIn" component={SignIn} />
       <Stack.Screen name="SignUp" component={SignUp} />
       <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
@@ -96,6 +117,13 @@ export default function MainStack() {
       <Stack.Screen name="PeriodDuration" component={PeriodDuration} />
       <Stack.Screen name="CyclePattern" component={CyclePattern} />
       <Stack.Screen name="QuickTracking" component={QuickTracking} />
+      <Stack.Screen name="SleepTracker" component={SleepTracker} />
+      <Stack.Screen name="Workouts" component={Workouts} />
+      <Stack.Screen name="FounderStory" component={FounderStory} />
+      <Stack.Screen name="HormoneResetGuide" component={HormoneResetGuide} />
+      <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen name="ChallengeHub" component={ChallengeHub} />
+      <Stack.Screen name="DetoxChallenge" component={DetoxChallenge} />
     </Stack.Navigator>
   );
 }
