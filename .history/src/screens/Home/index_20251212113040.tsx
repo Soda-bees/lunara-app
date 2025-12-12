@@ -28,9 +28,6 @@ export default function Home() {
   const navigation = useNavigation<NavigationProp>();
   const [showInsightDetails, setShowInsightDetails] = useState<Boolean>(false);
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
-  const [selectedFeeling, setSelectedFeeling] = useState<number | null>(null);
-  const [selectedEnergy, setSelectedEnergy] = useState<number | null>(null);
-  const [selectedSleep, setSelectedSleep] = useState<number | null>(null);
   const emojis = ['😄', '🙂', '😐', '😞'];
   const energyEmojis = [
     images.energizedEmoji,
@@ -395,21 +392,19 @@ export default function Home() {
 
           <View style={styles.container2}>
             <Text style={styles.sectionTitle}>Today's Tracking</Text>
-            {/* 1. FEELING */}
             <View>
               <View style={styles.row}>
                 <Image source={images.movementIcon} style={styles.icon} />
                 <Text style={styles.label}>How are you feeling?</Text>
               </View>
-
               <View style={styles.row2}>
                 {['Great', 'Good', 'Okay', 'Poor'].map((mood, index) => {
-                  const isSelected = selectedFeeling === index;
+                  const isSelected = selectedMood === index;
 
                   return (
                     <TouchableOpacity
                       key={index}
-                      onPress={() => setSelectedFeeling(index)}
+                      onPress={() => setSelectedMood(index)}
                       style={[
                         styles.optionBox,
                         isSelected && styles.selectedOptionBox,
@@ -438,85 +433,35 @@ export default function Home() {
               </View>
             </View>
 
-            {/* 2. ENERGY LEVEL */}
             <View>
               <View style={styles.row}>
                 <Image source={images.energyIcon} style={styles.icon} />
-                <Text style={styles.label}>Energy Level</Text>
+                <Text style={[styles.label]}>Energy Level</Text>
               </View>
-
               <View style={styles.row2}>
-                {['High', 'Medium', 'Low'].map((level, index) => {
-                  const isSelected = selectedEnergy === index;
-
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      onPress={() => setSelectedEnergy(index)}
-                      style={[
-                        styles.optionBox,
-                        isSelected && styles.selectedOptionBox,
-                      ]}
-                    >
-                      <Image
-                        source={energyEmojis[index]}
-                        style={styles.optionEmoji}
-                      />
-
-                      <Text
-                        style={[
-                          styles.optionText,
-                          isSelected && styles.selectedOptionText,
-                        ]}
-                      >
-                        {level}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                {['High', 'Medium', 'Low'].map((level, index) => (
+                  <TouchableOpacity key={index} style={styles.optionBox}>
+                    <Image
+                      source={energyEmojis[index]}
+                      style={styles.optionEmoji}
+                    />
+                    <Text style={styles.optionText}>{level}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </View>
-
-            {/* 3. SLEEP QUALITY */}
             <View>
               <View style={styles.row}>
                 <Image source={images.sleepQualityIcon} style={styles.icon} />
                 <Text style={styles.label}>How was your sleep quality?</Text>
               </View>
-
               <View style={styles.row2}>
-                {['Great', 'Good', 'Okay', 'Poor'].map((mood, index) => {
-                  const isSelected = selectedSleep === index;
-
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      onPress={() => setSelectedSleep(index)}
-                      style={[
-                        styles.optionBox,
-                        isSelected && styles.selectedOptionBox,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.optionEmojiText,
-                          isSelected && styles.selectedOptionEmojiText,
-                        ]}
-                      >
-                        {emojis[index]}
-                      </Text>
-
-                      <Text
-                        style={[
-                          styles.optionText,
-                          isSelected && styles.selectedOptionText,
-                        ]}
-                      >
-                        {mood}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                {['Great', 'Good', 'Okay', 'Poor'].map((mood, index) => (
+                  <TouchableOpacity key={index} style={styles.optionBox}>
+                    <Text style={styles.optionEmojiText}>{emojis[index]}</Text>
+                    <Text style={styles.optionText}>{mood}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </View>
             <TouchableOpacity

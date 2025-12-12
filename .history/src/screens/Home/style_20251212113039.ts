@@ -384,8 +384,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     gap: 6,
-    borderWidth: 1,
-    borderColor: '#F3F3F3',
   },
   optionEmojiText: {
     fontSize: 22,
@@ -492,17 +490,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   selectedOptionBox: {
-    backgroundColor: '#FFF9F0',
-    borderColor: colors.heading,
-    borderWidth: 1,
+    backgroundColor: '#F5E8FF',
+    borderColor: '#A64CE0',
+    borderWidth: 1.5,
   },
 
   selectedOptionText: {
-    color: colors.heading,
+    color: '#A64CE0',
+    fontWeight: '600',
   },
 
   selectedOptionEmojiText: {
-    // opacity: 1,
+    opacity: 1,
   },
 });
 

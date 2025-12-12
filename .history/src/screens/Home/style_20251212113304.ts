@@ -384,8 +384,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     gap: 6,
-    borderWidth: 1,
-    borderColor: '#F3F3F3',
   },
   optionEmojiText: {
     fontSize: 22,
