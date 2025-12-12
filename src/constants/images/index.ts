@@ -114,6 +114,7 @@ import weightTrackingIcon from '../../assets/images/weightTrackingIcon.png';
 import flowerIcon from '../../assets/images/flowerIcon.png';
 import leaf from '../../assets/images/leaf.png';
 import starIcon from '../../assets/images/starIcon.png';
+import lockedIcon from '../../assets/images/lockedIcon.png';
 
 const images: { [key: string]: any } = {
   googleIcon,
@@ -232,6 +233,7 @@ const images: { [key: string]: any } = {
   flowerIcon,
   leaf,
   starIcon,
+  lockedIcon,
 };
 
 export default images;
