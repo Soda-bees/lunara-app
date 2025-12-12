@@ -1,96 +1,3 @@
-// import { Image, StyleSheet, Text, View } from 'react-native';
-// import React from 'react';
-// import { colors } from '../../constants/colors';
-// import { sizes } from '../../constants/sizes';
-// import images from '../../constants/images';
-
-// export default function HabitsChallenge() {
-//   return (
-//     <View>
-//       <View style={styles.mainContainer}>
-//         <Text style={styles.cardTitle}>Phased Habit Integration</Text>
-//         <Text style={styles.cardDesc}>
-//           Master each habit before unlocking the next. Consistency creates
-//           lasting change.
-//         </Text>
-//         <View style={styles.weekStarTextTopView}>
-//           <Text style={styles.cardTitle}>Week 1</Text>
-//           <View style={styles.starTextMainView}>
-//             <Image source={images.starIcon} style={styles.starIconStyle} />
-//             <Text style={styles.starIconText}>Mastered</Text>
-//           </View>
-//         </View>
-//         <View style={styles.habitMainView}></View>
-//       </View>
-//     </View>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   mainContainer: {
-//     backgroundColor: colors.white,
-//     borderRadius: 14,
-//     borderWidth: 1,
-//     borderColor: '#f2f2f2',
-//     paddingHorizontal: 9,
-//     marginTop: 16,
-//     paddingVertical: 20,
-//   },
-
-//   cardTitle: {
-//     fontSize: 16,
-//     fontFamily: 'PlayfairDisplay-Medium',
-//     color: colors.black,
-//   },
-
-//   cardDesc: {
-//     fontSize: 12,
-//     fontFamily: 'Inter-Regular',
-//     color: colors.green,
-//     marginTop: 6,
-//     width: sizes.screenWidth * 0.75,
-//   },
-
-//   starIconStyle: {
-//     resizeMode: 'contain',
-//     width: sizes.screenWidth * 0.04,
-//     height: sizes.screenWidth * 0.04,
-//   },
-
-//   starIconText: {
-//     color: colors.heading,
-//     fontSize: 12,
-//     fontFamily: 'Inter-Medium',
-//     marginLeft: 5,
-//   },
-
-//   starTextMainView: {
-//     backgroundColor: colors.lightOranger,
-//     alignItems: 'center',
-//     flexDirection: 'row',
-//     padding: 4,
-//     paddingHorizontal: 10,
-//     borderRadius: 10,
-//     marginLeft: 10,
-//   },
-
-//   weekStarTextTopView: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     marginTop: 10,
-//   },
-
-//   habitMainView: {
-//     backgroundColor: '#EEEEEE50',
-//     borderRadius: 14,
-//     borderWidth: 1,
-//     borderColor: '#f2f2f2',
-//     paddingHorizontal: 9,
-//     marginTop: 16,
-//     paddingVertical: 20,
-//   },
-// });
-
 import { Image, StyleSheet, Text, View } from 'react-native';
 import React from 'react';
 import { colors } from '../../constants/colors';
@@ -114,19 +21,19 @@ export default function HabitsChallenge() {
         {
           title: '80oz water daily',
           pathway: 'Lymphatic',
-          completed: 7,
+          completed: 5,
           target: 5,
         },
         {
           title: 'Morning dry brushing',
           pathway: 'Lymphatic',
-          completed: 6,
+          completed: 5,
           target: 5,
         },
         {
           title: 'Daily greens (cruciferous vegetables)',
           pathway: 'Liver',
-          completed: 8,
+          completed: 4,
           target: 5,
         },
       ],
@@ -157,8 +64,35 @@ export default function HabitsChallenge() {
     },
   ];
 
+  const lockedData = [
+    {
+      title: 'Weekly castor oil pack',
+      unlockText:
+        'Unlocks after completing "NAC + Glutathione supplementation" (4/5 days)',
+      week: 3,
+    },
+    {
+      title: 'Weekly castor oil pack',
+      unlockText:
+        'Unlocks after completing "NAC + Glutathione supplementation" (4/5 days)',
+      week: 3,
+    },
+    {
+      title: 'Weekly castor oil pack',
+      unlockText:
+        'Unlocks after completing "NAC + Glutathione supplementation" (4/5 days)',
+      week: 3,
+    },
+    {
+      title: 'Weekly castor oil pack',
+      unlockText:
+        'Unlocks after completing "NAC + Glutathione supplementation" (4/5 days)',
+      week: 3,
+    },
+  ];
+
   return (
-    <View style={{ marginTop: 16 }}>
+    <View>
       <View style={styles.mainContainer}>
         <Text style={styles.cardTitle}>Phased Habit Integration</Text>
         <Text style={styles.cardDesc}>
@@ -166,9 +100,9 @@ export default function HabitsChallenge() {
           lasting change.
         </Text>
 
-        {habitsData.map((weekItem, weekIndex) => (
-          <View key={weekIndex} style={{ marginTop: 20 }}>
-            <View style={styles.weekStarTextTopView}>
+        {habitsData.map((weekItem, wIndex) => (
+          <View key={wIndex}>
+            <View style={styles.weekHeader}>
               <Text style={styles.cardTitle}>Week {weekItem.week}</Text>
 
               {weekItem.mastered && (
@@ -182,51 +116,98 @@ export default function HabitsChallenge() {
               )}
             </View>
 
-            {weekItem.habits.map((habit, habitIndex) => {
-              const progress = habit.completed / habit.target;
-              const color =
-                pathwayColors[habit.pathway as PathwayType] || colors.green;
+            {weekItem.habits.map((habit, hIndex) => {
+              const isCompleted = habit.completed >= habit.target;
 
               return (
-                <View key={habitIndex} style={styles.habitBox}>
-                  <View style={styles.habitHeader}>
-                    <Image
-                      source={images.starIcon}
-                      style={styles.starIconSecondStyle}
-                    />
+                <View key={hIndex} style={styles.habitMainView}>
+                  <Image
+                    source={isCompleted ? images.starIcon : images.checkBox}
+                    style={styles.habitIcon}
+                  />
 
-                    <View>
-                      <View style={styles.habitHeader}>
-                        <Text style={styles.habitTitle}>{habit.title}</Text>
-                        <View
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <View style={styles.titleRow}>
+                      <Text
+                        style={[
+                          styles.titleText,
+                          {
+                            color: isCompleted ? colors.heading : colors.black,
+                          },
+                        ]}
+                      >
+                        {habit.title}
+                      </Text>
+
+                      <View
+                        style={[
+                          styles.pathwayTag,
+                          {
+                            backgroundColor: `${
+                              pathwayColors[habit.pathway as PathwayType]
+                            }20`,
+                          },
+                        ]}
+                      >
+                        <Text
                           style={[
-                            styles.pathwayTag,
-                            { backgroundColor: `${color}20` },
+                            styles.pathwayTagText,
+                            {
+                              color:
+                                pathwayColors[habit.pathway as PathwayType],
+                            },
                           ]}
                         >
-                          <Text style={[styles.pathwayText, { color }]}>
-                            {habit.pathway}
-                          </Text>
-                        </View>
+                          {habit.pathway}
+                        </Text>
                       </View>
+                    </View>
+
+                    <View style={styles.progressRow}>
                       <View style={styles.progressBackground}>
                         <View
                           style={[
-                            styles.progressFill,
-                            { width: `${progress * 100}%` },
+                            styles.progressBar,
+                            {
+                              width: `${
+                                (habit.completed / habit.target) * 100
+                              }%`,
+                            },
                           ]}
                         />
-                        <View>
-                          <Text style={styles.progressText}>
-                            {habit.completed}/{habit.target} days
-                          </Text>
-                        </View>
                       </View>
+
+                      <Text style={styles.progressText}>
+                        {habit.completed}/{habit.target} days
+                      </Text>
                     </View>
                   </View>
                 </View>
               );
             })}
+          </View>
+        ))}
+
+        <View style={styles.headerRow}>
+          <Text style={styles.headerText}>Locked Habits</Text>
+
+          <View style={styles.countBubble}>
+            <Text style={styles.countText}>5</Text>
+          </View>
+        </View>
+        {lockedData.map((item, index) => (
+          <View key={index} style={styles.lockedCard}>
+            <Image source={images.lockedIcon} style={styles.lockIcon} />
+
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.lockedTitleText}>{item.title}</Text>
+
+              <Text style={styles.unlockText}>{item.unlockText}</Text>
+            </View>
+
+            <View style={styles.weekTag}>
+              <Text style={styles.weekTagText}>Week {item.week}</Text>
+            </View>
           </View>
         ))}
       </View>
@@ -241,15 +222,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f2f2f2',
     paddingHorizontal: 12,
+    marginTop: 16,
     paddingVertical: 20,
   },
 
   cardTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: 'PlayfairDisplay-Medium',
     color: colors.black,
   },
-
   cardDesc: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
@@ -258,90 +239,165 @@ const styles = StyleSheet.create({
     width: sizes.screenWidth * 0.75,
   },
 
-  weekStarTextTopView: {
+  weekHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 14,
   },
-
   starTextMainView: {
     backgroundColor: colors.lightOranger,
-    flexDirection: 'row',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-    marginLeft: 8,
     alignItems: 'center',
+    flexDirection: 'row',
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    marginLeft: 10,
   },
-
   starIconStyle: {
-    width: 16,
-    height: 16,
+    width: 13,
+    height: 13,
     resizeMode: 'contain',
   },
-  starIconSecondStyle: {
-    width: sizes.screenWidth * 0.06,
-    height: sizes.screenWidth * 0.06,
-    resizeMode: 'contain',
-  },
-
   starIconText: {
-    color: colors.heading,
     fontSize: 12,
     fontFamily: 'Inter-Medium',
+    color: colors.heading,
     marginLeft: 5,
   },
 
-  habitBox: {
+  habitMainView: {
+    width: '100%',
     backgroundColor: '#EEEEEE40',
     borderRadius: 14,
-    // padding: 14,
-    marginTop: 14,
     borderWidth: 1,
-    borderColor: '#EAEAEA',
-  },
-
-  habitHeader: {
+    borderColor: '#f2f2f2',
+    padding: 14,
+    marginTop: 12,
     flexDirection: 'row',
     alignItems: 'center',
   },
 
-  habitTitle: {
+  habitIcon: {
+    width: sizes.screenWidth * 0.06,
+    height: sizes.screenWidth * 0.06,
+    resizeMode: 'contain',
+    marginTop: 4,
+  },
+
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+
+  titleText: {
+    fontSize: 13,
     flex: 1,
-    marginLeft: 8,
-    fontSize: 14,
     fontFamily: 'Inter-Medium',
-    color: colors.heading,
+    paddingRight: 10,
   },
 
   pathwayTag: {
     paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
+    height: 25,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-
-  pathwayText: {
-    fontSize: 11,
+  pathwayTagText: {
+    fontSize: 12,
     fontFamily: 'Inter-Medium',
   },
 
-  progressBackground: {
-    height: 4,
-    backgroundColor: '#DADADA',
-    borderRadius: 6,
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 10,
-    width: sizes.screenWidth * 0.5,
   },
-
-  progressFill: {
-    height: 4,
-    borderRadius: 6,
+  progressBackground: {
+    height: 5,
+    flex: 1,
+    backgroundColor: '#E6E6E6',
+    borderRadius: 10,
+  },
+  progressBar: {
+    height: 5,
     backgroundColor: colors.heading,
+    borderRadius: 10,
   },
-
   progressText: {
+    marginLeft: 10,
     fontSize: 12,
     fontFamily: 'Inter-Regular',
     color: colors.disabledText,
-    marginTop: 6,
+  },
+
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  headerText: {
+    fontSize: 18,
+    fontFamily: 'PlayfairDisplay-Medium',
+    color: '#0E0E0E',
+  },
+  countBubble: {
+    backgroundColor: '#E8F1EB',
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    borderRadius: 20,
+    marginLeft: 10,
+  },
+  countText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#4E6F54',
+  },
+
+  lockedCard: {
+    backgroundColor: '#EDF3F2',
+    borderRadius: 14,
+    padding: 8,
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0EAE3',
+  },
+
+  lockIcon: {
+    width: 22,
+    height: 22,
+    resizeMode: 'contain',
+    tintColor: '#9FB7A7',
+    marginTop: 4,
+  },
+
+  lockedTitleText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#A9C2BE',
+  },
+
+  unlockText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#B5D3CE',
+    marginTop: 3,
+    // lineHeight: 18,
+  },
+
+  weekTag: {
+    backgroundColor: '#DFE9E3',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 20,
+    alignSelf: 'center',
+  },
+  weekTagText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#C6CAC8',
   },
 });
