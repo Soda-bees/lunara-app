@@ -5,6 +5,7 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from 'react-native';
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -89,7 +90,7 @@ export default function ChallengeHub() {
           Choose your path to transformation. Each challenge is{'\n'}designed to
           support your unique rhythm and goals.
         </Text>
-        <ScrollView contentContainerStyle={{paddingBottom:16}}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
           {challenges.map(item => (
             <View key={item.id} style={styles.challengeMainView}>
               <LinearGradient
@@ -122,7 +123,17 @@ export default function ChallengeHub() {
 
               <TouchableOpacity
                 style={styles.startChallenge}
-                onPress={() => navigation.navigate(item.screen as never)}
+                // onPress={() => navigation.navigate(item.screen as never)}
+                onPress={() => {
+                  if (item.screen === 'DetoxChallenge') {
+                    navigation.navigate(item.screen as never);
+                  } else {
+                    Alert.alert(
+                      'Coming Soon',
+                      'This challenge is not available yet.',
+                    );
+                  }
+                }}
               >
                 <LinearGradient
                   colors={gradients.primary}

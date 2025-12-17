@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
 
   contentContainer: {
     paddingHorizontal: sizes.screenWidth * 0.05,
-    paddingBottom: 32,
+    paddingBottom: sizes.screenHeight * 0.08,
     gap: 20,
   },
 

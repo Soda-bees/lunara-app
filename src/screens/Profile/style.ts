@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
 
   contentContainer: {
     paddingHorizontal: sizes.screenWidth * 0.05,
-    paddingBottom: 32,
+    paddingBottom: sizes.screenHeight * 0.08,
   },
 
   // Profile Info Section
@@ -605,10 +605,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
     marginTop: 12,
+    justifyContent:'space-between'
   },
 
   badgeCard: {
-    width: '31%',
+    width:sizes.screenWidth * 0.25,
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',

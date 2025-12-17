@@ -17,8 +17,6 @@ import Header from '../../components/Header';
 import GradientWrapper from '../../components/GradientWrapper';
 import images from '../../constants/images';
 import LinearGradient from 'react-native-linear-gradient';
-import GradientText from '../../components/GradientText';
-import { gradients } from '../../constants/gradientColors';
 import { sizes } from '../../constants/sizes';
 import Modal from 'react-native-modal';
 import Ionicons from '@react-native-vector-icons/ionicons';
@@ -240,7 +238,7 @@ export default function SleepTracker() {
                   <Text style={styles.insightText}>
                     Aim for bed by 22:30 for optimal hormone production
                   </Text>
-                </View>{' '}
+                </View>
               </View>
             </View>
           </GradientWrapper>
