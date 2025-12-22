@@ -115,6 +115,13 @@ import flowerIcon from '../../assets/images/flowerIcon.png';
 import leaf from '../../assets/images/leaf.png';
 import starIcon from '../../assets/images/starIcon.png';
 import lockedIcon from '../../assets/images/lockedIcon.png';
+import prettyLady from '../../assets/images/prettyLady.png';
+import doingGreat from '../../assets/images/doingGreat.png';
+import unique from '../../assets/images/unique.png';
+import fuel from '../../assets/images/fuel.png';
+import twinkleStar from '../../assets/images/twinkleStar.png';
+import healthApple from '../../assets/images/healthApple.png';
+import celebrationIcon from '../../assets/images/celebrationIcon.png';
 
 const images: { [key: string]: any } = {
   googleIcon,
@@ -234,6 +241,13 @@ const images: { [key: string]: any } = {
   leaf,
   starIcon,
   lockedIcon,
+  prettyLady,
+  doingGreat,
+  unique,
+  fuel,
+  twinkleStar,
+  healthApple,
+  celebrationIcon,
 };
 
 export default images;
