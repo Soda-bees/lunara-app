@@ -30,6 +30,8 @@ export interface OnboardingData {
   isTrackingCycle?: boolean;
   cycleLength?: string;
   periodLength?: string;
+  lastPeriodStartDate?: string; // ISO date string
+  lastPeriodEndDate?: string; // ISO date string
   isPregnant?: boolean;
   trimester?: 1 | 2 | 3 | null;
   isBreastfeeding?: boolean;

@@ -15,6 +15,7 @@ import { colors, radius, spacing } from '../../constants/theme/theme';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import { sizes } from '../../constants/sizes';
+import PeriodStartModal from '../../components/PeriodStartModal';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'WomenHealth'>;
 
@@ -25,6 +26,16 @@ export const WomenHealthScreen: React.FC<Props> = ({ navigation }) => {
   );
   const [cycleLength, setCycleLength] = useState(data.cycleLength || '');
   const [periodLength, setPeriodLength] = useState(data.periodLength || '');
+  const [lastPeriodStartDate, setLastPeriodStartDate] = useState<Date | null>(
+    data.lastPeriodStartDate ? new Date(data.lastPeriodStartDate) : null,
+  );
+  const [lastPeriodEndDate, setLastPeriodEndDate] = useState<Date | null>(
+    data.lastPeriodEndDate ? new Date(data.lastPeriodEndDate) : null,
+  );
+  const [showPeriodModal, setShowPeriodModal] = useState(false);
+  const [periodModalType, setPeriodModalType] = useState<'start' | 'end'>(
+    'start',
+  );
   const [isPregnant, setIsPregnant] = useState(data.isPregnant || false);
   const [trimester, setTrimester] = useState<1 | 2 | 3 | null>(
     data.trimester || null,
@@ -33,12 +44,33 @@ export const WomenHealthScreen: React.FC<Props> = ({ navigation }) => {
     data.isBreastfeeding || false,
   );
 
+  // Validation: Check if all cycle tracking fields are filled
+  const isCycleTrackingValid = () => {
+    if (!isTrackingCycle) return true; // Not required if tracking is disabled
+
+    return (
+      cycleLength !== '' &&
+      periodLength !== '' &&
+      lastPeriodStartDate !== null &&
+      lastPeriodEndDate !== null &&
+      lastPeriodEndDate >= lastPeriodStartDate // End date should be >= start date
+    );
+  };
+
   const handleContinue = () => {
+    // Validate cycle tracking fields if enabled
+    if (isTrackingCycle && !isCycleTrackingValid()) {
+      // You could show an alert here, but for now we'll just prevent navigation
+      return;
+    }
+
     updateData(
       {
         isTrackingCycle,
         cycleLength: cycleLength || undefined,
         periodLength: periodLength || undefined,
+        lastPeriodStartDate: lastPeriodStartDate?.toISOString() || undefined,
+        lastPeriodEndDate: lastPeriodEndDate?.toISOString() || undefined,
         isPregnant,
         trimester: trimester || undefined,
         isBreastfeeding,
@@ -47,6 +79,32 @@ export const WomenHealthScreen: React.FC<Props> = ({ navigation }) => {
     );
     // navigation.navigate('DietaryPreferences');
     navigation.navigate('FuelAndJoy');
+  };
+
+  const handlePeriodDateSelect = (date: Date) => {
+    if (periodModalType === 'start') {
+      setLastPeriodStartDate(date);
+      // If end date is before the new start date, clear it
+      if (lastPeriodEndDate && lastPeriodEndDate < date) {
+        setLastPeriodEndDate(null);
+      }
+    } else {
+      setLastPeriodEndDate(date);
+    }
+    setShowPeriodModal(false);
+  };
+
+  const openPeriodModal = (type: 'start' | 'end') => {
+    setPeriodModalType(type);
+    setShowPeriodModal(true);
+  };
+
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   };
 
   return (
@@ -146,6 +204,51 @@ export const WomenHealthScreen: React.FC<Props> = ({ navigation }) => {
                     );
                   })}
                 </View>
+
+                <Text style={styles.subLabel}>Last period start date</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.dateButton,
+                    lastPeriodStartDate && styles.dateButtonSelected,
+                  ]}
+                  onPress={() => openPeriodModal('start')}
+                >
+                  <Text
+                    style={[
+                      styles.dateButtonText,
+                      lastPeriodStartDate && styles.dateButtonTextSelected,
+                    ]}
+                  >
+                    {lastPeriodStartDate
+                      ? formatDate(lastPeriodStartDate)
+                      : 'Select start date'}
+                  </Text>
+                </TouchableOpacity>
+
+                <Text style={styles.subLabel}>Last period end date</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.dateButton,
+                    lastPeriodEndDate && styles.dateButtonSelected,
+                    !lastPeriodStartDate && styles.dateButtonDisabled,
+                  ]}
+                  onPress={() => openPeriodModal('end')}
+                  disabled={!lastPeriodStartDate}
+                >
+                  <Text
+                    style={[
+                      styles.dateButtonText,
+                      lastPeriodEndDate && styles.dateButtonTextSelected,
+                      !lastPeriodStartDate && styles.dateButtonTextDisabled,
+                    ]}
+                  >
+                    {lastPeriodEndDate
+                      ? formatDate(lastPeriodEndDate)
+                      : lastPeriodStartDate
+                      ? 'Select end date'
+                      : 'Select start date first'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -222,10 +325,20 @@ export const WomenHealthScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
         <View style={{ marginBottom: 4 }}>
-          <EmpatheticButton title="Continue" onPress={handleContinue} />
+          <EmpatheticButton
+            title="Continue"
+            onPress={handleContinue}
+            disabled={isTrackingCycle && !isCycleTrackingValid()}
+          />
           <Text style={styles.bottomText}>Your body is amazing! 🌺</Text>
         </View>
       </ScrollView>
+
+      <PeriodStartModal
+        visible={showPeriodModal}
+        onClose={() => setShowPeriodModal(false)}
+        onSelectDate={handlePeriodDateSelect}
+      />
     </ScreenContainer>
   );
 };
@@ -364,5 +477,42 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Inter-Regular',
     marginTop: 5,
+  },
+
+  dateButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+  },
+
+  dateButtonSelected: {
+    borderColor: colors.primary + '80',
+    backgroundColor: colors.lightPrimary,
+  },
+
+  dateButtonText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+  },
+
+  dateButtonTextSelected: {
+    color: colors.primary,
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+  },
+
+  dateButtonDisabled: {
+    opacity: 0.5,
+    backgroundColor: colors.surface,
+  },
+
+  dateButtonTextDisabled: {
+    color: colors.textMuted,
+    opacity: 0.5,
   },
 });
