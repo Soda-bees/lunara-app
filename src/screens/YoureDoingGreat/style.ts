@@ -41,12 +41,19 @@ const styles = StyleSheet.create({
 
   selfCenter: {
     alignSelf: 'center',
-    marginTop:10
+    marginTop: 30,
   },
 
   actions: {
     // gap: spacing.sm,
     marginBottom: sizes.screenHeight * 0.03,
+  },
+
+  prettyLadyView: {
+    width: sizes.screenWidth * 0.55,
+    height: sizes.screenWidth * 0.55,
+    alignSelf: 'center',
+    marginTop: sizes.screenHeight * 0.13,
   },
 });
 

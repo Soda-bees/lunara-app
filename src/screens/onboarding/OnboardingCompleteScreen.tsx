@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, Image } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, Alert, Image, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { RootStackParamList } from '../../navigation/stackNavigation';
@@ -9,10 +9,13 @@ import { ScreenContainer } from '../../components/ScreenContainer/ScreenContaine
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import images from '../../constants/images';
 import { sizes } from '../../constants/sizes';
+import LottieView from 'lottie-react-native';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'OnboardingComplete'>;
 
 export const OnboardingCompleteScreen: React.FC<Props> = ({ navigation }) => {
+  const ref = useRef<LottieView>(null);
+
   const { data, resetData } = useOnboarding();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -91,10 +94,19 @@ export const OnboardingCompleteScreen: React.FC<Props> = ({ navigation }) => {
     <ScreenContainer color="#FFE4E8">
       <View style={styles.container}>
         <View style={styles.mainView}>
-          <Image
+          {/* <Image
             source={images.celebrationIcon}
             style={styles.prettyLadyStyle}
-          />
+          /> */}
+          <View style={styles.prettyLadyView}>
+            <LottieView
+              source={require('../../assets/animations/Almostthere.json')}
+              autoPlay
+              loop={true}
+              style={StyleSheet.absoluteFill}
+              ref={ref}
+            />
+          </View>
           <Text style={styles.title}>You're All Set!</Text>
           <Text style={styles.body}>
             We've created a personalized plan just for you
@@ -137,7 +149,7 @@ const styles = StyleSheet.create({
 
   mainView: {
     alignSelf: 'center',
-    marginTop: sizes.screenHeight * 0.09,
+    marginBottom: sizes.screenHeight * 0.05,
   },
 
   title: {
@@ -193,5 +205,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Inter-Regular',
     marginTop: 5,
+  },
+
+  prettyLadyView: {
+    width: sizes.screenWidth * 0.55,
+    height: sizes.screenWidth * 0.55,
+    alignSelf: 'center',
+    // marginTop: sizes.screenHeight * 0.13,
+    // backgroundColor:'red'
   },
 });
