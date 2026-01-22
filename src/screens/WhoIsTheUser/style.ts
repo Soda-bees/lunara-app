@@ -32,6 +32,14 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
 
+  title: {
+    fontSize: 26,
+    // fontWeight: '700',
+    color: colors.black,
+    textAlign: 'center',
+    fontFamily: 'PlayfairDisplay-Bold',
+  },
+
   inputContainer: {
     paddingVertical: 5,
     flexDirection: 'row',

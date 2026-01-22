@@ -6,6 +6,8 @@ import {
   FlatList,
   StyleSheet,
   Image,
+  Modal,
+  Alert,
 } from 'react-native';
 import moment from 'moment';
 import { colors } from '../../constants/colors';
@@ -16,6 +18,23 @@ type PhaseType = 'Menstrual' | 'Follicular' | 'Ovulatory' | 'Luteal';
 
 type CycleCalendarProps = {
   periodStart: Date | null;
+  cycleLength?: number;
+  periodLength?: number;
+  periods?: Array<{
+    _id: string;
+    startDate: string;
+    endDate?: string; // Optional - period might not have ended yet
+  }>;
+  currentPhase?:
+    | 'menstrual'
+    | 'follicular'
+    | 'ovulatory'
+    | 'luteal'
+    | 'unknown';
+  cycleDay?: number;
+  onLogPeriodStart?: (date: Date) => void;
+  onLogPeriodEnd?: (date: Date) => void;
+  onViewPeriodDetails?: (date: Date) => void;
 };
 
 const PHASE_COLORS: Record<PhaseType, string> = {
@@ -25,19 +44,36 @@ const PHASE_COLORS: Record<PhaseType, string> = {
   Luteal: '#F6F6F6',
 };
 
-export default function CycleCalendar({ periodStart }: CycleCalendarProps) {
+export default function CycleCalendar({
+  periodStart,
+  cycleLength = 28,
+  periodLength = 5,
+  periods = [],
+  currentPhase,
+  cycleDay,
+  onLogPeriodStart,
+  onLogPeriodEnd,
+  onViewPeriodDetails,
+}: CycleCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(moment());
+  const [actionMenuVisible, setActionMenuVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<moment.Moment | null>(null);
 
   const startOfMonth = currentMonth.clone().startOf('month');
   const daysInMonth = currentMonth.daysInMonth();
   const startDay = startOfMonth.day();
+  const today = moment().startOf('day');
 
-  const cycleLength = 28;
-  const periodLength = 6;
+  // Use the most recent period start if available, otherwise use the prop
+  const latestPeriodStart =
+    periods.length > 0
+      ? moment(periods[0].startDate)
+      : periodStart
+      ? moment(periodStart)
+      : null;
 
   const cycleData = {
-    periodStart: periodStart ? moment(periodStart) : moment(),
-    // periodStart: moment(periodStart),
+    periodStart: latestPeriodStart || moment(),
     periodLength: periodLength,
     cycleLength: cycleLength,
   };
@@ -66,25 +102,71 @@ export default function CycleCalendar({ periodStart }: CycleCalendarProps) {
 
   const phases = buildPhases();
 
-  const generateCycleInstances = () => {
-    const cycles = [];
-    let cycleStart = cycleData.periodStart.clone();
+  // Check if a date is within a logged period
+  const isPeriodDate = (date: moment.Moment): boolean => {
+    return periods.some(period => {
+      const start = moment(period.startDate).startOf('day');
+      // If period doesn't have endDate yet, only check if date matches startDate
+      if (!period.endDate) {
+        return date.isSame(start, 'day');
+      }
+      const end = moment(period.endDate).startOf('day');
+      return date.isBetween(start, end, 'day', '[]');
+    });
+  };
 
+  const generateCycleInstances = () => {
+    const cycles: Array<{
+      Menstrual: [moment.Moment, moment.Moment];
+      Follicular: [moment.Moment, moment.Moment];
+      Ovulatory: [moment.Moment, moment.Moment];
+      Luteal: [moment.Moment, moment.Moment];
+    }> = [];
+
+    if (!cycleData.periodStart) {
+      return cycles;
+    }
+
+    // Only generate cycles for the current cycle and future cycles
+    // Don't generate backward cycles - only show actual logged periods for past dates
+    let cycleStart = cycleData.periodStart.clone();
     const endLimit = currentMonth.clone().add(6, 'months').endOf('month');
 
-    while (cycleStart.isBefore(endLimit)) {
-      const periodStart = cycleStart.clone();
-      const periodEnd = cycleStart
+    // Generate the current cycle (from the most recent period)
+    const currentPeriodStart = cycleStart.clone();
+    const currentPeriodEnd = currentPeriodStart
+      .clone()
+      .add(cycleData.periodLength - 1, 'day');
+    const currentOvulationDay = currentPeriodStart.clone().add(14, 'day');
+    const currentFollicularStart = currentPeriodEnd.clone().add(1, 'day');
+    const currentFollicularEnd = currentOvulationDay.clone().subtract(1, 'day');
+    const currentLutealStart = currentOvulationDay.clone().add(1, 'day');
+    const currentLutealEnd = currentPeriodStart
+      .clone()
+      .add(cycleData.cycleLength - 1, 'day');
+
+    cycles.push({
+      Menstrual: [currentPeriodStart, currentPeriodEnd],
+      Follicular: [currentFollicularStart, currentFollicularEnd],
+      Ovulatory: [currentOvulationDay, currentOvulationDay],
+      Luteal: [currentLutealStart, currentLutealEnd],
+    });
+
+    // Generate forward cycles (future predictions only)
+    let forwardStart = cycleStart.clone().add(cycleData.cycleLength, 'day');
+    while (
+      forwardStart.isBefore(endLimit) ||
+      forwardStart.isSame(endLimit, 'month')
+    ) {
+      const periodStart = forwardStart.clone();
+      const periodEnd = periodStart
         .clone()
         .add(cycleData.periodLength - 1, 'day');
-
-      const ovulationDay = cycleStart.clone().add(14, 'day');
-
+      const ovulationDay = periodStart.clone().add(14, 'day');
       const follicularStart = periodEnd.clone().add(1, 'day');
       const follicularEnd = ovulationDay.clone().subtract(1, 'day');
-
       const lutealStart = ovulationDay.clone().add(1, 'day');
-      const lutealEnd = cycleStart
+      const lutealEnd = periodStart
         .clone()
         .add(cycleData.cycleLength - 1, 'day');
 
@@ -95,7 +177,7 @@ export default function CycleCalendar({ periodStart }: CycleCalendarProps) {
         Luteal: [lutealStart, lutealEnd],
       });
 
-      cycleStart = cycleStart.clone().add(cycleData.cycleLength, 'day');
+      forwardStart = forwardStart.clone().add(cycleData.cycleLength, 'day');
     }
 
     return cycles;
@@ -104,6 +186,18 @@ export default function CycleCalendar({ periodStart }: CycleCalendarProps) {
   const allCycles = generateCycleInstances();
 
   const getPhaseForDate = (date: moment.Moment): PhaseType | null => {
+    // If this date is within a logged period, it's menstrual phase
+    if (isPeriodDate(date)) {
+      return 'Menstrual';
+    }
+
+    // For past dates (before the most recent period start), only show if it's a logged period
+    // Don't show predicted phases for past dates
+    if (latestPeriodStart && date.isBefore(latestPeriodStart, 'day')) {
+      return null; // No phase coloring for past dates without logged periods
+    }
+
+    // For current and future dates, calculate phase based on predicted cycles
     for (const cycle of allCycles) {
       for (const phase of Object.keys(cycle) as PhaseType[]) {
         const [start, end] = cycle[phase];
@@ -113,9 +207,95 @@ export default function CycleCalendar({ periodStart }: CycleCalendarProps) {
     return null;
   };
 
+  // Calculate next phases based on current phase and cycle day
+  const getNextPhases = (): Array<{ phase: PhaseType; days: number }> => {
+    if (
+      !currentPhase ||
+      !cycleDay ||
+      cycleDay <= 0 ||
+      currentPhase === 'unknown'
+    ) {
+      return [];
+    }
+
+    const nextPhases: Array<{ phase: PhaseType; days: number }> = [];
+    const currentDay = cycleDay;
+
+    // Map lowercase phase names to PhaseType
+    const phaseMap: Record<string, PhaseType> = {
+      menstrual: 'Menstrual',
+      follicular: 'Follicular',
+      ovulatory: 'Ovulatory',
+      luteal: 'Luteal',
+    };
+
+    const currentPhaseType = phaseMap[currentPhase] || null;
+
+    if (currentPhaseType === 'Menstrual') {
+      // Next: Follicular (after period ends)
+      const daysToFollicular = periodLength - currentDay + 1;
+      if (daysToFollicular > 0) {
+        nextPhases.push({ phase: 'Follicular', days: daysToFollicular });
+      }
+      // Then: Ovulatory
+      const daysToOvulatory =
+        periodLength - currentDay + (14 - periodLength) + 1;
+      if (daysToOvulatory > 0 && daysToOvulatory !== daysToFollicular) {
+        nextPhases.push({ phase: 'Ovulatory', days: daysToOvulatory });
+      }
+    } else if (currentPhaseType === 'Follicular') {
+      // Next: Ovulatory
+      const daysToOvulatory = 14 - currentDay + 1;
+      if (daysToOvulatory > 0) {
+        nextPhases.push({ phase: 'Ovulatory', days: daysToOvulatory });
+      }
+      // Then: Luteal
+      const daysToLuteal = 15 - currentDay + 1;
+      if (daysToLuteal > 0 && daysToLuteal !== daysToOvulatory) {
+        nextPhases.push({ phase: 'Luteal', days: daysToLuteal });
+      }
+    } else if (currentPhaseType === 'Ovulatory') {
+      // Next: Luteal
+      nextPhases.push({ phase: 'Luteal', days: 1 });
+      // Then: Next Menstrual (next period)
+      const daysToNextPeriod = cycleLength - currentDay + 1;
+      if (daysToNextPeriod > 0) {
+        nextPhases.push({ phase: 'Menstrual', days: daysToNextPeriod });
+      }
+    } else if (currentPhaseType === 'Luteal') {
+      // Next: Menstrual (next period)
+      const daysToNextPeriod = cycleLength - currentDay + 1;
+      if (daysToNextPeriod > 0) {
+        nextPhases.push({ phase: 'Menstrual', days: daysToNextPeriod });
+      }
+    }
+
+    return nextPhases.slice(0, 2); // Return up to 2 next phases
+  };
+
+  const nextPhases = getNextPhases();
+
+  // Calculate when the current cycle ends (next period start date)
+  const getCurrentCycleEndDate = (): moment.Moment | null => {
+    if (!latestPeriodStart) return null;
+
+    // The current cycle ends when the next period starts
+    // Next period = last period start + cycle length
+    // Normalize to start of day to avoid timezone issues
+    return latestPeriodStart.clone().add(cycleLength, 'day').startOf('day');
+  };
+
+  const currentCycleEndDate = getCurrentCycleEndDate();
+
   type CalendarCell =
     | { empty: true }
-    | { empty?: false; day: number; phase: PhaseType | null };
+    | {
+        empty?: false;
+        day: number;
+        phase: PhaseType | null;
+        isFuture: boolean;
+        isToday: boolean;
+      };
 
   const generateCalendarGrid = () => {
     const grid: CalendarCell[] = [];
@@ -130,9 +310,23 @@ export default function CycleCalendar({ periodStart }: CycleCalendarProps) {
         const dateObj = currentMonth.clone().date(dayNumber);
         const phase = getPhaseForDate(dateObj);
 
+        // Only apply future styling to dates ON OR AFTER the current cycle ends
+        // (i.e., dates in future cycles, not dates in the current cycle)
+        // Normalize both dates to start of day for accurate comparison
+        const isFuture = currentCycleEndDate
+          ? dateObj
+              .startOf('day')
+              .isSameOrAfter(currentCycleEndDate.startOf('day'), 'day')
+          : dateObj.isAfter(today, 'day');
+
+        // Check if this is today's date
+        const isToday = dateObj.isSame(today, 'day');
+
         grid.push({
           day: dayNumber,
           phase,
+          isFuture,
+          isToday,
         });
       }
     }
@@ -144,6 +338,49 @@ export default function CycleCalendar({ periodStart }: CycleCalendarProps) {
     setCurrentMonth(prev => prev.clone().subtract(1, 'month'));
   const goNextMonth = () =>
     setCurrentMonth(prev => prev.clone().add(1, 'month'));
+
+  const handleLongPress = (date: moment.Moment) => {
+    setSelectedDate(date);
+    setActionMenuVisible(true);
+  };
+
+  const handleLogPeriodStart = () => {
+    if (selectedDate && onLogPeriodStart) {
+      onLogPeriodStart(selectedDate.toDate());
+    }
+    setActionMenuVisible(false);
+    setSelectedDate(null);
+  };
+
+  const handleLogPeriodEnd = () => {
+    if (selectedDate && onLogPeriodEnd) {
+      onLogPeriodEnd(selectedDate.toDate());
+    }
+    setActionMenuVisible(false);
+    setSelectedDate(null);
+  };
+
+  const handleViewPeriodDetails = () => {
+    if (selectedDate && onViewPeriodDetails) {
+      onViewPeriodDetails(selectedDate.toDate());
+    }
+    setActionMenuVisible(false);
+    setSelectedDate(null);
+  };
+
+  const getPeriodForDate = (date: moment.Moment) => {
+    return periods.find(period => {
+      const start = moment(period.startDate).startOf('day');
+      const end = period.endDate
+        ? moment(period.endDate).startOf('day')
+        : null;
+      const dateStart = date.startOf('day');
+      if (end) {
+        return dateStart.isSameOrAfter(start) && dateStart.isSameOrBefore(end);
+      }
+      return dateStart.isSame(start);
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -172,16 +409,32 @@ export default function CycleCalendar({ periodStart }: CycleCalendarProps) {
           </TouchableOpacity>
         </View>
       </View>
-      <View style={styles.phaseMainView}>
-        <View style={styles.phasesUpdateView}>
-          <Text style={styles.nextText}>Next: Ovulatory</Text>
-          <Text style={styles.daysText}>6 days</Text>
+      {nextPhases.length > 0 && (
+        <View style={styles.phaseMainView}>
+          {nextPhases.map((nextPhase, index) => (
+            <View key={index} style={styles.phasesUpdateView}>
+              <Text style={styles.nextText}>Next: {nextPhase.phase}</Text>
+              <Text style={styles.daysText}>
+                {nextPhase.days === 1 ? '1 day' : `${nextPhase.days} days`}
+              </Text>
+            </View>
+          ))}
+          {nextPhases.length === 1 && (
+            <View style={[styles.phasesUpdateView, { opacity: 0.5 }]}>
+              <Text style={styles.nextText}>—</Text>
+              <Text style={styles.daysText}>—</Text>
+            </View>
+          )}
         </View>
-        <View style={styles.phasesUpdateView}>
-          <Text style={styles.nextText}>Next: Luteal</Text>
-          <Text style={styles.daysText}>10 days</Text>
+      )}
+      {nextPhases.length === 0 && (
+        <View style={styles.phaseMainView}>
+          <View style={styles.phasesUpdateView}>
+            <Text style={styles.nextText}>No data available</Text>
+            <Text style={styles.daysText}>—</Text>
+          </View>
         </View>
-      </View>
+      )}
 
       <View style={styles.weekRow}>
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
@@ -199,15 +452,29 @@ export default function CycleCalendar({ periodStart }: CycleCalendarProps) {
         keyExtractor={(_, i) => i.toString()}
         renderItem={({ item }) => {
           if (item.empty) return <View style={styles.emptyCell} />;
+          const dateObj = currentMonth.clone().date(item.day);
+          const periodForDate = getPeriodForDate(dateObj);
           return (
-            <View
+            <TouchableOpacity
               style={[
                 styles.dayCell,
                 item.phase ? { backgroundColor: PHASE_COLORS[item.phase] } : {},
+                item.isFuture && styles.futureDayCell,
+                item.isToday && styles.todayCell,
               ]}
+              onLongPress={() => handleLongPress(dateObj)}
+              activeOpacity={0.7}
             >
-              <Text style={styles.dayText}>{item.day}</Text>
-            </View>
+              <Text
+                style={[
+                  styles.dayText,
+                  item.isFuture && styles.futureDayText,
+                  item.isToday && styles.todayText,
+                ]}
+              >
+                {item.day}
+              </Text>
+            </TouchableOpacity>
           );
         }}
       />
@@ -232,10 +499,61 @@ export default function CycleCalendar({ periodStart }: CycleCalendarProps) {
           <Text style={{ color: colors.black, fontFamily: 'Inter-SemiBold' }}>
             Track your patterns:
           </Text>
-           Your cycle is unique. This predictive calendar learns from your
+           Your cycle is unique. This predictive calendar learns from your
           history to anticipate phase transitions.
         </Text>
       </View>
+
+      {/* Action Menu Modal */}
+      <Modal
+        visible={actionMenuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setActionMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setActionMenuVisible(false)}
+        >
+          <View style={styles.actionMenu}>
+            <Text style={styles.actionMenuTitle}>
+              {selectedDate?.format('MMMM D, YYYY')}
+            </Text>
+            {getPeriodForDate(selectedDate || moment()) ? (
+              <TouchableOpacity
+                style={styles.actionMenuItem}
+                onPress={handleViewPeriodDetails}
+              >
+                <Text style={styles.actionMenuText}>View Period Details</Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={styles.actionMenuItem}
+                  onPress={handleLogPeriodStart}
+                >
+                  <Text style={styles.actionMenuText}>Log Period Start</Text>
+                </TouchableOpacity>
+                {periods.some(p => p.startDate && !p.endDate) && (
+                  <TouchableOpacity
+                    style={styles.actionMenuItem}
+                    onPress={handleLogPeriodEnd}
+                  >
+                    <Text style={styles.actionMenuText}>Log Period End</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+            <TouchableOpacity
+              style={[styles.actionMenuItem, styles.actionMenuCancel]}
+              onPress={() => setActionMenuVisible(false)}
+            >
+              <Text style={styles.actionMenuCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -316,6 +634,28 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     fontSize: 14,
     color: colors.black,
+  },
+
+  futureDayCell: {
+    opacity: 0.6,
+    borderWidth: 1,
+    borderColor: colors.borderColor,
+    borderStyle: 'dashed',
+  },
+
+  futureDayText: {
+    opacity: 0.8,
+  },
+
+  todayCell: {
+    borderWidth: 2,
+    borderColor: colors.heading || '#E4AF5D',
+    borderStyle: 'solid',
+  },
+
+  todayText: {
+    color: colors.heading || '#E4AF5D',
+    fontWeight: 'bold',
   },
 
   legendContainer: {
@@ -403,5 +743,46 @@ const styles = StyleSheet.create({
     width: 15,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionMenu: {
+    backgroundColor: colors.white,
+    borderRadius: sizes.screenWidth * 0.03,
+    padding: 16,
+    minWidth: 200,
+    maxWidth: 300,
+  },
+  actionMenuTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.black,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  actionMenuItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderColor,
+  },
+  actionMenuText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: colors.black,
+  },
+  actionMenuCancel: {
+    borderBottomWidth: 0,
+    marginTop: 8,
+  },
+  actionMenuCancelText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.darkGrey,
+    textAlign: 'center',
   },
 });

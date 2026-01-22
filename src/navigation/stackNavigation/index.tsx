@@ -54,13 +54,17 @@ import { WorkoutDetailScreen } from '../../screens/WorkoutDetailScreen/WorkoutDe
 import { SymptomsScreen } from '../../screens/SymptomsScreen/SymptomsScreen';
 import { JournalScreen } from '../../screens/JournalScreen/JournalScreen';
 import { PeriodsScreen } from '../../screens/PeriodsScreen/PeriodsScreen';
+import CycleHistory from '../../screens/CycleHistory';
+// PregnancyDashboard is now merged into CycleInsight (Insights tab)
+// import PregnancyDashboard from '../../screens/PregnancyDashboard';
+import PregnancyInfo from '../../screens/PregnancyInfo';
+import PregnancyHistory from '../../screens/PregnancyHistory';
+import PostpartumTransition from '../../screens/PostpartumTransition';
 import { ProfileScreen } from '../../screens/ProfileScreen/ProfileScreen';
 import { CycleInsightsScreen } from '../../screens/CycleInsightsScreen/CycleInsightsScreen';
 import { SleepTrackingScreen } from '../../screens/SleepTrackingScreen/SleepTrackingScreen';
 import { TrackScreen } from '../../screens/TrackScreen/TrackScreen';
 import { LoginScreen } from '../../screens/LoginScreen/LoginScreen';
-import { ForgotPasswordScreen } from '../../screens/ForgotPasswordScreen/ForgotPasswordScreen';
-import { ResetPasswordScreen } from '../../screens/ResetPasswordScreen/ResetPasswordScreen';
 import { NavigationHandler } from '../../components/NavigationHandler/NavigationHandler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { OnboardingProvider } from '../../context/OnboardingContext';
@@ -80,9 +84,9 @@ export type RootStackParamList = {
   IntroSlider: any;
   SignUp: any;
   PrivacyConsent: any;
-  // ForgotPassword: any;
-  OTP: any;
-  // ResetPassword: any;
+  ForgotPassword: { from?: string } | undefined;
+  OTP: { email: string } | undefined;
+  ResetPassword: { email: string; otp: string } | undefined;
   ResetSuccess: any;
   NameInput: any;
   GetToKnow: any;
@@ -113,9 +117,8 @@ export type RootStackParamList = {
   DetoxChallenge: any;
   Welcome: undefined;
   Login: { from?: string } | undefined;
-  ForgotPassword: { from?: string } | undefined;
-  ResetPassword: { email: string; from?: string } | undefined;
-  AccountSetup: undefined;
+
+  AccountSetup: { googleUser?: { email: string; name: string } } | undefined;
   BasicInfo: undefined;
   Goals: undefined;
   WomenHealth: undefined;
@@ -137,6 +140,10 @@ export type RootStackParamList = {
   CycleInsights: undefined;
   SleepTracking: undefined;
   Track: undefined;
+  // PregnancyDashboard: undefined; // Merged into CycleInsight (Insights tab)
+  PregnancyInfo: undefined;
+  PregnancyHistory: undefined;
+  PostpartumTransition: undefined;
   LetsGetStarted: undefined;
   YoureDoingGreat: undefined;
   UniqueJourney: undefined;
@@ -144,6 +151,7 @@ export type RootStackParamList = {
   DailyLifeMatters: undefined;
   HealthStory: undefined;
   AlmostThere: undefined;
+  CycleHistory: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -158,11 +166,8 @@ export default function MainStack() {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen
-            name="ForgotPassword"
-            component={ForgotPasswordScreen}
-          />
-          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+          <Stack.Screen name="ResetPassword" component={ResetPassword} />
           <Stack.Screen name="AccountSetup" component={AccountSetupScreen} />
           <Stack.Screen name="BasicInfo" component={BasicInfoScreen} />
           <Stack.Screen name="Goals" component={GoalsScreen} />
@@ -189,6 +194,12 @@ export default function MainStack() {
           <Stack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
           <Stack.Screen name="Symptoms" component={SymptomsScreen} />
           <Stack.Screen name="Periods" component={PeriodsScreen} />
+          <Stack.Screen name="CycleHistory" component={CycleHistory} />
+          {/* PregnancyDashboard is now merged into CycleInsight (Insights tab) */}
+          {/* <Stack.Screen name="PregnancyDashboard" component={PregnancyDashboard} /> */}
+          <Stack.Screen name="PregnancyInfo" component={PregnancyInfo} />
+          <Stack.Screen name="PregnancyHistory" component={PregnancyHistory} />
+          <Stack.Screen name="PostpartumTransition" component={PostpartumTransition} />
           <Stack.Screen name="Journal" component={JournalScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="CycleInsights" component={CycleInsightsScreen} />
@@ -207,9 +218,7 @@ export default function MainStack() {
           <Stack.Screen name="CycleInsight" component={CycleInsight} />
           <Stack.Screen name="SignIn" component={SignIn} />
           <Stack.Screen name="SignUp" component={SignUp} />
-          {/* <Stack.Screen name="ForgotPassword" component={ForgotPassword} /> */}
           <Stack.Screen name="OTP" component={OTP} />
-          {/* <Stack.Screen name="ResetPassword" component={ResetPassword} /> */}
           <Stack.Screen name="ResetSuccess" component={ResetSuccess} />
           <Stack.Screen name="PrivacyConsent" component={PrivacyConsent} />
           <Stack.Screen name="NameInput" component={NameInput} />

@@ -7,6 +7,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from 'react-native';
 import styles from './style';
 import BackButton from '../../components/BackButton';
@@ -19,10 +20,15 @@ import Header from '../../components/Header';
 import GradientWrapper from '../../components/GradientWrapper';
 import LinearGradient from 'react-native-linear-gradient';
 import { gradients } from '../../constants/gradientColors';
+import Button from '../../components/Button';
+import { clearToken } from '../../services/api';
+import { useOnboarding } from '../../context/OnboardingContext';
+
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 
 export default function More() {
   const navigation = useNavigation<NavigationProp>();
+  const { resetData } = useOnboarding();
 
   const mainFeatures = [
     {
@@ -86,8 +92,40 @@ export default function More() {
     },
   ];
 
-  const handlePress = async () => {
-    navigation.navigate('HormoneResetGuide');
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Clear auth token
+              await clearToken();
+
+              // Clear onboarding data
+              resetData();
+
+              // Navigate to Welcome screen
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Welcome' }],
+              });
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          },
+        },
+      ],
+      { cancelable: true },
+    );
   };
 
   const handleSingleNavigation = (item: {
@@ -183,7 +221,7 @@ export default function More() {
               </View>
               <TouchableOpacity style={styles.updateButton}>
                 <LinearGradient
-                  colors={gradients.primary}
+                  colors={gradients.secondary}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.updateButtonGradient}
@@ -193,6 +231,7 @@ export default function More() {
               </TouchableOpacity>
             </GradientWrapper>
           </View>
+          <Button title="Logout" onPress={handleLogout} disabled={false} />
         </ScrollView>
       </View>
     </SafeAreaView>

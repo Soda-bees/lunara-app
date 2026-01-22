@@ -10,27 +10,45 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import styles from './style';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Header from '../../components/Header';
 import GradientWrapper from '../../components/GradientWrapper';
 import images from '../../constants/images';
 import LinearGradient from 'react-native-linear-gradient';
 import GradientText from '../../components/GradientText';
 import { gradients } from '../../constants/gradientColors';
+import {
+  getCurrentCycleStatus,
+  CycleStatusResponse,
+  getPregnancyStatus,
+  PregnancyStatusResponse,
+} from '../../services/api';
+import moment from 'moment';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 
 export default function Home() {
   const navigation = useNavigation<NavigationProp>();
+  // Get parent tab navigator for tab navigation
+  const tabNavigation = (navigation as any).getParent?.() || navigation;
   const [showInsightDetails, setShowInsightDetails] = useState<Boolean>(false);
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
   const [selectedFeeling, setSelectedFeeling] = useState<number | null>(null);
   const [selectedEnergy, setSelectedEnergy] = useState<number | null>(null);
   const [selectedSleep, setSelectedSleep] = useState<number | null>(null);
+  const [cycleStatus, setCycleStatus] = useState<
+    CycleStatusResponse['data'] | null
+  >(null);
+  const [pregnancyStatus, setPregnancyStatus] = useState<
+    PregnancyStatusResponse['data'] | null
+  >(null);
+  const [loading, setLoading] = useState(true);
   const emojis = ['😄', '🙂', '😐', '😞'];
   const energyEmojis = [
     images.energizedEmoji,
@@ -41,6 +59,89 @@ export default function Home() {
   const handleSleepTracker = () => {
     navigation.navigate('SleepTracker');
   };
+
+  // Fetch cycle and pregnancy data
+  const fetchCycleData = async () => {
+    try {
+      setLoading(true);
+
+      // Check pregnancy status first
+      const pregnancyResponse = await getPregnancyStatus();
+      if (pregnancyResponse.success && pregnancyResponse.data.isPregnant) {
+        setPregnancyStatus(pregnancyResponse.data);
+        setCycleStatus(null);
+        return;
+      }
+
+      // If not pregnant, fetch cycle status
+      const response = await getCurrentCycleStatus();
+      if (response.success && response.data.isTracking) {
+        setCycleStatus(response.data);
+      } else {
+        setCycleStatus(null);
+      }
+      setPregnancyStatus(null);
+    } catch (error: any) {
+      console.error('Error fetching data:', error);
+      setCycleStatus(null);
+      setPregnancyStatus(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchCycleData();
+    }, []),
+  );
+
+  // Helper functions
+  const getPhaseDisplayName = (phase?: string): string => {
+    if (!phase || phase === 'unknown') return 'Unknown';
+    return phase.charAt(0).toUpperCase() + phase.slice(1);
+  };
+
+  const getPhaseIcon = (phase?: string) => {
+    switch (phase) {
+      case 'menstrual':
+        return images.menstrualIcon;
+      case 'follicular':
+        return images.follicularIcon;
+      case 'ovulatory':
+        return images.ovulationIcon;
+      case 'luteal':
+        return images.lutealIcon;
+      default:
+        return images.lutealIcon; // Default fallback
+    }
+  };
+
+  const getEnergyLevelText = (energyLevel?: string | null): string => {
+    if (!energyLevel) return '—';
+    switch (energyLevel) {
+      case 'low':
+        return 'Low - Rest';
+      case 'rising':
+        return 'Rising - High';
+      case 'high':
+        return 'High - Peak';
+      case 'declining':
+        return 'Declining - Medium';
+      default:
+        return '—';
+    }
+  };
+
+  const calculateProgressPercentage = (
+    cycleDay?: number,
+    cycleLength?: number,
+  ): number => {
+    if (!cycleDay || !cycleLength) return 0;
+    return Math.min(100, Math.max(0, (cycleDay / cycleLength) * 100));
+  };
+
+  const todayDate = moment().format('dddd, MMMM D');
 
   return (
     <SafeAreaView style={styles.mainContainer} edges={['top']}>
@@ -55,243 +156,369 @@ export default function Home() {
         <View style={{ gap: 16 }}>
           <GradientWrapper variant="basic">
             <View style={styles.phaseBody}>
-              <View style={styles.row}>
-                <Image
-                  style={styles.currentPhaseIconMain}
-                  source={images.currentPhaseIconMain}
-                />
-                <Text style={styles.heading}>Current Phase</Text>
-              </View>
-              <View style={styles.phaseTextContainer}>
-                <Text style={styles.textPrimary}>Foliicular - Day 8</Text>
-              </View>
-              <View style={styles.colCenter}>
-                <Text style={styles.spacedText}>TODAY</Text>
-                <Text style={styles.textBlackMedium}>Tuesday, October 28</Text>
-              </View>
-              <View style={styles.cyclePhaseCard}>
-                <Text style={styles.spacedText}>CYCLE PROGRESS</Text>
+              {loading ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <ActivityIndicator size="large" color="#E4AF5D" />
+                </View>
+              ) : pregnancyStatus && pregnancyStatus.isPregnant ? (
+                <>
+                  {/* Pregnancy Progress Card */}
+                  <View style={styles.cyclePhaseCard}>
+                    <Text style={styles.spacedText}>PREGNANCY PROGRESS</Text>
+                    <View style={styles.rowFull}>
+                      <View style={styles.rowBottom}>
+                        <GradientText fontSize={46} fontFamily="Inter-Regular">
+                          {pregnancyStatus.pregnancyWeek || '—'}
+                        </GradientText>
+                        <Text style={[styles.numberTextMedium, { top: 8 }]}>
+                          {' '}
+                          / 40
+                        </Text>
+                      </View>
+                      <View style={styles.dayTextContainer}>
+                        <Text style={styles.textBlackNormal}>
+                          {pregnancyStatus.trimester === 1
+                            ? 'First Trimester'
+                            : pregnancyStatus.trimester === 2
+                            ? 'Second Trimester'
+                            : 'Third Trimester'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.progressIndicator}>
+                      <LinearGradient
+                        style={[
+                          styles.progress,
+                          {
+                            width: `${
+                              pregnancyStatus.progressPercentage || 0
+                            }%`,
+                          },
+                        ]}
+                        colors={['#E4AF5D', '#E799AD']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                      />
+                    </View>
+                    {pregnancyStatus.dueDate && (
+                      <Text style={styles.textDarkGrey}>
+                        Due date:{' '}
+                        {moment(pregnancyStatus.dueDate).format('MMMM D, YYYY')}
+                        {pregnancyStatus.daysUntilDueDate !== null &&
+                          pregnancyStatus.daysUntilDueDate !== undefined && (
+                            <Text>
+                              {' '}
+                              (
+                              {pregnancyStatus.daysUntilDueDate > 0
+                                ? `${pregnancyStatus.daysUntilDueDate} days to go`
+                                : pregnancyStatus.daysUntilDueDate === 0
+                                ? 'Due date is today!'
+                                : `${Math.abs(
+                                    pregnancyStatus.daysUntilDueDate,
+                                  )} days past due date`}
+                              )
+                            </Text>
+                          )}
+                      </Text>
+                    )}
+                  </View>
 
-                <View style={styles.rowFull}>
-                  <View style={styles.rowBottom}>
-                    <GradientText fontSize={46} fontFamily="Inter-Regular">
-                      8
-                    </GradientText>
-                    <Text style={[styles.numberTextMedium, { top: 8 }]}>
-                      / 28
+                  {/* Baby Development Card */}
+                  {pregnancyStatus.babyDevelopment && (
+                    <TouchableOpacity
+                      style={styles.cyclePhaseCard}
+                      onPress={() => {
+                        // Navigate to Cycle tab (which is now Insights)
+                        // @ts-ignore - Cycle is a tab route
+                        tabNavigation.jumpTo?.('Cycle') ||
+                          tabNavigation.navigate?.('Cycle');
+                      }}
+                    >
+                      <Text style={styles.spacedText}>BABY DEVELOPMENT</Text>
+                      <Text style={styles.babyDevelopmentText}>
+                        Size of a {pregnancyStatus.babyDevelopment.size}
+                      </Text>
+                      <Text style={styles.textDarkGrey}>
+                        {pregnancyStatus.babyDevelopment.development}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Today's Insights Card */}
+                  {pregnancyStatus.trimesterInsights &&
+                    pregnancyStatus.trimesterInsights.whatToExpect &&
+                    pregnancyStatus.trimesterInsights.whatToExpect.length >
+                      0 && (
+                      <TouchableOpacity
+                        style={styles.cyclePhaseCard}
+                        onPress={() => {
+                          // Navigate to Cycle tab (which is now Insights)
+                          // @ts-ignore - Cycle is a tab route
+                          tabNavigation.jumpTo?.('Cycle') ||
+                            tabNavigation.navigate?.('Cycle');
+                        }}
+                      >
+                        <Text style={styles.spacedText}>TODAY'S INSIGHT</Text>
+                        <Text style={styles.textDarkGrey}>
+                          {pregnancyStatus.trimesterInsights.whatToExpect[0]}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+
+                  {/* Link to Cycle History */}
+                  <TouchableOpacity
+                    style={styles.cyclePhaseCard}
+                    onPress={() => {
+                      // Navigate to Cycle tab (which is now Insights)
+                      // @ts-ignore - Cycle is a tab route
+                      tabNavigation.jumpTo?.('Cycle') ||
+                        tabNavigation.navigate?.('Cycle');
+                    }}
+                  >
+                    <Text style={styles.spacedText}>CYCLE HISTORY</Text>
+                    <Text style={styles.textDarkGrey}>
+                      View your past cycles and insights from before pregnancy.
+                      Your cycle data is preserved.
+                    </Text>
+                    <Text
+                      style={[
+                        styles.textDarkGrey,
+                        {
+                          marginTop: 8,
+                          color: '#E799AD',
+                          fontFamily: 'Inter-SemiBold',
+                        },
+                      ]}
+                    >
+                      View Cycle Insights →
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              ) : !cycleStatus || !cycleStatus.isTracking ? (
+                <View>
+                  <Text style={styles.textDarkGrey}>
+                    Cycle tracking is not enabled. Please enable it in your
+                    profile settings to see phase insights.
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.row}>
+                    <Image
+                      style={styles.currentPhaseIconMain}
+                      source={images.currentPhaseIconMain}
+                    />
+                    <Text style={styles.heading}>Current Phase</Text>
+                  </View>
+                  <View style={styles.phaseTextContainer}>
+                    <Text style={styles.textPrimary}>
+                      {getPhaseDisplayName(cycleStatus.phase)} - Day{' '}
+                      {cycleStatus.cycleDay || '—'}
                     </Text>
                   </View>
-                  <View style={styles.dayTextContainer}>
-                    <Text style={styles.textBlackNormal}>Day 8</Text>
+                  <View style={styles.colCenter}>
+                    <Text style={styles.spacedText}>TODAY</Text>
+                    <Text style={styles.textBlackMedium}>{todayDate}</Text>
                   </View>
-                </View>
-                <View style={styles.progressIndicator}>
-                  <LinearGradient
-                    style={styles.progress}
-                    colors={['#E4AF5D', '#E799AD']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                  ></LinearGradient>
-                </View>
-                <View style={styles.rowFull}>
-                  <View>
-                    <Text style={styles.spacedText}>CURRENT PHASE</Text>
-                    <GradientText
-                      fontSize={24}
-                      fontFamily="PlayfairDisplay-SemiBold"
-                    >
-                      Luteal
-                    </GradientText>
+                  <View style={styles.cyclePhaseCard}>
+                    <Text style={styles.spacedText}>CYCLE PROGRESS</Text>
+
+                    <View style={styles.rowFull}>
+                      <View style={styles.rowBottom}>
+                        <GradientText fontSize={46} fontFamily="Inter-Regular">
+                          {cycleStatus.cycleDay || '—'}
+                        </GradientText>
+                        <Text style={[styles.numberTextMedium, { top: 8 }]}>
+                          {' '}
+                          / {cycleStatus.averageCycleLength || 28}
+                        </Text>
+                      </View>
+                      <View style={styles.dayTextContainer}>
+                        <Text style={styles.textBlackNormal}>
+                          Day {cycleStatus.cycleDay || '—'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.progressIndicator}>
+                      <LinearGradient
+                        style={[
+                          styles.progress,
+                          {
+                            width: `${calculateProgressPercentage(
+                              cycleStatus.cycleDay,
+                              cycleStatus.averageCycleLength || 28,
+                            )}%`,
+                          },
+                        ]}
+                        colors={['#E4AF5D', '#E799AD']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                      ></LinearGradient>
+                    </View>
+                    <View style={styles.rowFull}>
+                      <View>
+                        <Text style={styles.spacedText}>CURRENT PHASE</Text>
+                        <GradientText
+                          fontSize={24}
+                          fontFamily="PlayfairDisplay-SemiBold"
+                        >
+                          {getPhaseDisplayName(cycleStatus.phase)}
+                        </GradientText>
+                      </View>
+                      <Image
+                        source={getPhaseIcon(cycleStatus.phase)}
+                        style={styles.lutealIcon}
+                      />
+                    </View>
+
+                    <Text style={styles.textDarkGrey}>
+                      {cycleStatus.tagline || '—'}
+                    </Text>
                   </View>
-                  <Image source={images.lutealIcon} style={styles.lutealIcon} />
-                </View>
 
-                <Text style={styles.textDarkGrey}>
-                  Energy rising _ perfect for new beginnings
-                </Text>
-              </View>
+                  <View style={styles.softCopyContainer}>
+                    <Text style={styles.textDarkGrey}>
+                      {cycleStatus.description ||
+                        'No description available for this phase.'}
+                    </Text>
+                  </View>
+                </>
+              )}
 
-              <View style={styles.softCopyContainer}>
-                <Text style={styles.textDarkGrey}>
-                  Energy is rising! This is your spring—time for new beginnings,
-                  creativity, and planning.
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={
-                  showInsightDetails
-                    ? [styles.sliderRow, { marginBottom: 15 }]
-                    : styles.sliderRow
-                }
-                // onPress={() => setShowInsightDetails(true)}
-                onPress={() => setShowInsightDetails(prev => !prev)}
-              >
-                <Image
-                  source={images.slideDown}
+              {cycleStatus && cycleStatus.isTracking && (
+                <TouchableOpacity
                   style={
                     showInsightDetails
-                      ? styles.slideActiveIcon
-                      : styles.slideIcon
+                      ? [styles.sliderRow, { marginBottom: 15 }]
+                      : styles.sliderRow
                   }
-                />
-                <Text style={styles.greenText}>
-                  Tap to {showInsightDetails ? 'hide' : 'see'} detailed insights
-                </Text>
-              </TouchableOpacity>
-              {showInsightDetails && (
+                  onPress={() => setShowInsightDetails(prev => !prev)}
+                >
+                  <Image
+                    source={images.slideDown}
+                    style={
+                      showInsightDetails
+                        ? styles.slideActiveIcon
+                        : styles.slideIcon
+                    }
+                  />
+                  <Text style={styles.greenText}>
+                    Tap to {showInsightDetails ? 'hide' : 'see'} detailed
+                    insights
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {showInsightDetails && cycleStatus && cycleStatus.isTracking && (
                 <>
                   <View style={styles.rowFlexBox}>
                     <View style={styles.flexBox}>
                       <Image source={images.energyHigh} style={styles.icon} />
                       <Text style={styles.greenText}>Energy Level</Text>
-                      <Text style={styles.textBlackSmall}>Rising - High</Text>
+                      <Text style={styles.textBlackSmall}>
+                        {getEnergyLevelText(cycleStatus.energyLevel)}
+                      </Text>
                     </View>
                     <View style={styles.flexBox}>
                       <Image source={images.sparkle} style={styles.icon} />
                       <Text style={styles.greenText}>Best For</Text>
                       <Text style={styles.textBlackSmall}>
-                        New projects, socializing, challenging workouts
+                        {cycleStatus.bestFor && cycleStatus.bestFor.length > 0
+                          ? cycleStatus.bestFor.join(', ')
+                          : '—'}
                       </Text>
                     </View>
                   </View>
 
                   <View style={styles.thisPhaseDataContainer}>
-                    <View style={styles.section}>
-                      <View style={styles.row}>
-                        <Image
-                          source={images.nutritionIcon}
-                          style={styles.icon}
-                        />
-                        <Text style={styles.textBlackBold}>
-                          Nutrition This Phase
-                        </Text>
-                      </View>
-                      <View>
+                    {cycleStatus.nutrition &&
+                      cycleStatus.nutrition.length > 0 && (
+                        <View style={styles.section}>
+                          <View style={styles.row}>
+                            <Image
+                              source={images.nutritionIcon}
+                              style={styles.icon}
+                            />
+                            <Text style={styles.textBlackBold}>
+                              Nutrition This Phase
+                            </Text>
+                          </View>
+                          <View>
+                            {cycleStatus.nutrition.map((item, index) => (
+                              <View key={index} style={styles.row}>
+                                <View style={styles.bulletPoint}></View>
+                                <Text style={styles.textBlackNormal}>
+                                  {item}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      )}
+                    {cycleStatus.movement &&
+                      cycleStatus.movement.length > 0 && (
+                        <View style={styles.section}>
+                          <View style={styles.row}>
+                            <Image
+                              source={images.movementIcon}
+                              style={styles.icon}
+                            />
+                            <Text style={styles.textBlackBold}>
+                              Movement This Phase
+                            </Text>
+                          </View>
+                          <View>
+                            {cycleStatus.movement.map((item, index) => (
+                              <View key={index} style={styles.row}>
+                                <View style={styles.bulletPoint}></View>
+                                <Text style={styles.textBlackNormal}>
+                                  {item}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        </View>
+                      )}
+                    {cycleStatus.mindset && cycleStatus.mindset.length > 0 && (
+                      <View style={styles.section}>
                         <View style={styles.row}>
-                          <View style={styles.bulletPoint}></View>
-                          <Text style={styles.textBlackNormal}>
-                            Fresh, light foods
+                          <Image
+                            source={images.mindsetIcon}
+                            style={styles.icon}
+                          />
+                          <Text style={styles.textBlackBold}>
+                            Mindset & Focus
                           </Text>
                         </View>
-                        <View style={styles.row}>
-                          <View style={styles.bulletPoint}></View>
-                          <Text style={styles.textBlackNormal}>
-                            Fermented foods for gut health
-                          </Text>
-                        </View>
-                        <View style={styles.row}>
-                          <View style={styles.bulletPoint}></View>
-
-                          <Text style={styles.textBlackNormal}>
-                            Lean proteins
-                          </Text>
-                        </View>
-                        <View style={styles.row}>
-                          <View style={styles.bulletPoint}></View>
-                          <Text style={styles.textBlackNormal}>
-                            Complex carbs for energy
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                    <View style={styles.section}>
-                      <View style={styles.row}>
-                        <Image
-                          source={images.movementIcon}
-                          style={styles.icon}
-                        />
-                        <Text style={styles.textBlackBold}>
-                          Movement This Phase
-                        </Text>
-                      </View>
-                      <View>
-                        <View style={styles.row}>
-                          <View style={styles.bulletPoint}></View>
-                          <Text style={styles.textBlackNormal}>
-                            HIIT workouts
-                          </Text>
-                        </View>
-                        <View style={styles.row}>
-                          <View style={styles.bulletPoint}></View>
-                          <Text style={styles.textBlackNormal}>
-                            Strength training
-                          </Text>
-                        </View>
-                        <View style={styles.row}>
-                          <View style={styles.bulletPoint}></View>
-
-                          <Text style={styles.textBlackNormal}>
-                            Dance or cardio
-                          </Text>
-                        </View>
-                        <View style={styles.row}>
-                          <View style={styles.bulletPoint}></View>
-                          <Text style={styles.textBlackNormal}>
-                            Try new activities
-                          </Text>
+                        <View>
+                          {cycleStatus.mindset.map((item, index) => (
+                            <View key={index} style={styles.row}>
+                              <View style={styles.bulletPoint}></View>
+                              <Text style={styles.textBlackNormal}>{item}</Text>
+                            </View>
+                          ))}
                         </View>
                       </View>
-                    </View>
-                    <View style={styles.section}>
-                      <View style={styles.row}>
-                        <Image
-                          source={images.mondsetIcon}
-                          style={styles.icon}
-                        />
-                        <Text style={styles.textBlackBold}>
-                          Mindset & Focus
-                        </Text>
-                      </View>
-                      <View>
-                        <View style={styles.row}>
-                          <View style={styles.bulletPoint}></View>
-                          <Text style={styles.textBlackNormal}>
-                            Start new projects
-                          </Text>
-                        </View>
-                        <View style={styles.row}>
-                          <View style={styles.bulletPoint}></View>
-                          <Text style={styles.textBlackNormal}>
-                            Network and socialize
-                          </Text>
-                        </View>
-                        <View style={styles.row}>
-                          <View style={styles.bulletPoint}></View>
-
-                          <Text style={styles.textBlackNormal}>
-                            Take on challenges
-                          </Text>
-                        </View>
-                        <View style={styles.row}>
-                          <View style={styles.bulletPoint}></View>
-                          <Text style={styles.textBlackNormal}>
-                            Think big and plan
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
+                    )}
                   </View>
 
-                  <LinearGradient
-                    colors={gradients.pinkish}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.pinkishGradient}
-                  >
-                    <View style={styles.row}>
-                      <Image source={images.sparkle} style={styles.icon} />
-                      <Text style={styles.textBlackBold}>
-                        Understanding This Phase
+                  {cycleStatus.understanding && (
+                    <LinearGradient
+                      colors={gradients.pinkish}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.pinkishGradient}
+                    >
+                      <View style={styles.row}>
+                        <Image source={images.sparkle} style={styles.icon} />
+                        <Text style={styles.textBlackBold}>
+                          Understanding This Phase
+                        </Text>
+                      </View>
+                      <Text style={styles.textBlackSmall}>
+                        {cycleStatus.understanding}
                       </Text>
-                    </View>
-                    <Text style={styles.textBlackSmall}>
-                      Rising estrogen brings mental clarity and physical energy.
-                      This is when you naturally feel most optimistic and
-                      capable. Use this window for things that require focus,
-                      creativity, and social connection.
-                    </Text>
-                  </LinearGradient>
+                    </LinearGradient>
+                  )}
                 </>
               )}
             </View>

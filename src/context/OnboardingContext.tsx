@@ -15,6 +15,7 @@ export interface OnboardingData {
   fullName?: string;
   email?: string;
   password?: string;
+  googleIdToken?: string; // Store Google ID token for Google sign-in users
 
   // Basic info
   age?: string;
@@ -32,9 +33,14 @@ export interface OnboardingData {
   periodLength?: string;
   lastPeriodStartDate?: string; // ISO date string
   lastPeriodEndDate?: string; // ISO date string
+  lastPeriodFlow?: 'light' | 'medium' | 'heavy';
+  lastPeriodSymptoms?: string[];
+  lastPeriodNotes?: string;
   isPregnant?: boolean;
   trimester?: 1 | 2 | 3 | null;
   isBreastfeeding?: boolean;
+  dueDate?: string; // ISO date string
+  lastMenstrualPeriod?: string; // ISO date string
 
   // Dietary preferences
   dietaryRestrictions?: {

@@ -104,14 +104,14 @@ const styles = StyleSheet.create({
   cell: {
     backgroundColor: colors.white,
     fontFamily: 'MP-Medium',
-    width: sizes.screenWidth * 0.16,
-    fontSize: fontSize.h4,
+    width: sizes.screenWidth * 0.1,
+    fontSize: fontSize.h5,
     textAlign: 'center',
     color: colors.black,
-    borderRadius: 16,
+    borderRadius: 8,
     borderColor: colors.borderColor,
     borderWidth: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   cellIOS: {
     backgroundColor: colors.white,

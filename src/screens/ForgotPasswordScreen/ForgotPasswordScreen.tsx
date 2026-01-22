@@ -11,7 +11,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
 import { colors, radius, spacing } from '../../constants/theme/theme';
-import { EmpatheticButton } from '../../components/EmpatheticButton/EmpatheticButton';
+import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPassword'>;
 

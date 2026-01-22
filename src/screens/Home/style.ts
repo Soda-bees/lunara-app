@@ -448,6 +448,12 @@ const styles = StyleSheet.create({
   selectedOptionEmojiText: {
     // opacity: 1,
   },
+  babyDevelopmentText: {
+    fontSize: 18,
+    color: colors.heading,
+    fontFamily: 'PlayfairDisplay-SemiBold',
+    marginBottom: 8,
+  },
 });
 
 export default styles;

@@ -23,16 +23,20 @@ import {
   Cursor,
   useBlurOnFulfill,
 } from 'react-native-confirmation-code-field';
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { forgotPassword } from '../../services/api';
+import { Alert } from 'react-native';
 
-export default function OTP() {
-  const navigation = useNavigation<NavigationProp>();
-  const [email, setEmail] = useState('');
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'OTP'>;
+
+export default function OTP({ navigation, route }: Props) {
+  const email = route.params?.email || '';
   const [loader, setLoader] = useState<boolean>(false);
   const [value, setValue] = useState('');
   const [timer, setTimer] = useState(60);
 
-  const CELL_COUNT = 4;
+  const CELL_COUNT = 6; // OTP is 6 digits based on backend
   const ref = useBlurOnFulfill({ value, cellCount: CELL_COUNT });
 
   useEffect(() => {
@@ -46,14 +50,45 @@ export default function OTP() {
   }, [timer]);
 
   const handlePress = async () => {
-    navigation.navigate('ResetPassword');
+    if (value.length !== CELL_COUNT) {
+      Alert.alert('Error', 'Please enter the complete OTP code');
+      return;
+    }
+
+    if (!email) {
+      Alert.alert('Error', 'Email not found. Please start over.');
+      navigation.navigate('ForgotPassword');
+      return;
+    }
+
+    // Navigate to ResetPassword with email and OTP
+    navigation.navigate('ResetPassword', { email, otp: value });
   };
-  const onHide = () => {
-    // navigation.navigate('NewPassword', {email});
-  };
-  const handleResend = () => {
+
+  const handleResend = async () => {
     if (timer !== 0) return;
-    setTimer(60);
+
+    if (!email) {
+      Alert.alert('Error', 'Email not found. Please start over.');
+      navigation.navigate('ForgotPassword');
+      return;
+    }
+
+    setLoader(true);
+    try {
+      const response = await forgotPassword(email);
+      if (response.success) {
+        setTimer(60);
+        setValue('');
+        Alert.alert('Success', 'OTP has been resent to your email');
+      } else {
+        Alert.alert('Error', response.message || 'Unable to resend OTP');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Unable to resend OTP');
+    } finally {
+      setLoader(false);
+    }
   };
 
   return (

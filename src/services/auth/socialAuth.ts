@@ -9,6 +9,7 @@ import appleAuth, {
   AppleRequestOperation,
   AppleRequestScope,
 } from '@invertase/react-native-apple-authentication';
+import { googleAuth, storeToken } from '../api';
 
 export const configureGoogleSignIn = () => {
   GoogleSignin.configure({
@@ -44,34 +45,79 @@ export const configureGoogleSignIn = () => {
 //     }
 // };
 
-export const signInWithGoogle = async (): Promise<void> => {
+export const signInWithGoogle = async (): Promise<{
+  success: boolean;
+  isNewUser?: boolean;
+  user?: { email: string; name: string };
+  token?: string;
+  googleIdToken?: string;
+  navigationTarget?: string;
+}> => {
   try {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
     const result = await GoogleSignin.signIn();
 
     if (result?.type === 'cancelled') {
       console.log('User cancelled Google login');
-      return;
+      return { success: false };
     }
 
     const idToken = result?.data?.idToken;
+    const userInfo = result?.data?.user;
+    
     if (!idToken) {
       console.log('No idToken — probably cancelled');
-      return;
+      return { success: false };
     }
 
-    const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-    await auth().signInWithCredential(googleCredential);
+    // Get user info from Google
+    const email = userInfo?.email || '';
+    const name = userInfo?.name || email.split('@')[0];
 
-    Alert.alert('Success', 'Signed in with Google!');
+    // Call backend API
+    const response = await googleAuth({
+      idToken,
+      email,
+      name,
+    });
+
+    if (response.success) {
+      if (response.isNewUser) {
+        // New user - return info for onboarding with Google ID token
+        return {
+          success: true,
+          isNewUser: true,
+          user: {
+            email: response.user?.email || email,
+            name: response.user?.name || name,
+          },
+          googleIdToken: idToken, // Store token for later use in onboarding
+          navigationTarget: 'AccountSetup',
+        };
+      } else {
+        // Existing user - store token and login
+        if (response.token) {
+          await storeToken(response.token);
+        }
+        return {
+          success: true,
+          isNewUser: false,
+          token: response.token,
+          navigationTarget: 'TabNavigator',
+        };
+      }
+    } else {
+      throw new Error(response.message || 'Google sign-in failed');
+    }
   } catch (error: any) {
     console.error('Google Sign-In error:', error);
     if (error?.code === statusCodes.SIGN_IN_CANCELLED) {
       console.log('User cancelled Google Sign-In');
-      return;
+      return { success: false };
     }
 
     Alert.alert('Error', error.message || 'Google sign-in failed');
+    return { success: false };
   }
 };
 

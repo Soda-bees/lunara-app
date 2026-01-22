@@ -23,11 +23,13 @@ import {
   onAppleButtonPress,
   signInWithGoogle,
 } from '../../services/auth/socialAuth';
+import { useOnboarding } from '../../context/OnboardingContext';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 
 export default function SignUp() {
   const navigation = useNavigation<NavigationProp>();
+  const { updateData } = useOnboarding();
 
   const [secure, setSecure] = useState(true);
   const [secure2, setSecure2] = useState(true);
@@ -48,6 +50,33 @@ export default function SignUp() {
 
     setLoader(false);
     navigation.navigate('PrivacyConsent');
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const result = await signInWithGoogle();
+
+      if (result.success) {
+        if (result.isNewUser && result.user && result.googleIdToken) {
+          // New user - store Google ID token in onboarding context
+          updateData({
+            email: result.user.email,
+            fullName: result.user.name,
+            googleIdToken: result.googleIdToken,
+          });
+
+          // Navigate to AccountSetup with pre-filled email/name
+          navigation.navigate('AccountSetup', {
+            googleUser: result.user,
+          } as any);
+        } else {
+          // Existing user - navigate to main app
+          navigation.navigate('TabNavigator');
+        }
+      }
+    } catch (error: any) {
+      console.error('Google sign-in error:', error);
+    }
   };
 
   useEffect(() => {
@@ -138,12 +167,15 @@ export default function SignUp() {
             </View>
             <View style={styles.row}>
               {/* <TouchableOpacity style={styles.button} onPress={logoutFromGoogle}> */}
-              <TouchableOpacity style={styles.button} onPress={onAppleButtonPress}>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={onAppleButtonPress}
+              >
                 <Image style={styles.buttonIcon} source={images.appleIcon} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.button}
-                onPress={signInWithGoogle}
+                onPress={handleGoogleSignIn}
               >
                 <Image style={styles.buttonIcon} source={images.googleIcon} />
               </TouchableOpacity>

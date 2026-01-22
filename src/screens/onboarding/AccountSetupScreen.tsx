@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,29 +17,63 @@ import { ScreenContainer } from '../../components/ScreenContainer/ScreenContaine
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import { sizes } from '../../constants/sizes';
 import images from '../../constants/images';
+import {
+  configureGoogleSignIn,
+  onAppleButtonPress,
+  signInWithGoogle,
+} from '../../services/auth/socialAuth';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AccountSetup'>;
 
-export const AccountSetupScreen: React.FC<Props> = ({ navigation }) => {
+export const AccountSetupScreen: React.FC<Props> = ({ navigation, route }) => {
   const { updateData, data } = useOnboarding();
-  const [fullName, setFullName] = useState(data.fullName || '');
-  const [email, setEmail] = useState(data.email || '');
+  const googleUser = route.params?.googleUser;
+
+  // Pre-fill with Google user data if available
+  const [fullName, setFullName] = useState(
+    googleUser?.name || data.fullName || '',
+  );
+  const [email, setEmail] = useState(googleUser?.email || data.email || '');
   const [password, setPassword] = useState(data.password || '');
   const [confirmPassword, setConfirmPassword] = useState(data.password || '');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [emailBlurred, setEmailBlurred] = useState(false);
+  // Check if user is from Google (either from route params or context)
+  const [isGoogleUser, setIsGoogleUser] = useState(
+    !!googleUser || !!data.googleIdToken,
+  );
+
+  // Update email/name if Google user data comes from context
+  useEffect(() => {
+    if (data.googleIdToken && !googleUser) {
+      setIsGoogleUser(true);
+      if (data.email && !email) setEmail(data.email);
+      if (data.fullName && !fullName) setFullName(data.fullName);
+    }
+  }, [data.googleIdToken, data.email, data.fullName]);
 
   const isEmailValid = /\S+@\S+\.\S+/.test(email);
   const isPasswordStrong = password.length >= 8;
   const passwordsMatch = password === confirmPassword;
-  const canProceed =
-    fullName && isEmailValid && isPasswordStrong && passwordsMatch;
+  // For Google users, password is optional (they'll complete onboarding without password)
+  // Password will be set during final signup
+  const canProceed = isGoogleUser
+    ? fullName && isEmailValid
+    : fullName && isEmailValid && isPasswordStrong && passwordsMatch;
+
+  useEffect(() => {
+    configureGoogleSignIn();
+  }, []);
 
   const handleContinue = () => {
     if (canProceed) {
-      updateData({ fullName, email, password }, 'LetsGetStarted');
-      // navigation.navigate('BasicInfo');
+      // For Google users, don't save password (they'll complete signup at the end)
+      // Google ID token is already stored in onboarding context from SignIn/SignUp
+      const dataToSave = isGoogleUser
+        ? { fullName, email }
+        : { fullName, email, password };
+      updateData(dataToSave, 'LetsGetStarted');
       navigation.navigate('LetsGetStarted');
     }
   };
@@ -77,18 +111,23 @@ export const AccountSetupScreen: React.FC<Props> = ({ navigation }) => {
               style={[
                 styles.input,
                 emailBlurred && email && !isEmailValid && styles.inputError,
+                isGoogleUser && styles.inputDisabled,
               ]}
               placeholder="you@example.com"
               placeholderTextColor={colors.placeholder}
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={isGoogleUser ? undefined : setEmail}
+              editable={!isGoogleUser}
               onBlur={() => setEmailBlurred(true)}
               onFocus={() => setEmailBlurred(false)}
             />
             {emailBlurred && email && !isEmailValid && (
               <Text style={styles.error}>Enter a valid email address</Text>
+            )}
+            {isGoogleUser && (
+              <Text style={styles.helper}>Email from your Google account</Text>
             )}
           </View>
 
@@ -145,6 +184,34 @@ export const AccountSetupScreen: React.FC<Props> = ({ navigation }) => {
                 />
               </TouchableOpacity>
             </View>
+
+            <View style={styles.socialAuthContainer}>
+              <View style={styles.socialAuthDivider}>
+                <View style={styles.hr}></View>
+                <Text style={styles.socialAuthText}>or continue with</Text>
+                <View style={styles.hr}></View>
+              </View>
+              <View style={styles.socialAuthButtons}>
+                <TouchableOpacity
+                  style={styles.socialButton}
+                  onPress={onAppleButtonPress}
+                >
+                  <Image
+                    style={styles.socialButtonIcon}
+                    source={images.appleIcon}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.socialButton}
+                  onPress={signInWithGoogle}
+                >
+                  <Image
+                    style={styles.socialButtonIcon}
+                    source={images.googleIcon}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
             {confirmPassword && !passwordsMatch && (
               <Text style={styles.error}>Passwords must match</Text>
             )}
@@ -156,9 +223,6 @@ export const AccountSetupScreen: React.FC<Props> = ({ navigation }) => {
             onPress={handleContinue}
             disabled={!canProceed}
           />
-          <Text style={styles.privacy}>
-            By continuing, you agree to our terms and privacy policy.
-          </Text>
         </View>
       </KeyboardAwareScrollView>
     </ScreenContainer>
@@ -194,13 +258,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     fontSize: 14,
   },
+  inputDisabled: {
+    backgroundColor: '#F5F5F5',
+    color: colors.textMuted,
+  },
 
   passwordContainer: {
     position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
   },
-  
+
   passwordInput: {
     flex: 1,
     borderWidth: 1,
@@ -250,7 +318,55 @@ const styles = StyleSheet.create({
   },
 
   bottomButton: {
-    marginTop: sizes.screenHeight * 0.14,
+    marginTop: sizes.screenHeight * 0.02,
     gap: spacing.sm,
+  },
+
+  socialAuthContainer: {
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+
+  socialAuthDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+
+  hr: {
+    height: 1,
+    backgroundColor: colors.border,
+    flex: 1,
+  },
+
+  socialAuthText: {
+    color: colors.textMuted,
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    paddingHorizontal: spacing.sm,
+  },
+
+  socialAuthButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+  },
+
+  socialButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: sizes.screenHeight * 0.07,
+    width: sizes.screenHeight * 0.07,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: sizes.screenHeight * 0.1,
+  },
+
+  socialButtonIcon: {
+    height: sizes.screenHeight * 0.032,
+    width: sizes.screenHeight * 0.032,
+    resizeMode: 'contain',
   },
 });

@@ -122,6 +122,7 @@ import fuel from '../../assets/images/fuel.png';
 import twinkleStar from '../../assets/images/twinkleStar.png';
 import healthApple from '../../assets/images/healthApple.png';
 import celebrationIcon from '../../assets/images/celebrationIcon.png';
+import backgroundEffect from '../../assets/images/backgroundEffect.png';
 
 const images: { [key: string]: any } = {
   googleIcon,
@@ -248,6 +249,7 @@ const images: { [key: string]: any } = {
   twinkleStar,
   healthApple,
   celebrationIcon,
+  backgroundEffect,
 };
 
 export default images;

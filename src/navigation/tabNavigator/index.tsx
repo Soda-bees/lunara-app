@@ -85,7 +85,7 @@ export default function TabNavigator() {
       <Tab.Screen
         name="Cycle"
         component={CycleInsight}
-        options={{ tabBarLabel: 'Cycle' }}
+        options={{ tabBarLabel: 'Insights' }}
       />
       <Tab.Screen
         name="Track"

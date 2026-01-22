@@ -1,4 +1,4 @@
-import React, { JSX, useState } from 'react';
+import React, { JSX, useState, useEffect } from 'react';
 import {
   Image,
   Keyboard,
@@ -19,19 +19,78 @@ import { useNavigation } from '@react-navigation/native';
 import images from '../../constants/images';
 import { colors } from '../../constants/colors';
 import Button from '../../components/Button';
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { resetPassword } from '../../services/api';
+import { Alert } from 'react-native';
 
-export default function ResetPassword() {
-  const navigation = useNavigation<NavigationProp>();
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'ResetPassword'>;
+
+export default function ResetPassword({ navigation, route }: Props) {
+  const email = route.params?.email || '';
+  const otp = route.params?.otp || '';
   const [secure, setSecure] = useState(true);
   const [secure2, setSecure2] = useState(true);
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loader, setLoader] = useState<boolean>(false);
 
+  useEffect(() => {
+    if (!email || !otp) {
+      Alert.alert('Error', 'Missing information. Please start over.');
+      navigation.navigate('ForgotPassword');
+    }
+  }, [email, otp, navigation]);
+
   const handlePress = async () => {
-    navigation.navigate('ResetSuccess');
+    if (!password.trim() || !confirmPassword.trim()) {
+      Alert.alert('Error', 'Please enter both password fields');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (!email || !otp) {
+      Alert.alert('Error', 'Missing information. Please start over.');
+      navigation.navigate('ForgotPassword');
+      return;
+    }
+
+    setLoader(true);
+    try {
+      const response = await resetPassword(email, otp, password);
+
+      if (response.success) {
+        Alert.alert('Success', 'Password reset successful! Please login with your new password.', [
+          {
+            text: 'OK',
+            onPress: () => {
+              navigation.navigate('SignIn');
+            },
+          },
+        ]);
+      } else {
+        Alert.alert(
+          'Error',
+          response.message || 'Invalid OTP or password reset failed',
+        );
+      }
+    } catch (error: any) {
+      Alert.alert(
+        'Error',
+        error.message || 'Unable to reset password. Please try again.',
+      );
+    } finally {
+      setLoader(false);
+    }
   };
 
   return (

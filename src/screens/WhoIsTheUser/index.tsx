@@ -15,6 +15,7 @@ import { RootStackParamList } from '../../navigation/stackNavigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import Button from '../../components/Button';
+import GradientText from '../../components/GradientText';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 
@@ -24,7 +25,10 @@ export default function WhoIsTheUser() {
     'self' | 'partner' | null
   >(null);
   const handlePress = () => {
-    navigation.navigate('SignIn');
+    // Only allow navigation for personal use
+    if (selectedOption === 'self') {
+      navigation.navigate('SignIn');
+    }
   };
 
   return (
@@ -42,7 +46,12 @@ export default function WhoIsTheUser() {
         <View style={styles.mainContainer}>
           <View>
             <View style={styles.textContainer}>
-              <Text style={styles.forgotText}>Hi IsaBella!</Text>
+              <GradientText
+                fontFamily="PlayfairDisplay-SemiBold"
+                style={styles.title}
+              >
+                Hi!
+              </GradientText>
               <Text style={styles.paraText}>
                 Is Lunara For Your personal use?
               </Text>
@@ -85,7 +94,11 @@ export default function WhoIsTheUser() {
           </View>
 
           <View style={styles.bottomButton}>
-            <Button title="Continue" onPress={handlePress} />
+            <Button
+              title="Continue"
+              onPress={handlePress}
+              disabled={selectedOption !== 'self'}
+            />
           </View>
         </View>
       </TouchableWithoutFeedback>

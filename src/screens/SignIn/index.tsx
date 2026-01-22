@@ -23,11 +23,15 @@ import {
   onAppleButtonPress,
   signInWithGoogle,
 } from '../../services/auth/socialAuth';
+import { login, storeToken } from '../../services/api';
+import { useOnboarding } from '../../context/OnboardingContext';
+import { Alert } from 'react-native';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 
 export default function SignIn() {
   const navigation = useNavigation<NavigationProp>();
+  const { updateData } = useOnboarding();
 
   const [secure, setSecure] = useState(true);
   const [email, setEmail] = useState('');
@@ -36,18 +40,70 @@ export default function SignIn() {
   const [loader, setLoader] = useState(false);
 
   const navigateToSignUp = () => {
-    navigation.navigate('SignUp');
+    navigation.navigate('AccountSetup');
   };
   const navigateForgotPassword = () => {
     navigation.navigate('ForgotPassword');
   };
 
   const handleSignIn = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please enter both email and password');
+      return;
+    }
+
     setLoader(true);
 
-    // TODO sign-in API call
-    navigation.navigate('TabNavigator');
-    setLoader(false);
+    try {
+      const response = await login({ email: email.trim(), password });
+
+      if (response.success && response.token) {
+        // Store auth token
+        await storeToken(response.token);
+
+        // Navigate to tab navigator
+        navigation.navigate('TabNavigator');
+      } else {
+        Alert.alert(
+          'Login Failed',
+          response.message || 'Invalid email or password',
+        );
+      }
+    } catch (error: any) {
+      Alert.alert(
+        'Error',
+        error.message || 'Something went wrong. Please try again.',
+      );
+    } finally {
+      setLoader(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const result = await signInWithGoogle();
+      
+      if (result.success) {
+        if (result.isNewUser && result.user && result.googleIdToken) {
+          // New user - store Google ID token in onboarding context
+          updateData({
+            email: result.user.email,
+            fullName: result.user.name,
+            googleIdToken: result.googleIdToken,
+          });
+          
+          // Navigate to AccountSetup with pre-filled email/name
+          navigation.navigate('AccountSetup', {
+            googleUser: result.user,
+          } as any);
+        } else {
+          // Existing user - navigate to main app
+          navigation.navigate('TabNavigator');
+        }
+      }
+    } catch (error: any) {
+      console.error('Google sign-in error:', error);
+    }
   };
 
   useEffect(() => {
@@ -133,7 +189,7 @@ export default function SignIn() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.button}
-                onPress={signInWithGoogle}
+                onPress={handleGoogleSignIn}
               >
                 <Image style={styles.buttonIcon} source={images.googleIcon} />
               </TouchableOpacity>

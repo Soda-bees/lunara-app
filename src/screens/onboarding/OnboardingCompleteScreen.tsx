@@ -1,23 +1,44 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, Alert, Image } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { colors, radius, spacing } from '../../constants/theme/theme';
-import { signup, storeToken } from '../../services/api';
+import {
+  signup,
+  storeToken,
+  googleAuth,
+  createPeriod,
+  type SignupRequest,
+} from '../../services/api';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import images from '../../constants/images';
 import { sizes } from '../../constants/sizes';
+import LottieView from 'lottie-react-native';
+import GradientText from '../../components/GradientText';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'OnboardingComplete'>;
 
 export const OnboardingCompleteScreen: React.FC<Props> = ({ navigation }) => {
   const { data, resetData } = useOnboarding();
   const [isLoading, setIsLoading] = useState(false);
+  const ref = useRef<LottieView>(null);
 
   const handleGetStarted = async () => {
-    if (!data.fullName || !data.email || !data.password) {
+    if (!data.fullName || !data.email) {
+      Alert.alert(
+        'Error',
+        'Missing required account information. Please start over.',
+      );
+      navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
+      return;
+    }
+
+    // Check if this is a Google user (no password but has Google ID token)
+    const isGoogleUser = !data.password && data.googleIdToken;
+
+    if (!isGoogleUser && !data.password) {
       Alert.alert(
         'Error',
         'Missing required account information. Please start over.',
@@ -29,11 +50,8 @@ export const OnboardingCompleteScreen: React.FC<Props> = ({ navigation }) => {
     setIsLoading(true);
 
     try {
-      // Prepare signup payload
-      const signupData = {
-        fullName: data.fullName,
-        email: data.email,
-        password: data.password,
+      // Prepare onboarding data
+      const onboardingData = {
         age: data.age,
         height: data.height,
         weight: data.weight,
@@ -43,9 +61,14 @@ export const OnboardingCompleteScreen: React.FC<Props> = ({ navigation }) => {
         isTrackingCycle: data.isTrackingCycle,
         cycleLength: data.cycleLength,
         periodLength: data.periodLength,
+        lastPeriodStartDate: data.lastPeriodStartDate,
+        lastPeriodEndDate: data.lastPeriodEndDate,
         isPregnant: data.isPregnant,
         trimester: data.trimester,
         isBreastfeeding: data.isBreastfeeding,
+        dueDate: data.dueDate,
+        lastMenstrualPeriod: data.lastMenstrualPeriod,
+        pregnancyStartDate: data.isPregnant ? new Date().toISOString() : undefined,
         dietaryRestrictions: data.dietaryRestrictions,
         otherAllergies: data.otherAllergies,
         cuisinePreferences: data.cuisinePreferences,
@@ -59,17 +82,59 @@ export const OnboardingCompleteScreen: React.FC<Props> = ({ navigation }) => {
         medications: data.medications,
       };
 
-      const response = await signup(signupData);
+      let response;
+
+      if (isGoogleUser && data.googleIdToken) {
+        // Google user - call Google auth with onboarding data
+        response = await googleAuth({
+          idToken: data.googleIdToken,
+          email: data.email,
+          name: data.fullName,
+          ...onboardingData,
+        });
+      } else {
+        // Regular signup - password is guaranteed to exist due to check above
+        if (!data.password) {
+          throw new Error('Password is required for signup');
+        }
+        const signupData: SignupRequest = {
+          fullName: data.fullName!,
+          email: data.email!,
+          password: data.password,
+          ...onboardingData,
+        };
+        response = await signup(signupData);
+      }
 
       if (response.success && response.token) {
         // Store auth token
         await storeToken(response.token);
 
+        // Create first period if cycle tracking is enabled and we have start/end dates
+        if (
+          data.isTrackingCycle &&
+          data.lastPeriodStartDate &&
+          data.lastPeriodEndDate
+        ) {
+          try {
+            await createPeriod({
+              startDate: data.lastPeriodStartDate,
+              endDate: data.lastPeriodEndDate,
+              flow: data.lastPeriodFlow || 'medium',
+              symptoms: data.lastPeriodSymptoms || [],
+              notes: data.lastPeriodNotes || '',
+            });
+          } catch (periodError: any) {
+            // Log error but don't block signup completion
+            console.error('Error creating first period:', periodError);
+          }
+        }
+
         // Clear onboarding data
         resetData();
 
-        // Navigate to home
-        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+        // Navigate to TabNavigator
+        navigation.reset({ index: 0, routes: [{ name: 'TabNavigator' }] });
       } else {
         Alert.alert(
           'Signup Failed',
@@ -91,11 +156,32 @@ export const OnboardingCompleteScreen: React.FC<Props> = ({ navigation }) => {
     <ScreenContainer color="#FFE4E8">
       <View style={styles.container}>
         <View style={styles.mainView}>
-          <Image
+          {/* <Image
             source={images.celebrationIcon}
             style={styles.prettyLadyStyle}
-          />
-          <Text style={styles.title}>You're All Set!</Text>
+          /> */}
+          <View style={styles.prettyLadyView}>
+            <LottieView
+              source={require('../../assets/animations/Almostthere.json')}
+              autoPlay
+              loop={true}
+              style={StyleSheet.absoluteFill}
+              ref={ref}
+            />
+          </View>
+          <View
+            style={{
+              alignSelf: 'center',
+            }}
+          >
+            <GradientText
+              fontFamily="PlayfairDisplay-SemiBold"
+              style={styles.title}
+            >
+              You're All Set!
+            </GradientText>
+          </View>
+
           <Text style={styles.body}>
             We've created a personalized plan just for you
           </Text>
@@ -132,12 +218,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.xs,
   },
 
   mainView: {
     alignSelf: 'center',
-    marginTop: sizes.screenHeight * 0.09,
   },
 
   title: {
@@ -193,5 +278,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Inter-Regular',
     marginTop: 5,
+  },
+
+  prettyLadyView: {
+    width: sizes.screenWidth * 0.53,
+    height: sizes.screenWidth * 0.53,
+    alignSelf: 'center',
+    // marginTop: sizes.screenHeight * 0.13,
+    // backgroundColor: 'red',
   },
 });
