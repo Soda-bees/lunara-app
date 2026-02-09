@@ -46,6 +46,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginTop: sizes.screenHeight * 0.01,
     marginBottom: sizes.screenHeight * 0.03,
+    alignSelf: 'flex-start',
   },
 
   textPrimary: {
@@ -453,6 +454,70 @@ const styles = StyleSheet.create({
     color: colors.heading,
     fontFamily: 'PlayfairDisplay-SemiBold',
     marginBottom: 8,
+  },
+  predictionBanner: {
+    marginBottom: 16,
+    padding: 14,
+    backgroundColor: '#FFF8EB',
+    borderWidth: 1,
+    borderColor: colors.heading + '40',
+    borderRadius: 12,
+    gap: 8,
+  },
+  predictionBannerTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.heading,
+    marginBottom: 4,
+  },
+  predictionBannerText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.darkGrey,
+    lineHeight: 18,
+  },
+  predictionBannerActions: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+    marginTop: 4,
+  },
+  predictionBannerButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 80,
+    backgroundColor: colors.heading,
+  },
+  predictionBannerButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.heading,
+  },
+  predictionBannerButtonText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.white,
+  },
+  predictionBannerButtonTextSecondary: {
+    color: colors.heading,
+  },
+  predictedPhaseCard: {
+    // opacity: 0.7,
+  },
+  predictionInfoContainer: {
+    marginTop: 12,
+    marginBottom: 8,
+    padding: 12,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.heading,
+  },
+  predictionInfoText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.darkGrey,
+    lineHeight: 18,
   },
 });
 

@@ -297,14 +297,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontFamily: 'Inter-SemiBold',
-    color: colors.heading,
+    color: colors.black,
     marginBottom: 12,
   },
   dateButton: {
     borderWidth: 1,
     borderColor: colors.borderColor,
     borderRadius: 8,
-    padding: 16,
+    padding: 12,
     backgroundColor: colors.white,
   },
   dateButtonText: {
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   symptomChipText: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
-    color: colors.heading,
+    color: colors.placeholderColor,
   },
   symptomChipTextSelected: {
     color: colors.white,
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   severityButton: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 100,
     borderWidth: 1,
     borderColor: colors.borderColor,
     backgroundColor: colors.white,
@@ -377,8 +377,8 @@ const styles = StyleSheet.create({
   },
   severityButtonText: {
     fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.heading,
+    fontFamily: 'Inter-Medium',
+    color: colors.placeholderColor,
   },
   severityButtonTextSelected: {
     color: colors.white,
@@ -390,13 +390,13 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     fontFamily: 'Inter-Regular',
-    color: colors.heading,
+    color: colors.darkGrey,
     minHeight: 100,
   },
   submitButton: {
     backgroundColor: colors.heading,
-    borderRadius: 8,
-    paddingVertical: 16,
+    borderRadius: 12,
+    paddingVertical: 12,
     alignItems: 'center',
     marginTop: 32,
     marginBottom: 20,

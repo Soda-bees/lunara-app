@@ -13,7 +13,7 @@ const styles = StyleSheet.create({
   phaseBody: {
     width: sizes.screenWidth * 0.9,
     alignItems: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
   },
 
   topContainer: {
@@ -53,9 +53,9 @@ const styles = StyleSheet.create({
   rowFull: {
     width: '100%',
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginVertical: 15,
+    marginVertical: 8,
   },
 
   numberTextGradient: {
@@ -83,6 +83,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.darkGrey,
     fontFamily: 'Inter-Regular',
+  },
+
+  textDarkGreyWidht:{
+    fontSize: 12,
+    color: colors.darkGrey,
+    fontFamily: 'Inter-Regular',
+    width: sizes.screenWidth * 0.7,
   },
 
   textBlackNormal: {
@@ -121,44 +128,54 @@ const styles = StyleSheet.create({
   overdueCard: {
     marginTop: 10,
     marginBottom: 16,
-    padding: 12,
-    borderRadius: sizes.screenWidth * 0.03,
+    padding: 14,
+    backgroundColor: '#FFF8EB',
     borderWidth: 1,
-    borderColor: colors.borderColorDark,
-    backgroundColor: '#FFF5F5',
+    borderColor: colors.heading + '40',
+    borderRadius: 12,
+    gap: 8,
   },
 
   overdueTitle: {
+    fontSize: 14,
     fontFamily: 'Inter-SemiBold',
-    fontSize: 13,
-    color: colors.maroonText,
+    color: colors.heading,
     marginBottom: 4,
   },
 
   overdueText: {
-    fontFamily: 'Inter-Regular',
     fontSize: 12,
+    fontFamily: 'Inter-Regular',
     color: colors.darkGrey,
-    marginBottom: 10,
+    lineHeight: 18,
   },
 
   overdueActions: {
     flexDirection: 'row',
-    alignItems: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+    marginTop: 4,
   },
 
   overduePrimaryButton: {
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: sizes.screenWidth * 0.03,
+    borderRadius: 8,
     backgroundColor: colors.heading,
-    marginRight: 8,
   },
 
   overduePrimaryText: {
-    fontFamily: 'Inter-SemiBold',
     fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
     color: colors.white,
+  },
+  overduePrimaryButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.heading,
+  },
+  overduePrimaryTextSecondary: {
+    color: colors.heading,
   },
 
   overdueSecondaryButton: {
@@ -492,6 +509,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: colors.borderColor,
+    alignSelf: 'flex-start',
   },
 
   regularityRow: {
@@ -742,7 +760,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.borderColor,
     borderRadius: 4,
     overflow: 'hidden',
-    marginTop: 10,
+    marginVertical: 10,
   },
   progress: {
     height: '100%',
@@ -779,29 +797,52 @@ const styles = StyleSheet.create({
   actionsContainer: {
     width: sizes.screenWidth * 0.82,
     gap: 12,
-    marginTop: 16,
-    marginBottom: 32,
+    marginTop: 20,
+    marginBottom: 24,
   },
   actionButton: {
     backgroundColor: colors.heading,
     borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: colors.heading,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
+    minHeight: 50,
   },
   secondaryButton: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.heading,
+    flex: 1,
+    backgroundColor: '#FAFAFA',
+    borderWidth: 1.5,
+    borderColor: colors.heading + '25',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+    minHeight: 50,
   },
   actionButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     color: colors.white,
     fontFamily: 'Inter-SemiBold',
+    letterSpacing: 0.2,
   },
   secondaryButtonText: {
     color: colors.heading,
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    letterSpacing: 0.2,
   },
   row: {
     flexDirection: 'row',
@@ -814,6 +855,83 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Light-BETA',
     letterSpacing: 3,
     marginBottom: 8,
+  },
+  predictionInfoContainer: {
+    marginTop: 12,
+    marginBottom: 8,
+    padding: 12,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.heading,
+  },
+  predictionInfoText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.darkGrey,
+    lineHeight: 18,
+  },
+  symptomHistorySection: {
+    width: sizes.screenWidth * 0.9,
+    alignSelf: 'center',
+    marginTop: 20,
+    marginBottom: 24,
+    padding: 16,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderColor,
+  },
+  symptomHistoryTitle: {
+    fontSize: 14,
+    fontFamily: 'PlayfairDisplay-SemiBold',
+    color: colors.heading,
+    marginBottom: 16,
+  },
+  symptomItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  symptomItemDate: {
+    fontSize: 11,
+    fontFamily: 'Inter-Regular',
+    color: colors.darkGrey,
+    marginBottom: 4,
+  },
+  symptomItemName: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.black,
+  },
+  symptomSeverityBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginLeft: 12,
+  },
+  symptomSeverityText: {
+    fontSize: 11,
+    fontFamily: 'Inter-SemiBold',
+  },
+  viewFullHistoryLink: {
+    marginTop: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  viewFullHistoryLinkText: {
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.heading,
+  },
+  noSymptomsText: {
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+    color: colors.darkGrey,
+    textAlign: 'center',
+    paddingVertical: 20,
   },
 });
 

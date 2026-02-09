@@ -66,6 +66,7 @@ export const WomenHealthScreen: React.FC<Props> = ({ navigation }) => {
   );
   const [showDueDatePicker, setShowDueDatePicker] = useState(false);
   const [showLMPPicker, setShowLMPPicker] = useState(false);
+  const [autoCalculatedField, setAutoCalculatedField] = useState<'dueDate' | 'lmp' | null>(null);
 
   // Validation: Check if at least one option is selected (cycle tracking or pregnancy)
   const isAtLeastOneSelected = () => {
@@ -135,34 +136,64 @@ export const WomenHealthScreen: React.FC<Props> = ({ navigation }) => {
       setDueDate(null);
       setLastMenstrualPeriod(null);
       setTrimester(null);
+      setAutoCalculatedField(null);
     }
   };
 
-  // Handle due date change with auto-calculation of LMP
+  // Handle due date change with smart auto-calculation of LMP
   const handleDueDateChange = (event: any, date?: Date) => {
     if (Platform.OS === 'android') {
       setShowDueDatePicker(false);
     }
     if (date) {
       setDueDate(date);
-      // Auto-calculate LMP (due date - 280 days)
-      const lmp = new Date(date);
-      lmp.setDate(lmp.getDate() - 280);
-      setLastMenstrualPeriod(lmp);
+      // Auto-calculate LMP only if LMP is empty or was previously auto-calculated
+      if (!lastMenstrualPeriod || autoCalculatedField === 'lmp') {
+        const lmp = new Date(date);
+        lmp.setDate(lmp.getDate() - 280);
+        setLastMenstrualPeriod(lmp);
+        setAutoCalculatedField('lmp');
+      } else {
+        // User has manually set LMP, don't override it
+        if (autoCalculatedField === 'dueDate') {
+          setAutoCalculatedField(null);
+        }
+      }
     }
   };
 
-  // Handle LMP change with auto-calculation of due date
+  // Handle LMP change with smart auto-calculation of due date
   const handleLMPChange = (event: any, date?: Date) => {
     if (Platform.OS === 'android') {
       setShowLMPPicker(false);
     }
     if (date) {
       setLastMenstrualPeriod(date);
-      // Auto-calculate due date (LMP + 280 days)
-      const calculatedDue = new Date(date);
-      calculatedDue.setDate(calculatedDue.getDate() + 280);
-      setDueDate(calculatedDue);
+      // Auto-calculate due date only if due date is empty or was previously auto-calculated
+      if (!dueDate || autoCalculatedField === 'dueDate') {
+        const calculatedDue = new Date(date);
+        calculatedDue.setDate(calculatedDue.getDate() + 280);
+        setDueDate(calculatedDue);
+        setAutoCalculatedField('dueDate');
+      } else {
+        // User has manually set due date, don't override it
+        if (autoCalculatedField === 'lmp') {
+          setAutoCalculatedField(null);
+        }
+      }
+    }
+  };
+
+  // Handle manual editing of auto-calculated fields
+  const handleManualDueDateEdit = () => {
+    if (autoCalculatedField === 'dueDate') {
+      setAutoCalculatedField(null);
+    }
+  };
+
+  const handleManualLMPEdit = () => {
+    if (autoCalculatedField === 'lmp') {
+      setAutoCalculatedField(null);
     }
   };
 
@@ -517,7 +548,10 @@ export const WomenHealthScreen: React.FC<Props> = ({ navigation }) => {
                       styles.dateButton,
                       dueDate && styles.dateButtonSelected,
                     ]}
-                    onPress={() => setShowDueDatePicker(true)}
+                    onPress={() => {
+                      handleManualDueDateEdit();
+                      setShowDueDatePicker(true);
+                    }}
                   >
                     <Text
                       style={[
@@ -564,7 +598,10 @@ export const WomenHealthScreen: React.FC<Props> = ({ navigation }) => {
                       styles.dateButton,
                       lastMenstrualPeriod && styles.dateButtonSelected,
                     ]}
-                    onPress={() => setShowLMPPicker(true)}
+                    onPress={() => {
+                      handleManualLMPEdit();
+                      setShowLMPPicker(true);
+                    }}
                   >
                     <Text
                       style={[
@@ -594,10 +631,11 @@ export const WomenHealthScreen: React.FC<Props> = ({ navigation }) => {
                       <Text style={styles.datePickerDoneText}>Done</Text>
                     </TouchableOpacity>
                   )}
-                  {dueDate && lastMenstrualPeriod && (
+                  {dueDate && lastMenstrualPeriod && autoCalculatedField && (
                     <Text style={styles.helperText}>
-                      Due date and LMP are auto-calculated. You can update
-                      either one.
+                      {autoCalculatedField === 'dueDate'
+                        ? 'Due date was auto-calculated from LMP. You can update it manually if needed.'
+                        : 'LMP was auto-calculated from due date. You can update it manually if needed.'}
                     </Text>
                   )}
                 </View>
@@ -643,6 +681,7 @@ export const WomenHealthScreen: React.FC<Props> = ({ navigation }) => {
         onClose={() => setShowPeriodModal(false)}
         onConfirm={handlePeriodLog}
         focusOnEndDate={periodModalType === 'end'}
+        endDateOptional={false}
         editingPeriod={
           lastPeriodStartDate || lastPeriodEndDate
             ? ({

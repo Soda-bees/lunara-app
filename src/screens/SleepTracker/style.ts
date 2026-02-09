@@ -591,6 +591,7 @@ const styles = StyleSheet.create({
     color: '#000',
     flex: 1,
     fontFamily: 'Inter-Regular',
+    marginVertical:8
   },
 
   totalSleepBox: {
@@ -733,6 +734,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.heading,
     fontFamily: 'Inter-Regular',
+  },
+  datePickerDone: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: colors.heading,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  datePickerDoneText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
   },
 });
 

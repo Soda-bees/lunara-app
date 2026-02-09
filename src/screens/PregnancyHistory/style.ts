@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   symptomNotes: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
-    color: colors.heading,
+    color: colors.placeholderColor,
     marginTop: 8,
     lineHeight: 20,
   },

@@ -11,11 +11,14 @@ const getBaseURL = () => {
     return 'https://lunaranew-e6853745dbd7.herokuapp.com/api'; // Production
   }
 
-  // For Android emulator
+  // For Android
   if (Platform.OS === 'android') {
     // Use your computer's IP address for physical device
+    // Change this to your computer's IPv4 address when testing on physical device
     // Use '10.0.2.2' for Android emulator
-    return 'http://10.0.2.2:3000/api'; // Android emulator
+    const PHYSICAL_DEVICE_IP = '192.168.100.207'; // Your computer's IP address
+    return `http://${PHYSICAL_DEVICE_IP}:3000/api`; // Physical device
+    // return 'http://10.0.2.2:3000/api'; // Uncomment this for Android emulator
   }
 
   // For iOS simulator
@@ -666,6 +669,7 @@ export interface UpdatePregnancyInfoRequest {
   lastMenstrualPeriod?: string;
   pregnancyNotes?: string;
   isPregnant?: boolean; // Allow setting isPregnant to true
+  trimester?: 1 | 2 | 3 | null;
 }
 
 export interface UpdatePregnancyInfoResponse {
@@ -742,6 +746,406 @@ export async function transitionToPostpartum(
   return apiCall<TransitionToPostpartumResponse>('/pregnancy/postpartum', {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+}
+
+// Cycle Symptom API Types
+export type CycleSymptomType =
+  | 'Energy'
+  | 'Mood'
+  | 'Focus'
+  | 'Cramps'
+  | 'Bloating'
+  | 'Headache'
+  | 'Breast Tenderness'
+  | 'Acne'
+  | 'Food Cravings'
+  | 'Back Pain'
+  | 'Nausea';
+
+export type CycleSymptomSeverity =
+  | 'mild'
+  | 'moderate'
+  | 'severe'
+  | 'low'
+  | 'medium'
+  | 'high'
+  | 'poor'
+  | 'neutral'
+  | 'good'
+  | 'fair';
+
+export interface CycleSymptom {
+  _id?: string;
+  date: string;
+  symptom: CycleSymptomType;
+  severity: CycleSymptomSeverity;
+  notes?: string;
+}
+
+export interface LogCycleSymptomRequest {
+  date: string;
+  symptom: CycleSymptomType;
+  severity?: CycleSymptomSeverity;
+  notes?: string;
+}
+
+export interface CycleSymptomResponse {
+  success: boolean;
+  data: CycleSymptom;
+  message?: string;
+}
+
+export interface CycleSymptomsResponse {
+  success: boolean;
+  data: CycleSymptom[];
+}
+
+export interface CycleSymptomPattern {
+  symptom: string;
+  severity: 'mild' | 'moderate' | 'severe';
+  count: number;
+  trend: 'increasing' | 'decreasing' | 'stable';
+}
+
+export interface CycleSymptomPatternsResponse {
+  success: boolean;
+  data: {
+    patterns: CycleSymptomPattern[];
+  };
+}
+
+export interface CycleSymptomHistoryItem {
+  day: number | null;
+  date: string;
+  phase: string;
+  symptoms: Record<string, string>;
+  note?: string | null;
+}
+
+export interface CycleSymptomHistoryResponse {
+  success: boolean;
+  data: CycleSymptomHistoryItem[];
+}
+
+// Cycle Symptom API Functions
+export async function logCycleSymptom(
+  data: LogCycleSymptomRequest,
+): Promise<CycleSymptomResponse> {
+  return apiCall<CycleSymptomResponse>('/symptoms/cycle', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getCycleSymptoms(
+  startDate?: string,
+  endDate?: string,
+): Promise<CycleSymptomsResponse> {
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+
+  const queryString = params.toString();
+  return apiCall<CycleSymptomsResponse>(
+    `/symptoms/cycle${queryString ? `?${queryString}` : ''}`,
+    {
+      method: 'GET',
+    },
+  );
+}
+
+export async function getCycleSymptomPatterns(): Promise<CycleSymptomPatternsResponse> {
+  return apiCall<CycleSymptomPatternsResponse>('/symptoms/cycle/patterns', {
+    method: 'GET',
+  });
+}
+
+export async function getCycleSymptomHistory(): Promise<CycleSymptomHistoryResponse> {
+  return apiCall<CycleSymptomHistoryResponse>('/symptoms/cycle/history', {
+    method: 'GET',
+  });
+}
+
+export async function getCycleSymptom(
+  id: string,
+): Promise<CycleSymptomResponse> {
+  return apiCall<CycleSymptomResponse>(`/symptoms/cycle/${id}`, {
+    method: 'GET',
+  });
+}
+
+export interface UpdateCycleSymptomRequest {
+  date?: string;
+  symptom?: CycleSymptomType;
+  severity?: CycleSymptomSeverity;
+  notes?: string;
+}
+
+export async function updateCycleSymptom(
+  id: string,
+  data: UpdateCycleSymptomRequest,
+): Promise<CycleSymptomResponse> {
+  return apiCall<CycleSymptomResponse>(`/symptoms/cycle/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteCycleSymptom(
+  id: string,
+): Promise<{ success: boolean; message?: string }> {
+  return apiCall<{ success: boolean; message?: string }>(
+    `/symptoms/cycle/${id}`,
+    {
+      method: 'DELETE',
+    },
+  );
+}
+
+// Sleep API Types
+export interface Sleep {
+  _id: string;
+  user: string;
+  date: string;
+  bedTime: string;
+  wakeTime: string;
+  duration: number;
+  quality: number;
+  notes?: string;
+  cyclePhase?: 'menstrual' | 'follicular' | 'ovulatory' | 'luteal' | null;
+  pregnancyWeek?: number | null;
+  trimester?: number | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface LogSleepRequest {
+  date: string;
+  bedTime: string;
+  wakeTime: string;
+  quality: number;
+  notes?: string;
+}
+
+export interface SleepResponse {
+  success: boolean;
+  data: Sleep;
+  message?: string;
+}
+
+export interface SleepsResponse {
+  success: boolean;
+  data: Sleep[];
+  pagination?: {
+    page: number;
+    pages: number;
+    limit: number;
+    total: number;
+  };
+}
+
+export interface SleepStatisticsResponse {
+  success: boolean;
+  data: {
+    sevenDayGoal: {
+      totalDays: number;
+      daysWith8Plus: number;
+      percentage: number;
+      recentLogCount: number;
+      days: Array<{
+        date: string;
+        hours: number | null;
+      }>;
+    };
+    averages: {
+      duration: number | null;
+      quality: number | null;
+    };
+    totalLogs: number;
+  };
+}
+
+export interface SleepPhasePattern {
+  phase: string;
+  avgDuration: number | null;
+  avgQuality: number | null;
+  count: number;
+}
+
+export interface SleepPatternsResponse {
+  success: boolean;
+  data: SleepPhasePattern[];
+}
+
+export interface SleepInsightsResponse {
+  success: boolean;
+  data: string[];
+}
+
+export interface UpdateSleepRequest {
+  date?: string;
+  bedTime?: string;
+  wakeTime?: string;
+  quality?: number;
+  notes?: string;
+}
+
+// Sleep API Functions
+export async function logSleep(
+  data: LogSleepRequest,
+): Promise<SleepResponse> {
+  return apiCall<SleepResponse>('/sleep', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export interface SleepFilters {
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+export async function getSleepLogs(
+  filters?: SleepFilters,
+): Promise<SleepsResponse> {
+  const params = new URLSearchParams();
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  if (filters?.page) params.append('page', filters.page.toString());
+  if (filters?.limit) params.append('limit', filters.limit.toString());
+
+  const queryString = params.toString();
+  return apiCall<SleepsResponse>(`/sleep${queryString ? `?${queryString}` : ''}`, {
+    method: 'GET',
+  });
+}
+
+export async function getSleepStatistics(): Promise<SleepStatisticsResponse> {
+  return apiCall<SleepStatisticsResponse>('/sleep/statistics', {
+    method: 'GET',
+  });
+}
+
+export async function getSleepPatternsByPhase(): Promise<SleepPatternsResponse> {
+  return apiCall<SleepPatternsResponse>('/sleep/patterns', {
+    method: 'GET',
+  });
+}
+
+export async function getSleepInsights(): Promise<SleepInsightsResponse> {
+  return apiCall<SleepInsightsResponse>('/sleep/insights', {
+    method: 'GET',
+  });
+}
+
+export async function getSleep(id: string): Promise<SleepResponse> {
+  return apiCall<SleepResponse>(`/sleep/${id}`, {
+    method: 'GET',
+  });
+}
+
+export async function updateSleep(
+  id: string,
+  data: UpdateSleepRequest,
+): Promise<SleepResponse> {
+  return apiCall<SleepResponse>(`/sleep/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteSleep(
+  id: string,
+): Promise<{ success: boolean; message?: string }> {
+  return apiCall<{ success: boolean; message?: string }>(`/sleep/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+// Cycle Phase Content API Types
+export interface CyclePhaseContent {
+  phase: 'menstrual' | 'follicular' | 'ovulatory' | 'luteal';
+  energyLevel: 'low' | 'rising' | 'high' | 'declining';
+  bestFor: string[];
+  nutrition: string[];
+  movement: string[];
+  mindset: string[];
+  understanding: string;
+  isActive: boolean;
+}
+
+export interface CyclePhaseContentResponse {
+  success: boolean;
+  data: CyclePhaseContent[];
+}
+
+export async function getCyclePhaseContent(): Promise<CyclePhaseContentResponse> {
+  return apiCall<CyclePhaseContentResponse>('/cycle-phase-content', {
+    method: 'GET',
+  });
+}
+
+// Weekly Updates API Types
+export interface WeeklyUpdate {
+  title: string;
+  message: string;
+  iconType: 'energy' | 'mental' | 'metabolism' | 'mood' | 'fertility' | 'nutrition' | 'movement';
+  color: string;
+  iconColor?: string;
+  order: number;
+}
+
+export interface WeeklyUpdatesResponse {
+  success: boolean;
+  data: WeeklyUpdate[];
+}
+
+// Did You Know API Types
+export interface DidYouKnow {
+  fact: string;
+  author?: string | null;
+}
+
+export interface DidYouKnowResponse {
+  success: boolean;
+  data: DidYouKnow;
+}
+
+// Personalized Insight API Types
+export interface PersonalizedInsight {
+  insight: string;
+}
+
+export interface PersonalizedInsightResponse {
+  success: boolean;
+  data: PersonalizedInsight | null;
+}
+
+// Weekly Updates API Functions
+export async function getWeeklyUpdatesByPhase(
+  phase: string,
+): Promise<WeeklyUpdatesResponse> {
+  return apiCall<WeeklyUpdatesResponse>(`/cycle-phase-content/${phase}/weekly-updates`, {
+    method: 'GET',
+  });
+}
+
+// Did You Know API Functions
+export async function getDidYouKnowByPhase(
+  phase: string,
+): Promise<DidYouKnowResponse> {
+  return apiCall<DidYouKnowResponse>(`/cycle-phase-content/${phase}/did-you-know`, {
+    method: 'GET',
+  });
+}
+
+// Personalized Insight API Functions
+export async function getPersonalizedInsight(): Promise<PersonalizedInsightResponse> {
+  return apiCall<PersonalizedInsightResponse>('/cycle-phase-content/personalized-insight', {
+    method: 'GET',
   });
 }
 

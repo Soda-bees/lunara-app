@@ -33,12 +33,14 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
             />
           </View>
           <View style={[styles.header, { bottom: 15 }]}>
+            <View style={{ alignSelf: 'center'}}>
             <GradientText
               fontFamily="PlayfairDisplay-SemiBold"
               style={styles.title}
-            >
+              >
               Welcome To Lunara
             </GradientText>
+              </View>
             <Text style={styles.subtitle}>
               Your personal companion for health, wellness, and self-care.
             </Text>

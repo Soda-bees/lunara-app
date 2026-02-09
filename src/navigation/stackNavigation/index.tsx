@@ -59,6 +59,7 @@ import CycleHistory from '../../screens/CycleHistory';
 // import PregnancyDashboard from '../../screens/PregnancyDashboard';
 import PregnancyInfo from '../../screens/PregnancyInfo';
 import PregnancyHistory from '../../screens/PregnancyHistory';
+import SymptomHistory from '../../screens/SymptomHistory';
 import PostpartumTransition from '../../screens/PostpartumTransition';
 import { ProfileScreen } from '../../screens/ProfileScreen/ProfileScreen';
 import { CycleInsightsScreen } from '../../screens/CycleInsightsScreen/CycleInsightsScreen';
@@ -152,6 +153,7 @@ export type RootStackParamList = {
   HealthStory: undefined;
   AlmostThere: undefined;
   CycleHistory: undefined;
+  SymptomHistory: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -199,6 +201,7 @@ export default function MainStack() {
           {/* <Stack.Screen name="PregnancyDashboard" component={PregnancyDashboard} /> */}
           <Stack.Screen name="PregnancyInfo" component={PregnancyInfo} />
           <Stack.Screen name="PregnancyHistory" component={PregnancyHistory} />
+          <Stack.Screen name="SymptomHistory" component={SymptomHistory} />
           <Stack.Screen name="PostpartumTransition" component={PostpartumTransition} />
           <Stack.Screen name="Journal" component={JournalScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />

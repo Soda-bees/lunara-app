@@ -8,6 +8,7 @@ import {
   Image,
   ScrollView,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import images from '../../constants/images';
 import { colors } from '../../constants/colors';
@@ -29,6 +30,8 @@ interface PeriodStartModalProps {
   onConfirm: (data: PeriodLogData) => void;
   editingPeriod?: Period | null;
   focusOnEndDate?: boolean; // If true, automatically show end date section
+  endDateOptional?: boolean; // Controls whether UI labels show end date as optional
+  loading?: boolean; // Loading state for period logging
 }
 
 const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -58,6 +61,8 @@ const PeriodStartModal: React.FC<PeriodStartModalProps> = ({
   onConfirm,
   editingPeriod,
   focusOnEndDate = false,
+  endDateOptional = true,
+  loading = false,
 }) => {
   // Initialize state from editingPeriod if provided
   const getInitialStartDate = () => {
@@ -119,6 +124,7 @@ const PeriodStartModal: React.FC<PeriodStartModalProps> = ({
   );
   const [notes, setNotes] = useState(editingPeriod?.notes || '');
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset form when modal opens/closes or editingPeriod changes
   React.useEffect(() => {
@@ -160,6 +166,7 @@ const PeriodStartModal: React.FC<PeriodStartModalProps> = ({
         setNotes('');
       }
       setError(null);
+      setIsSubmitting(false); // Reset submitting state when modal opens/closes
     }
   }, [visible, editingPeriod, focusOnEndDate]);
 
@@ -273,8 +280,11 @@ const PeriodStartModal: React.FC<PeriodStartModalProps> = ({
     setSelectedEndYear(year);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (selectedStart === null || selectedStartMonth === null || selectedStartYear === null) return;
+    if (loading || isSubmitting) return; // Prevent multiple submissions
+    
+    setIsSubmitting(true); // Set local loading state immediately
 
     // Use stored month/year for start date, not current month
     const startDate = new Date(selectedStartYear, selectedStartMonth, selectedStart);
@@ -302,20 +312,20 @@ const PeriodStartModal: React.FC<PeriodStartModalProps> = ({
       notes: notes.trim() || undefined,
     };
 
-    onConfirm(periodData);
-    // Reset form
-    setSelectedStart(null);
-    setSelectedStartMonth(null);
-    setSelectedStartYear(null);
-    setSelectedEnd(null);
-    setSelectedEndMonth(null);
-    setSelectedEndYear(null);
-    setShowEndDate(false);
-    setFlow('medium');
-    setSymptoms([]);
-    setNotes('');
-    setError(null);
-    onClose();
+    try {
+      // Call onConfirm and await if it returns a promise
+      // This keeps the button in loading state during the async operation
+      const result = onConfirm(periodData);
+      if (result && typeof result.then === 'function') {
+        await result;
+      }
+      // Form will be reset automatically by useEffect when modal closes (visible becomes false)
+      // The parent component handles closing the modal after success
+    } catch (error) {
+      // Don't reset form on error - let user see what they entered
+      console.error('Error in period log:', error);
+      setIsSubmitting(false); // Reset on error so user can try again
+    }
   };
 
   return (
@@ -428,14 +438,18 @@ const PeriodStartModal: React.FC<PeriodStartModalProps> = ({
                   <Text style={styles.addEndDateText}>
                     {selectedEnd !== null
                       ? 'Change end date'
-                      : '+ Add end date (optional)'}
+                      : endDateOptional
+                        ? '+ Add end date (optional)'
+                        : '+ Add end date'}
                   </Text>
                 </TouchableOpacity>
               )}
 
               {showEndDate && selectedStart !== null && (
                 <View style={styles.endDateSection}>
-                  <Text style={styles.sectionTitle}>End Date (Optional)</Text>
+                  <Text style={styles.sectionTitle}>
+                    {endDateOptional ? 'End Date (Optional)' : 'End Date'}
+                  </Text>
                   <View style={styles.grid}>
                     {grid.map((item, index) =>
                       item.empty ? (
@@ -564,14 +578,18 @@ const PeriodStartModal: React.FC<PeriodStartModalProps> = ({
           <TouchableOpacity
             style={[
               styles.confirmBtn,
-              selectedStart === null && styles.confirmBtnDisabled,
+              (selectedStart === null || loading || isSubmitting) && styles.confirmBtnDisabled,
             ]}
             onPress={handleConfirm}
-            disabled={selectedStart === null}
+            disabled={selectedStart === null || loading || isSubmitting}
           >
-            <Text style={styles.confirmText}>
-              {editingPeriod ? 'Update Period' : 'Log Period'}
-            </Text>
+            {(loading || isSubmitting) ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <Text style={styles.confirmText}>
+                {editingPeriod ? 'Update Period' : 'Log Period'}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>

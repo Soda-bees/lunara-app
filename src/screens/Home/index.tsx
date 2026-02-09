@@ -1,4 +1,4 @@
-import React, { JSX, useState } from 'react';
+import React, { JSX, useState, useEffect } from 'react';
 import {
   Image,
   Keyboard,
@@ -12,6 +12,7 @@ import {
   View,
   ActivityIndicator,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import styles from './style';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,30 +26,42 @@ import LinearGradient from 'react-native-linear-gradient';
 import GradientText from '../../components/GradientText';
 import { gradients } from '../../constants/gradientColors';
 import {
-  getCurrentCycleStatus,
-  CycleStatusResponse,
   getPregnancyStatus,
   PregnancyStatusResponse,
+  updatePregnancyInfo,
 } from '../../services/api';
+import { getPhaseDataStatus } from '../../utils/cycleUtils';
+import PregnancyPromptModal, {
+  PregnancyPromptData,
+} from '../../components/PregnancyPromptModal';
 import moment from 'moment';
+import { useCycleData } from '../../context/CycleDataContext';
+import { colors } from '../../constants/colors';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 
 export default function Home() {
   const navigation = useNavigation<NavigationProp>();
-  // Get parent tab navigator for tab navigation
-  const tabNavigation = (navigation as any).getParent?.() || navigation;
+  const {
+    cycleStatus: cycleStatusState,
+    periods: periodsState,
+    refreshCycleData,
+  } = useCycleData();
+  const cycleStatus = cycleStatusState.data;
+  const periodList = periodsState.data || [];
+  const loading =
+    cycleStatusState.loading || periodsState.loading;
+
   const [showInsightDetails, setShowInsightDetails] = useState<Boolean>(false);
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
   const [selectedFeeling, setSelectedFeeling] = useState<number | null>(null);
   const [selectedEnergy, setSelectedEnergy] = useState<number | null>(null);
   const [selectedSleep, setSelectedSleep] = useState<number | null>(null);
-  const [cycleStatus, setCycleStatus] = useState<
-    CycleStatusResponse['data'] | null
-  >(null);
   const [pregnancyStatus, setPregnancyStatus] = useState<
     PregnancyStatusResponse['data'] | null
   >(null);
-  const [loading, setLoading] = useState(true);
+  const [showPregnancyPrompt, setShowPregnancyPrompt] = useState(false);
+  const [updatingPregnancy, setUpdatingPregnancy] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const emojis = ['😄', '🙂', '😐', '😞'];
   const energyEmojis = [
     images.energizedEmoji,
@@ -60,41 +73,53 @@ export default function Home() {
     navigation.navigate('SleepTracker');
   };
 
-  // Fetch cycle and pregnancy data
-  const fetchCycleData = async () => {
-    try {
-      setLoading(true);
-
-      // Check pregnancy status first
-      const pregnancyResponse = await getPregnancyStatus();
-      if (pregnancyResponse.success && pregnancyResponse.data.isPregnant) {
-        setPregnancyStatus(pregnancyResponse.data);
-        setCycleStatus(null);
-        return;
+  // Fetch pregnancy status on mount and when cycle data changes
+  useEffect(() => {
+    const fetchPregnancyStatus = async () => {
+      try {
+        const pregnancyResponse = await getPregnancyStatus();
+        if (pregnancyResponse.success) {
+          setPregnancyStatus(
+            pregnancyResponse.data.isPregnant
+              ? pregnancyResponse.data
+              : null,
+          );
+        }
+      } catch (error: any) {
+        console.error('Error fetching pregnancy status:', error);
       }
+    };
 
-      // If not pregnant, fetch cycle status
-      const response = await getCurrentCycleStatus();
-      if (response.success && response.data.isTracking) {
-        setCycleStatus(response.data);
-      } else {
-        setCycleStatus(null);
-      }
-      setPregnancyStatus(null);
-    } catch (error: any) {
-      console.error('Error fetching data:', error);
-      setCycleStatus(null);
-      setPregnancyStatus(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchPregnancyStatus();
+  }, []);
 
+  // Background refresh on focus (only if stale) - silent, no loaders
   useFocusEffect(
     React.useCallback(() => {
-      fetchCycleData();
-    }, []),
+      refreshCycleData();
+    }, [refreshCycleData]),
   );
+
+  // Pull-to-refresh handler
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshCycleData({ force: true });
+      // Also refresh pregnancy status
+      const pregnancyResponse = await getPregnancyStatus();
+      if (pregnancyResponse.success) {
+        setPregnancyStatus(
+          pregnancyResponse.data.isPregnant
+            ? pregnancyResponse.data
+            : null,
+        );
+      }
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshCycleData]);
 
   // Helper functions
   const getPhaseDisplayName = (phase?: string): string => {
@@ -141,6 +166,115 @@ export default function Home() {
     return Math.min(100, Math.max(0, (cycleDay / cycleLength) * 100));
   };
 
+  // Determine if current phase is predicted or actual
+  const phaseDataStatus = cycleStatus
+    ? getPhaseDataStatus(cycleStatus, periodList)
+    : { isPredicted: true, reason: 'not_tracking' };
+
+  // Check if period is overdue
+  const isOverdue =
+    typeof cycleStatus?.daysUntilNextPeriod === 'number' &&
+    cycleStatus.daysUntilNextPeriod < 0;
+
+  // Helper function to navigate to Cycle tab
+  const navigateToCycleTab = () => {
+    try {
+      // Method 1: Check if navigation itself has jumpTo (when inside tab navigator)
+      const navAny = navigation as any;
+      if (navAny.jumpTo && typeof navAny.jumpTo === 'function') {
+        navAny.jumpTo('Cycle');
+        return;
+      }
+      
+      // Method 2: Try to get parent tab navigator
+      let parent = navAny.getParent?.();
+      // Keep going up the parent chain to find the tab navigator
+      while (parent) {
+        if (parent.jumpTo && typeof parent.jumpTo === 'function') {
+          parent.jumpTo('Cycle');
+          return;
+        }
+        parent = parent.getParent?.();
+      }
+      
+      // Method 3: Fallback - navigate to CycleInsight as a stack screen
+      // This is registered in the stack navigator and will work
+      navigation.navigate('CycleInsight');
+    } catch (error) {
+      console.error('Error navigating to Cycle tab:', error);
+      // Final fallback
+      navigation.navigate('CycleInsight');
+    }
+  };
+
+  const handleLogPeriodFromHome = () => {
+    // Navigate to Cycle tab (CycleInsight screen) where period logging is available
+    navigateToCycleTab();
+  };
+
+  const handleAddPregnancyFromHome = () => {
+    setShowPregnancyPrompt(true);
+  };
+
+  const handlePregnancyPrompt = async (data: PregnancyPromptData) => {
+    if (!data.isPregnant) {
+      setShowPregnancyPrompt(false);
+      return;
+    }
+
+    try {
+      setUpdatingPregnancy(true);
+      const updateData: any = {
+        isPregnant: true,
+      };
+
+      if (data.dueDate) {
+        updateData.dueDate = data.dueDate.toISOString();
+      }
+
+      if (data.lastMenstrualPeriod) {
+        updateData.lastMenstrualPeriod = data.lastMenstrualPeriod.toISOString();
+      }
+
+      if (data.trimester !== undefined && data.trimester !== null) {
+        updateData.trimester = data.trimester;
+      }
+
+      const response = await updatePregnancyInfo(updateData);
+
+      if (response.success) {
+        setShowPregnancyPrompt(false);
+        Alert.alert(
+          'Pregnancy Status Updated',
+          'We have updated your pregnancy status. Your dashboard will now show pregnancy insights.',
+        );
+        // Refresh pregnancy status and cycle data
+        const pregnancyResponse = await getPregnancyStatus();
+        if (pregnancyResponse.success) {
+          setPregnancyStatus(
+            pregnancyResponse.data.isPregnant
+              ? pregnancyResponse.data
+              : null,
+          );
+        }
+        await refreshCycleData({ force: true });
+      } else {
+        Alert.alert(
+          'Error',
+          'Failed to update pregnancy status. Please try again.',
+        );
+      }
+    } catch (error: any) {
+      console.error('Error updating pregnancy status:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to update pregnancy status. Please try again.',
+      );
+    } finally {
+      setUpdatingPregnancy(false);
+    }
+  };
+
   const todayDate = moment().format('dddd, MMMM D');
 
   return (
@@ -152,7 +286,12 @@ export default function Home() {
       />
 
       <Header />
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <View style={{ gap: 16 }}>
           <GradientWrapper variant="basic">
             <View style={styles.phaseBody}>
@@ -160,7 +299,8 @@ export default function Home() {
                 <View style={{ padding: 20, alignItems: 'center' }}>
                   <ActivityIndicator size="large" color="#E4AF5D" />
                 </View>
-              ) : pregnancyStatus && pregnancyStatus.isPregnant ? (
+              ) : null}
+              {!loading && pregnancyStatus && pregnancyStatus.isPregnant ? (
                 <>
                   {/* Pregnancy Progress Card */}
                   <View style={styles.cyclePhaseCard}>
@@ -227,12 +367,7 @@ export default function Home() {
                   {pregnancyStatus.babyDevelopment && (
                     <TouchableOpacity
                       style={styles.cyclePhaseCard}
-                      onPress={() => {
-                        // Navigate to Cycle tab (which is now Insights)
-                        // @ts-ignore - Cycle is a tab route
-                        tabNavigation.jumpTo?.('Cycle') ||
-                          tabNavigation.navigate?.('Cycle');
-                      }}
+                      onPress={navigateToCycleTab}
                     >
                       <Text style={styles.spacedText}>BABY DEVELOPMENT</Text>
                       <Text style={styles.babyDevelopmentText}>
@@ -251,12 +386,7 @@ export default function Home() {
                       0 && (
                       <TouchableOpacity
                         style={styles.cyclePhaseCard}
-                        onPress={() => {
-                          // Navigate to Cycle tab (which is now Insights)
-                          // @ts-ignore - Cycle is a tab route
-                          tabNavigation.jumpTo?.('Cycle') ||
-                            tabNavigation.navigate?.('Cycle');
-                        }}
+                        onPress={navigateToCycleTab}
                       >
                         <Text style={styles.spacedText}>TODAY'S INSIGHT</Text>
                         <Text style={styles.textDarkGrey}>
@@ -265,34 +395,31 @@ export default function Home() {
                       </TouchableOpacity>
                     )}
 
-                  {/* Link to Cycle History */}
-                  <TouchableOpacity
-                    style={styles.cyclePhaseCard}
-                    onPress={() => {
-                      // Navigate to Cycle tab (which is now Insights)
-                      // @ts-ignore - Cycle is a tab route
-                      tabNavigation.jumpTo?.('Cycle') ||
-                        tabNavigation.navigate?.('Cycle');
-                    }}
-                  >
-                    <Text style={styles.spacedText}>CYCLE HISTORY</Text>
-                    <Text style={styles.textDarkGrey}>
-                      View your past cycles and insights from before pregnancy.
-                      Your cycle data is preserved.
-                    </Text>
-                    <Text
-                      style={[
-                        styles.textDarkGrey,
-                        {
-                          marginTop: 8,
-                          color: '#E799AD',
-                          fontFamily: 'Inter-SemiBold',
-                        },
-                      ]}
+                  {/* Link to Cycle History - Only show if user has cycle history */}
+                  {periodList.length > 0 && (
+                    <TouchableOpacity
+                      style={styles.cyclePhaseCard}
+                      onPress={navigateToCycleTab}
                     >
-                      View Cycle Insights →
-                    </Text>
-                  </TouchableOpacity>
+                      <Text style={styles.spacedText}>CYCLE HISTORY</Text>
+                      <Text style={styles.textDarkGrey}>
+                        View your past cycles and insights from before pregnancy.
+                        Your cycle data is preserved.
+                      </Text>
+                      <Text
+                        style={[
+                          styles.textDarkGrey,
+                          {
+                            marginTop: 8,
+                            color: '#E799AD',
+                            fontFamily: 'Inter-SemiBold',
+                          },
+                        ]}
+                      >
+                        View Cycle Insights →
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </>
               ) : !cycleStatus || !cycleStatus.isTracking ? (
                 <View>
@@ -303,24 +430,116 @@ export default function Home() {
                 </View>
               ) : (
                 <>
-                  <View style={styles.row}>
-                    <Image
-                      style={styles.currentPhaseIconMain}
-                      source={images.currentPhaseIconMain}
-                    />
-                    <Text style={styles.heading}>Current Phase</Text>
-                  </View>
-                  <View style={styles.phaseTextContainer}>
-                    <Text style={styles.textPrimary}>
-                      {getPhaseDisplayName(cycleStatus.phase)} - Day{' '}
-                      {cycleStatus.cycleDay || '—'}
-                    </Text>
-                  </View>
-                  <View style={styles.colCenter}>
-                    <Text style={styles.spacedText}>TODAY</Text>
-                    <Text style={styles.textBlackMedium}>{todayDate}</Text>
-                  </View>
-                  <View style={styles.cyclePhaseCard}>
+                  {/* Prediction/Overdue Warning Banner */}
+                  {(phaseDataStatus.isPredicted || isOverdue) && (
+                    <View style={styles.predictionBanner}>
+                      {phaseDataStatus.isPredicted ? (
+                        <>
+                          <Text style={styles.predictionBannerTitle}>
+                            This is a prediction
+                          </Text>
+                          <Text style={styles.predictionBannerText}>
+                            Log your period or add pregnancy info for accurate
+                            cycle tracking.
+                          </Text>
+                          <View style={styles.predictionBannerActions}>
+                            <TouchableOpacity
+                              style={styles.predictionBannerButton}
+                              activeOpacity={0.8}
+                              onPress={handleLogPeriodFromHome}
+                            >
+                              <Text style={styles.predictionBannerButtonText}>
+                                Log Period
+                              </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[
+                                styles.predictionBannerButton,
+                                styles.predictionBannerButtonSecondary,
+                              ]}
+                              activeOpacity={0.8}
+                              onPress={handleAddPregnancyFromHome}
+                            >
+                              <Text
+                                style={[
+                                  styles.predictionBannerButtonText,
+                                  styles.predictionBannerButtonTextSecondary,
+                                ]}
+                              >
+                                Add Pregnancy Info
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        </>
+                      ) : isOverdue ? (
+                        <>
+                          <Text style={styles.predictionBannerTitle}>
+                            Your period is late
+                          </Text>
+                          <Text style={styles.predictionBannerText}>
+                            Your period was expected{' '}
+                            {cycleStatus.daysUntilNextPeriod
+                              ? `${Math.abs(cycleStatus.daysUntilNextPeriod)} days ago`
+                              : 'recently'}
+                            . Are you possibly pregnant?
+                          </Text>
+                          <View style={styles.predictionBannerActions}>
+                            <TouchableOpacity
+                              style={styles.predictionBannerButton}
+                              activeOpacity={0.8}
+                              onPress={handleLogPeriodFromHome}
+                            >
+                              <Text style={styles.predictionBannerButtonText}>
+                                Log Period
+                              </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[
+                                styles.predictionBannerButton,
+                                styles.predictionBannerButtonSecondary,
+                              ]}
+                              activeOpacity={0.8}
+                              onPress={handleAddPregnancyFromHome}
+                            >
+                              <Text
+                                style={[
+                                  styles.predictionBannerButtonText,
+                                  styles.predictionBannerButtonTextSecondary,
+                                ]}
+                              >
+                                I might be pregnant
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        </>
+                      ) : null}
+                    </View>
+                  )}
+                  <View
+                    style={[
+                      phaseDataStatus.isPredicted && styles.predictedPhaseCard,
+                    ]}
+                  >
+                    <View style={styles.row}>
+                      <Image
+                        style={styles.currentPhaseIconMain}
+                        source={images.currentPhaseIconMain}
+                      />
+                      <Text style={styles.heading}>Current Phase</Text>
+                    </View>
+                    <View style={styles.phaseTextContainer}>
+                      <Text style={styles.textPrimary}>
+                        {phaseDataStatus.isPredicted
+                          ? 'Predicted: '
+                          : ''}{getPhaseDisplayName(cycleStatus.phase)} - Day{' '}
+                        {cycleStatus.cycleDay || '—'}
+                      </Text>
+                    </View>
+                    <View style={styles.colCenter}>
+                      <Text style={styles.spacedText}>TODAY</Text>
+                      <Text style={styles.textBlackMedium}>{todayDate}</Text>
+                    </View>
+                    <View style={styles.cyclePhaseCard}>
                     <Text style={styles.spacedText}>CYCLE PROGRESS</Text>
 
                     <View style={styles.rowFull}>
@@ -375,13 +594,24 @@ export default function Home() {
                       {cycleStatus.tagline || '—'}
                     </Text>
                   </View>
-
+                  </View>
                   <View style={styles.softCopyContainer}>
                     <Text style={styles.textDarkGrey}>
                       {cycleStatus.description ||
                         'No description available for this phase.'}
                     </Text>
                   </View>
+                  {/* Prediction Info Message */}
+                  {phaseDataStatus.isPredicted && (
+                    <View style={styles.predictionInfoContainer}>
+                      <Text style={styles.predictionInfoText}>
+                        This information is based on our advanced cycle prediction
+                        calculations. To get the most accurate cycle tracking
+                        personalized to your body, please log your period start
+                        date.
+                      </Text>
+                    </View>
+                   )} 
                 </>
               )}
 
@@ -422,7 +652,7 @@ export default function Home() {
                       <Image source={images.sparkle} style={styles.icon} />
                       <Text style={styles.greenText}>Best For</Text>
                       <Text style={styles.textBlackSmall}>
-                        {cycleStatus.bestFor && cycleStatus.bestFor.length > 0
+                        {cycleStatus.bestFor && Array.isArray(cycleStatus.bestFor) && cycleStatus.bestFor.length > 0
                           ? cycleStatus.bestFor.join(', ')
                           : '—'}
                       </Text>
@@ -431,6 +661,7 @@ export default function Home() {
 
                   <View style={styles.thisPhaseDataContainer}>
                     {cycleStatus.nutrition &&
+                      Array.isArray(cycleStatus.nutrition) &&
                       cycleStatus.nutrition.length > 0 && (
                         <View style={styles.section}>
                           <View style={styles.row}>
@@ -455,6 +686,7 @@ export default function Home() {
                         </View>
                       )}
                     {cycleStatus.movement &&
+                      Array.isArray(cycleStatus.movement) &&
                       cycleStatus.movement.length > 0 && (
                         <View style={styles.section}>
                           <View style={styles.row}>
@@ -478,27 +710,29 @@ export default function Home() {
                           </View>
                         </View>
                       )}
-                    {cycleStatus.mindset && cycleStatus.mindset.length > 0 && (
-                      <View style={styles.section}>
-                        <View style={styles.row}>
-                          <Image
-                            source={images.mindsetIcon}
-                            style={styles.icon}
-                          />
-                          <Text style={styles.textBlackBold}>
-                            Mindset & Focus
-                          </Text>
+                    {cycleStatus.mindset &&
+                      Array.isArray(cycleStatus.mindset) &&
+                      cycleStatus.mindset.length > 0 && (
+                        <View style={styles.section}>
+                          <View style={styles.row}>
+                            <Image
+                              source={images.mindsetIcon}
+                              style={styles.icon}
+                            />
+                            <Text style={styles.textBlackBold}>
+                              Mindset & Focus
+                            </Text>
+                          </View>
+                          <View>
+                            {cycleStatus.mindset.map((item, index) => (
+                              <View key={index} style={styles.row}>
+                                <View style={styles.bulletPoint}></View>
+                                <Text style={styles.textBlackNormal}>{item}</Text>
+                              </View>
+                            ))}
+                          </View>
                         </View>
-                        <View>
-                          {cycleStatus.mindset.map((item, index) => (
-                            <View key={index} style={styles.row}>
-                              <View style={styles.bulletPoint}></View>
-                              <Text style={styles.textBlackNormal}>{item}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      </View>
-                    )}
+                      )}
                   </View>
 
                   {cycleStatus.understanding && (
@@ -828,6 +1062,12 @@ export default function Home() {
           </GradientWrapper>
         </View>
       </ScrollView>
+      <PregnancyPromptModal
+        visible={showPregnancyPrompt}
+        onClose={() => setShowPregnancyPrompt(false)}
+        onConfirm={handlePregnancyPrompt}
+        loading={updatingPregnancy}
+      />
     </SafeAreaView>
   );
 }
