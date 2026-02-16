@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -10,156 +10,176 @@ import {
 import images from '../../constants/images';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
+import {
+  DailyMealPlan,
+  NutritionTimeSlot,
+  getDailyNutritionPlan,
+  setMealCompletedApi,
+  swapMealOptionApi,
+} from '../../services/api';
+
+type WeeklyPlan = {
+  isoDate: string;
+  label: string;
+  isToday: boolean;
+  plan: DailyMealPlan | null;
+};
+
+const formatDateLabel = (date: Date) => {
+  return date.toISOString().split('T')[0];
+};
+
+const getDayName = (date: Date) => {
+  return date.toLocaleDateString(undefined, { weekday: 'long' });
+};
 
 export default function Nutrition() {
-  const [expandedDay, setExpandedDay] = useState<string>('Wednesday');
-  const [completedMeals, setCompletedMeals] = useState<
-    Record<string, Record<number, boolean>>
-  >({});
+  const [expandedDay, setExpandedDay] = useState<string>('');
+  const [weeklyPlans, setWeeklyPlans] = useState<WeeklyPlan[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const weeklyData = [
-    {
-      day: 'Wednesday',
-      date: '2025-10-29',
-      isToday: true,
-      meals: [
-        {
-          time: '9:00 Am',
-          title: 'Protein smoothie with MCT oil and collagen',
-          desc: 'Break your fast mindfully',
-          protein: 25,
-          carbs: 35,
-          fat: 20,
-        },
-        {
-          time: '11:30 Am',
-          title: 'Hard-boiled eggs with sea salt',
-          desc: 'Optional balanced snack',
-          protein: 8,
-          carbs: 5,
-          fat: 12,
-        },
-        {
-          time: '1:00 Pm',
-          title: 'Grass-fed beef with rainbow salad',
-          desc: 'Sustain your energy',
-          protein: 30,
-          carbs: 40,
-          fat: 15,
-        },
-        {
-          time: '6:00 Pm',
-          title: 'Turkey burgers with sweet potato fries',
-          desc: 'Nourish and restore (last meal before fast)',
-          protein: 28,
-          carbs: 30,
-          fat: 18,
-        },
-      ],
-    },
-    {
-      day: 'Thursday',
-      date: '2025-10-30',
-      meals: [
-        {
-          time: '9:00 Am',
-          title: 'Protein smoothie with MCT oil and collagen',
-          desc: 'Break your fast mindfully',
-          protein: 25,
-          carbs: 35,
-          fat: 20,
-        },
-        {
-          time: '11:30 Am',
-          title: 'Hard-boiled eggs with sea salt',
-          desc: 'Optional balanced snack',
-          protein: 8,
-          carbs: 5,
-          fat: 12,
-        },
-        {
-          time: '1:00 Pm',
-          title: 'Grass-fed beef with rainbow salad',
-          desc: 'Sustain your energy',
-          protein: 30,
-          carbs: 40,
-          fat: 15,
-        },
-        {
-          time: '6:00 Pm',
-          title: 'Turkey burgers with sweet potato fries',
-          desc: 'Nourish and restore (last meal before fast)',
-          protein: 28,
-          carbs: 30,
-          fat: 18,
-        },
-      ],
-    },
-    {
-      day: 'Friday',
-      date: '2025-10-31',
-      meals: [
-        {
-          time: '9:00 Am',
-          title: 'Protein smoothie with MCT oil and collagen',
-          desc: 'Break your fast mindfully',
-          protein: 25,
-          carbs: 35,
-          fat: 20,
-        },
-        {
-          time: '11:30 Am',
-          title: 'Hard-boiled eggs with sea salt',
-          desc: 'Optional balanced snack',
-          protein: 8,
-          carbs: 5,
-          fat: 12,
-        },
-        {
-          time: '1:00 Pm',
-          title: 'Grass-fed beef with rainbow salad',
-          desc: 'Sustain your energy',
-          protein: 30,
-          carbs: 40,
-          fat: 15,
-        },
-        {
-          time: '6:00 Pm',
-          title: 'Turkey burgers with sweet potato fries',
-          desc: 'Nourish and restore (last meal before fast)',
-          protein: 28,
-          carbs: 30,
-          fat: 18,
-        },
-        {
-          time: '6:00 Pm',
-          title: 'Turkey burgers with sweet potato fries',
-          desc: 'Nourish and restore (last meal before fast)',
-          protein: 28,
-          carbs: 30,
-          fat: 18,
-        },
-      ],
-    },
-    { day: 'Saturday', date: '2025-11-1', meals: [] },
-    { day: 'Sunday', date: '2025-11-07', meals: [] },
-  ];
+  useEffect(() => {
+    const loadWeek = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  const toggleMealCheck = (dayName: any, mealIndex: any) => {
-    setCompletedMeals(prev => {
-      const dayMeals = prev[dayName] || {};
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-      const updatedDay = {
-        ...dayMeals,
-        [mealIndex]: !dayMeals[mealIndex],
-      };
+        const start = new Date(today);
+        const week: WeeklyPlan[] = [];
 
-      return {
-        ...prev,
-        [dayName]: updatedDay,
-      };
-    });
+        for (let i = 0; i < 5; i++) {
+          const d = new Date(start);
+          d.setDate(start.getDate() + i);
+          const isoDate = formatDateLabel(d);
+
+          console.log(`[Nutrition Frontend] Fetching plan for date: ${isoDate}`);
+          // eslint-disable-next-line no-await-in-loop
+          const res = await getDailyNutritionPlan(isoDate);
+          console.log(`[Nutrition Frontend] Response for ${isoDate}:`, {
+            success: res.success,
+            hasData: !!res.data,
+            timeSlotsCount: res.data?.timeSlots?.length || 0,
+            totalOptions: res.data?.timeSlots?.reduce((sum, slot) => sum + (slot.options?.length || 0), 0) || 0,
+          });
+
+          if (res.data?.timeSlots) {
+            res.data.timeSlots.forEach((slot, idx) => {
+              console.log(`[Nutrition Frontend] Slot ${idx} (${slot.time}): ${slot.options?.length || 0} options`);
+            });
+          }
+
+          week.push({
+            isoDate,
+            label: getDayName(d),
+            isToday: d.getTime() === today.getTime(),
+            plan: res.data,
+          });
+        }
+
+        setWeeklyPlans(week);
+        if (!expandedDay && week.length > 0) {
+          const todayEntry =
+            week.find(d => d.isToday)?.label || week[0].label;
+          setExpandedDay(todayEntry);
+        }
+      } catch (e: any) {
+        setError(e?.message || 'Unable to load nutrition plan.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadWeek();
+  }, [expandedDay]);
+
+  const handleToggleMealCheck = async (
+    day: WeeklyPlan,
+    slot: NutritionTimeSlot,
+    slotIndex: number,
+  ) => {
+    const newCompleted = !slot.completed;
+    // Optimistic update
+    setWeeklyPlans(prev =>
+      prev.map(d => {
+        if (d.isoDate !== day.isoDate || !d.plan) {
+          return d;
+        }
+        const updatedSlots = d.plan.timeSlots.map((s, idx) =>
+          idx === slotIndex ? { ...s, completed: newCompleted } : s,
+        );
+        return { ...d, plan: { ...d.plan, timeSlots: updatedSlots } };
+      }),
+    );
+
+    try {
+      await setMealCompletedApi(day.isoDate, {
+        time: slot.time,
+        completed: newCompleted,
+      });
+    } catch {
+      // Revert on failure
+      setWeeklyPlans(prev =>
+        prev.map(d => {
+          if (d.isoDate !== day.isoDate || !d.plan) {
+            return d;
+          }
+          const updatedSlots = d.plan.timeSlots.map((s, idx) =>
+            idx === slotIndex ? { ...s, completed: !newCompleted } : s,
+          );
+          return { ...d, plan: { ...d.plan, timeSlots: updatedSlots } };
+        }),
+      );
+    }
   };
+
+  const handleSwap = async (day: WeeklyPlan, slot: NutritionTimeSlot, slotIndex: number) => {
+    // Optimistic update: cycle selected option locally
+    setWeeklyPlans(prev =>
+      prev.map(d => {
+        if (d.isoDate !== day.isoDate || !d.plan) {
+          return d;
+        }
+        const updatedSlots = d.plan.timeSlots.map((s, idx) => {
+          if (idx !== slotIndex) return s;
+          if (!s.options || s.options.length === 0) return s;
+          const nextIndex = (s.selectedOptionIndex + 1) % s.options.length;
+          return { ...s, selectedOptionIndex: nextIndex };
+        });
+        return { ...d, plan: { ...d.plan, timeSlots: updatedSlots } };
+      }),
+    );
+
+    try {
+      await swapMealOptionApi(day.isoDate, { time: slot.time });
+    } catch {
+      // On failure, reload that day's plan
+      try {
+        const res = await getDailyNutritionPlan(day.isoDate);
+        setWeeklyPlans(prev =>
+          prev.map(d =>
+            d.isoDate === day.isoDate ? { ...d, plan: res.data } : d,
+          ),
+        );
+      } catch {
+        // swallow; UI already shows something reasonable
+      }
+    }
+  };
+
+  const todayPhaseLabel = useMemo(() => {
+    const todayPlan = weeklyPlans.find(d => d.isToday && d.plan)?.plan;
+    if (!todayPlan) return 'Today’s Nutrition';
+    const phase = todayPlan.phase;
+    if (phase === 'follicular') return 'Follicular Phase Focus';
+    if (phase === 'menstrual') return 'Menstrual Phase Support';
+    if (phase === 'ovulatory') return 'Ovulatory Phase Glow';
+    if (phase === 'luteal') return 'Luteal Phase Nourish';
+    return 'Cycle-Aware Nutrition';
+  }, [weeklyPlans]);
 
   return (
     <View>
@@ -183,37 +203,43 @@ export default function Nutrition() {
         </View>
 
         <View style={styles.todayInnerBox}>
-          <Text style={styles.heading}>Follicular Phase Focus</Text>
+          <Text style={styles.heading}>{todayPhaseLabel}</Text>
           <Text
             style={[styles.subHeading, { color: colors.green, marginTop: 4 }]}
           >
-            Higher protein, leafy greens, fermented foods. Supporting estrogen
-            rise naturally.
+            Personalized meal plan based on your cycle, goals, and preferences.
           </Text>
         </View>
       </View>
 
       <Text style={[styles.sectionTitle]}>Weekly Meal Plan</Text>
 
-      {weeklyData.map(day => (
+      {loading && (
+        <Text style={styles.subHeading}>Loading your meal plan...</Text>
+      )}
+      {error && !loading && (
+        <Text style={[styles.subHeading, { color: 'red' }]}>{error}</Text>
+      )}
+
+      {weeklyPlans.map(day => (
         <View
-          key={day.day}
+          key={day.isoDate}
           style={
-            expandedDay === day.day
+            expandedDay === day.label
               ? [styles.dayContainer, { borderColor: colors.heading }]
               : styles.dayContainer
           }
         >
           <TouchableOpacity
             onPress={() =>
-              setExpandedDay(day.day === expandedDay ? '' : day.day)
+              setExpandedDay(day.label === expandedDay ? '' : day.label)
             }
             style={styles.dayHeader}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View>
-                <Text style={styles.dayTitle}>{day.day}</Text>
-                <Text style={styles.dateTitle}>{day.date}</Text>
+                <Text style={styles.dayTitle}>{day.label}</Text>
+                <Text style={styles.dateTitle}>{day.isoDate}</Text>
               </View>
               {day.isToday && (
                 <View style={styles.todayTag}>
@@ -223,53 +249,65 @@ export default function Nutrition() {
             </View>
 
             <Text style={styles.dayCount}>
-              {
-                Object.values(completedMeals[day.day] || {}).filter(Boolean)
-                  .length
-              }
-              / {day.meals.length}
+              {day.plan
+                ? day.plan.timeSlots.filter(s => s.completed).length
+                : 0}
+              / {day.plan ? day.plan.timeSlots.length : 0}
             </Text>
           </TouchableOpacity>
 
-          {expandedDay === day.day && day.meals.length > 0 && (
-            <View>
-              {day.meals.map((meal, i) => (
-                <View key={i} style={styles.mealCard}>
+          {expandedDay === day.label &&
+            day.plan &&
+            day.plan.timeSlots.length > 0 && (
+              <View>
+                {day.plan.timeSlots.map((slot, i) => {
+                  const active =
+                    slot.options[slot.selectedOptionIndex] ||
+                    slot.options[0];
+                  if (!active) return null;
+                  return (
+                    <View key={slot.time} style={styles.mealCard}>
                   <View style={styles.rowBetween}>
                     <View style={styles.row}>
                       <TouchableOpacity
                         style={styles.dotTextMainView}
-                        onPress={() => toggleMealCheck(day.day, i)}
+                        onPress={() =>
+                          handleToggleMealCheck(day, slot, i)
+                        }
                       >
                         <Image
                           source={
-                            completedMeals[day.day]?.[i]
+                            slot.completed
                               ? images.orangeCheckBoxOn
                               : images.orangeCheckBoxOff
                           }
                           style={styles.dot}
                         />
-                        <Text style={styles.mealTime}>{meal.time}</Text>
+                        <Text style={styles.mealTime}>{slot.time}</Text>
                       </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity style={styles.swapMainView}>
+                    <TouchableOpacity
+                      style={styles.swapMainView}
+                      onPress={() => handleSwap(day, slot, i)}
+                    >
                       <Image source={images.swapIcon} style={styles.swapIcon}/>
                       <Text style={styles.swapText}>Swap</Text>
                     </TouchableOpacity>
                   </View>
 
-                  <Text style={styles.mealTitle}>{meal.title}</Text>
-                  <Text style={styles.mealDesc}>{meal.desc}</Text>
+                  <Text style={styles.mealTitle}>{active.title}</Text>
+                  <Text style={styles.mealDesc}>{active.description}</Text>
 
                   <Text style={styles.macroText}>
-                    P: {meal.protein}g&nbsp;&nbsp;C:{meal.carbs}g&nbsp;&nbsp;F:{' '}
-                    {meal.fat}g
+                    P: {active.protein}g&nbsp;&nbsp;C:{active.carbs}g&nbsp;&nbsp;F:{' '}
+                    {active.fat}g
                   </Text>
                 </View>
-              ))}
-            </View>
-          )}
+                  );
+                })}
+              </View>
+            )}
         </View>
       ))}
     </View>

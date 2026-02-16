@@ -1175,3 +1175,105 @@ export async function getMe(): Promise<GetMeResponse> {
     method: 'GET',
   });
 }
+
+// Nutrition API Types
+export interface MealOption {
+  meal: string;
+  title: string;
+  description: string;
+  protein: number;
+  carbs: number;
+  fat: number;
+  tags: string[];
+}
+
+export interface NutritionTimeSlot {
+  time: string;
+  label: string;
+  options: MealOption[];
+  selectedOptionIndex: number;
+  completed: boolean;
+}
+
+export interface DailyMealPlan {
+  _id: string;
+  user: string;
+  date: string;
+  phase: 'menstrual' | 'follicular' | 'ovulatory' | 'luteal' | 'unknown';
+  isPregnant: boolean;
+  isBreastfeeding: boolean;
+  isPostpartum: boolean;
+  primaryGoal?: string | null;
+  dietaryRestrictionsSnapshot: {
+    vegetarian: boolean;
+    vegan: boolean;
+    pescatarian: boolean;
+    glutenFree: boolean;
+    dairyFree: boolean;
+    nutAllergy: boolean;
+    cuisines: string[];
+    dislikedFoods?: string;
+    favoriteFoods?: string;
+    budgetRange?: string;
+  };
+  timeSlots: NutritionTimeSlot[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DailyMealPlanResponse {
+  success: boolean;
+  data: DailyMealPlan;
+}
+
+export interface SwapMealResponse {
+  success: boolean;
+  data: {
+    index: number;
+    time: string;
+    selectedOptionIndex: number;
+  };
+}
+
+export interface SetMealCompletedResponse {
+  success: boolean;
+  data: {
+    index: number;
+    time: string;
+    completed: boolean;
+  };
+}
+
+export async function getDailyNutritionPlan(
+  date?: string,
+): Promise<DailyMealPlanResponse> {
+  const params = new URLSearchParams();
+  if (date) {
+    params.append('date', date);
+  }
+  const query = params.toString();
+  const endpoint = `/nutrition/plan${query ? `?${query}` : ''}`;
+  return apiCall<DailyMealPlanResponse>(endpoint, {
+    method: 'GET',
+  });
+}
+
+export async function swapMealOptionApi(
+  date: string,
+  params: { time?: string; slotIndex?: number },
+): Promise<SwapMealResponse> {
+  return apiCall<SwapMealResponse>('/nutrition/plan/swap', {
+    method: 'POST',
+    body: JSON.stringify({ date, ...params }),
+  });
+}
+
+export async function setMealCompletedApi(
+  date: string,
+  params: { time?: string; slotIndex?: number; completed: boolean },
+): Promise<SetMealCompletedResponse> {
+  return apiCall<SetMealCompletedResponse>('/nutrition/plan/complete', {
+    method: 'POST',
+    body: JSON.stringify({ date, ...params }),
+  });
+}
