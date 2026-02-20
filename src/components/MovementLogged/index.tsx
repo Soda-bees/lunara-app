@@ -1,33 +1,119 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import React, { useState } from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
 import images from '../../constants/images';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
-
-type WorkoutItem = {
-  id: number;
-  title: string;
-  icon?: any;
-};
+import { getDailyWorkoutPlan, logWorkoutApi, WorkoutOption } from '../../services/api';
 
 export default function MovementLogged() {
-  const [selected, setSelected] = useState<number[]>([]);
+  const [workouts, setWorkouts] = useState<WorkoutOption[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  const WORKOUTS: WorkoutItem[] = [
-    { id: 1, title: 'Weight training' },
-    { id: 2, title: 'Running or cycling' },
-    { id: 3, title: 'Pilates reformer' },
-    { id: 4, title: 'Barre or dance cardio' },
-    { id: 5, title: 'Rock climbing' },
-  ];
+  const loadWorkouts = useCallback(async (skipLoadingState: boolean = false) => {
+      try {
+        if (!skipLoadingState) {
+          setLoading(true);
+        }
+        setError(null);
+        const today = new Date().toISOString().split('T')[0];
+        const res = await getDailyWorkoutPlan(today);
+        if (res.success && res.data.workouts) {
+          setWorkouts(res.data.workouts);
+          
+          // Load logged workouts from plan
+          if (res.data.loggedWorkouts && res.data.loggedWorkouts.length > 0) {
+            const loggedIds = res.data.loggedWorkouts.map(lw => {
+              // Handle both populated (object) and non-populated (string) workout IDs
+              if (typeof lw.workoutId === 'object' && lw.workoutId && '_id' in lw.workoutId) {
+                return String(lw.workoutId._id);
+              }
+              return String(lw.workoutId || '');
+            }).filter(id => id && id !== '');
+            setSelected(loggedIds);
+          } else {
+            // Fallback: Check legacy selectedOptionIndex for migration
+            if (res.data.selectedOptionIndex !== undefined && res.data.selectedOptionIndex >= 0 && res.data.workouts[res.data.selectedOptionIndex]) {
+              const workout = res.data.workouts[res.data.selectedOptionIndex];
+              const workoutId = typeof workout.workout === 'object' && workout.workout && '_id' in workout.workout
+                ? String(workout.workout._id)
+                : String(workout.workout || '');
+              if (workoutId && workoutId !== '') {
+                setSelected([workoutId]);
+              }
+            } else {
+              setSelected([]);
+            }
+          }
+        }
+      } catch (e: any) {
+        setError(e?.message || 'Unable to load workouts.');
+        console.error('[MovementLogged] Error loading workouts:', e);
+      } finally {
+        if (!skipLoadingState) {
+          setLoading(false);
+        }
+        setRefreshing(false);
+      }
+    }, []);
 
-  const toggleWorkout = (id: number) => {
-    setSelected(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
-    );
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadWorkouts(true);
+  }, [loadWorkouts]);
+
+  useEffect(() => {
+    loadWorkouts();
+  }, [loadWorkouts]);
+
+  const toggleWorkout = async (workoutId: string) => {
+    const isSelected = selected.includes(workoutId);
+    const action = isSelected ? 'remove' : 'add';
+    
+    // Optimistic update
+    if (isSelected) {
+      setSelected(prev => prev.filter(x => x !== workoutId));
+    } else {
+      setSelected(prev => [...prev, workoutId]);
+    }
+
+    try {
+      setLoading(true);
+      const today = new Date().toISOString().split('T')[0];
+      const res = await logWorkoutApi(today, workoutId, action);
+      
+      if (res.success && res.data.loggedWorkouts) {
+        // Update state based on API response
+        const loggedIds = res.data.loggedWorkouts.map(lw => {
+          if (typeof lw.workoutId === 'object' && lw.workoutId && '_id' in lw.workoutId) {
+            return String(lw.workoutId._id);
+          }
+          return String(lw.workoutId || '');
+        }).filter(id => id && id !== '');
+        setSelected(loggedIds);
+      }
+    } catch (e: any) {
+      console.error('[MovementLogged] Error logging workout:', e);
+      setError(e?.message || 'Unable to log workout.');
+      // Revert optimistic update on error
+      if (isSelected) {
+        setSelected(prev => [...prev, workoutId]);
+      } else {
+        setSelected(prev => prev.filter(x => x !== workoutId));
+      }
+    } finally {
+      setLoading(false);
+    }
   };
   return (
-    <View style={styles.mainContainer}>
+    <ScrollView
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      <View style={styles.mainContainer}>
       <View style={styles.cardHeader}>
         <View style={styles.movementMainView}>
           <Image
@@ -42,18 +128,36 @@ export default function MovementLogged() {
         </View>
       </View>
 
-      {WORKOUTS.map(item => {
-        const isChecked = selected.includes(item.id);
+      {loading && workouts.length === 0 && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color={colors.heading} />
+          <Text style={styles.loadingText}>Loading workouts...</Text>
+        </View>
+      )}
+
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
+      {workouts.map((item, index) => {
+        // Handle both populated (object) and non-populated (string) workout IDs
+        const workoutId = typeof item.workout === 'object' && item.workout && '_id' in item.workout
+          ? String(item.workout._id)
+          : String(item.workout || `workout-${index}`);
+        const isChecked = selected.includes(workoutId);
 
         return (
           <TouchableOpacity
-            key={item.id}
+            key={workoutId}
             style={[
               styles.workoutItem,
               isChecked && styles.workoutItemSelected,
             ]}
-            onPress={() => toggleWorkout(item.id)}
+            onPress={() => toggleWorkout(workoutId)}
             activeOpacity={0.8}
+            disabled={loading}
           >
             <View style={styles.row}>
               <View style={styles.onlyFlexDirectionRow}>
@@ -96,11 +200,16 @@ export default function MovementLogged() {
         </View>
       )}
 
-      <View style={styles.suggestedDurationBox}>
-        <Text style={styles.durationLabel}>Suggested Duration:</Text>
-        <Text style={styles.durationTime}>30–45 minutes</Text>
+      {workouts.length > 0 && (
+        <View style={styles.suggestedDurationBox}>
+          <Text style={styles.durationLabel}>Suggested Duration:</Text>
+          <Text style={styles.durationTime}>
+            {workouts[0]?.duration || 30} minutes
+          </Text>
+        </View>
+      )}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -238,5 +347,27 @@ const styles = StyleSheet.create({
   onlyFlexDirectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 12,
+    color: colors.darkGrey,
+    fontFamily: 'Inter-Regular',
+  },
+  errorContainer: {
+    padding: 12,
+    backgroundColor: '#FFEBEE',
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#C62828',
+    fontFamily: 'Inter-Regular',
   },
 });

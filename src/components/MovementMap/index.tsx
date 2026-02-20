@@ -1,10 +1,37 @@
-import { StyleSheet, Text, View } from 'react-native';
-import React from 'react';
+import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
+import { getCycleMovementMap, CycleMovementMapPhase } from '../../services/api';
 
 export default function MovementMap() {
-  const getPhasesData = [
+  const [phasesData, setPhasesData] = useState<CycleMovementMapPhase[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadMovementMap = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await getCycleMovementMap();
+        if (res.success && res.data) {
+          setPhasesData(res.data);
+        } else {
+          setError('Unable to load movement map.');
+        }
+      } catch (e: any) {
+        console.error('[MovementMap] Error loading movement map:', e);
+        setError(e?.message || 'Unable to load movement map.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadMovementMap();
+  }, []);
+
+  // Fallback data if API fails
+  const fallbackData: CycleMovementMapPhase[] = [
     {
       phaseName: 'Menstrual',
       phaseLevel: 'Low',
@@ -43,6 +70,8 @@ export default function MovementMap() {
     },
   ];
 
+  const displayData = phasesData.length > 0 ? phasesData : fallbackData;
+
   const getLevelStyle = (level: string) => {
     switch (level) {
       case 'Low':
@@ -78,7 +107,21 @@ export default function MovementMap() {
   return (
     <View style={styles.mainContainer}>
       <Text style={styles.mainHeading}>Your Cycle Movement Map</Text>
-      {getPhasesData.map((item, index) => {
+      
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color={colors.heading} />
+          <Text style={styles.loadingText}>Loading movement map...</Text>
+        </View>
+      )}
+
+      {error && phasesData.length === 0 && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
+      {displayData.map((item, index) => {
         return (
           <View style={styles.phasesMainView} key={index}>
             <View style={styles.onlyFlexDirectionRow}>
@@ -175,5 +218,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     marginTop:9
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 12,
+    color: colors.darkGrey,
+    fontFamily: 'Inter-Regular',
+  },
+  errorContainer: {
+    padding: 12,
+    backgroundColor: '#FFEBEE',
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#C62828',
+    fontFamily: 'Inter-Regular',
   },
 });

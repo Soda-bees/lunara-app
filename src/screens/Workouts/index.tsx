@@ -6,7 +6,7 @@ import {
   StatusBar,
   ScrollView,
 } from 'react-native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styles from './style';
 import GradientWrapper from '../../components/GradientWrapper';
@@ -16,46 +16,72 @@ import Header from '../../components/Header';
 import MovementLogged from '../../components/MovementLogged';
 import MovementMap from '../../components/MovementMap';
 import { sizes } from '../../constants/sizes';
+import { getPhaseInfo, getMovementScience, PhaseInfo, MovementScienceItem } from '../../services/api';
 
 export default function Workouts() {
-  const movementScienceData = [
-    {
-      title: 'Muscle & Insulin',
-      description:
-        'Muscle contraction increases insulin sensitivity—helping regulate blood sugar and hormone balance.',
-      image: '💪',
-    },
-    {
-      title: 'Walking After Meals',
-      description:
-        'A 10-minute walk after eating can reduce estrogen dominance and improve digestion.',
-      image: '🚶‍♀️',
-    },
-    {
-      title: 'Follicular Strength',
-      description:
-        'Strength training during the follicular phase amplifies muscle growth and metabolic results.',
-      image: '🏋️‍♀️',
-    },
-    {
-      title: 'Cortisol Balance',
-      description:
-        'Gentle movement during menstruation helps lower cortisol while supporting lymphatic flow.',
-      image: '🧘‍♀️',
-    },
-    {
-      title: 'Dopamine Boost',
-      description:
-        'High-energy workouts during ovulation maximize dopamine production and mood elevation.',
-      image: '⚡',
-    },
-    {
-      title: 'Recovery Matters',
-      description:
-        'Progesterone naturally slows you down—honor this by choosing lower-impact movement in your luteal phase.',
-      image: '🌙',
-    },
-  ];
+  const [phaseInfo, setPhaseInfo] = useState<PhaseInfo | null>(null);
+  const [movementScienceData, setMovementScienceData] = useState<MovementScienceItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Load phase info and movement science in parallel
+        const [phaseRes, scienceRes] = await Promise.all([
+          getPhaseInfo(today),
+          getMovementScience(),
+        ]);
+
+        if (phaseRes.success && phaseRes.data) {
+          setPhaseInfo(phaseRes.data);
+        }
+
+        if (scienceRes.success && scienceRes.data) {
+          setMovementScienceData(scienceRes.data);
+        } else {
+          // Fallback science data
+          setMovementScienceData([
+            {
+              title: 'Muscle & Insulin',
+              description: 'Muscle contraction increases insulin sensitivity—helping regulate blood sugar and hormone balance.',
+              image: '💪',
+            },
+            {
+              title: 'Walking After Meals',
+              description: 'A 10-minute walk after eating can reduce estrogen dominance and improve digestion.',
+              image: '🚶‍♀️',
+            },
+          ]);
+        }
+      } catch (e: any) {
+        console.error('[Workouts] Error loading data:', e);
+        setError(e?.message || 'Unable to load workout information.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  // Fallback phase info
+  const fallbackPhaseInfo: PhaseInfo = {
+    phaseName: 'Your Current Phase',
+    phaseTitle: 'Movement Focus',
+    description: 'Listen to your body and choose movement that feels right for you today.',
+    benefit: 'Supports overall health and well-being',
+    avoid: 'Overexertion or ignoring your body\'s signals',
+    phase: 'unknown',
+    isPregnant: false,
+    isBreastfeeding: false,
+    isPostpartum: false,
+  };
+
+  const displayPhaseInfo = phaseInfo || fallbackPhaseInfo;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -80,7 +106,7 @@ export default function Workouts() {
                       Your Current Phase
                     </Text>
                     <Text style={[styles.forgotText, { fontSize: 24 }]}>
-                      Follicular Phase
+                      {displayPhaseInfo.phaseName}
                     </Text>
                     <View style={styles.risingMainView}>
                       <Text
@@ -89,7 +115,7 @@ export default function Workouts() {
                           { color: colors.heading },
                         ]}
                       >
-                        Rising - Power Building
+                        {displayPhaseInfo.phaseTitle}
                       </Text>
                     </View>
                   </View>
@@ -100,16 +126,14 @@ export default function Workouts() {
                 />
               </View>
               <Text style={styles.textDarkGrey}>
-                Estrogen is rising, metabolism is increasing. Your body is
-                primed to build strength and endurance.
+                {displayPhaseInfo.description}
               </Text>
               <View style={styles.cautionView}>
                 <Image source={images.energyHigh} style={styles.icon} />
                 <View>
                   <Text style={styles.heading}>Hormone Benefit</Text>
                   <Text style={styles.durationText}>
-                    Supports estrogen metabolism, builds lean muscle, enhances
-                    insulin sensitivity
+                    {displayPhaseInfo.benefit}
                   </Text>
                 </View>
               </View>
@@ -121,7 +145,7 @@ export default function Workouts() {
                 <View>
                   <Text style={styles.heading}>What to Avoid</Text>
                   <Text style={styles.durationText}>
-                    Over-restriction or under-eating
+                    {displayPhaseInfo.avoid}
                   </Text>
                 </View>
               </View>
@@ -129,6 +153,19 @@ export default function Workouts() {
           </GradientWrapper>
           <MovementLogged />
           <MovementMap />
+          
+          {loading && (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading movement science...</Text>
+            </View>
+          )}
+
+          {error && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
           <View style={styles.movementScienceView}>
             <Text style={styles.mainHeading}>Movement Science</Text>
             {movementScienceData.map((item, index) => {

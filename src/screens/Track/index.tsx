@@ -51,12 +51,12 @@ export default function Track() {
             isActive={selectedCategory === 'Movement'}
             onPress={setSelectedCategory}
           />
-          <CategoryButton
+          {/* <CategoryButton
             icon={images.mindfulIcon}
             label="Mindful"
             isActive={selectedCategory === 'Mindful'}
             onPress={setSelectedCategory}
-          />
+          /> */}
         </View>
         <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
           {selectedCategory === 'Nutrition' ? (

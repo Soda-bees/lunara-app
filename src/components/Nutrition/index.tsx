@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import images from '../../constants/images';
 import { colors } from '../../constants/colors';
@@ -14,6 +15,7 @@ import {
   DailyMealPlan,
   NutritionTimeSlot,
   getDailyNutritionPlan,
+  getWeeklyNutritionPlan,
   setMealCompletedApi,
   swapMealOptionApi,
 } from '../../services/api';
@@ -38,63 +40,67 @@ export default function Nutrition() {
   const [weeklyPlans, setWeeklyPlans] = useState<WeeklyPlan[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const hasInitialized = useRef(false);
 
-  useEffect(() => {
-    const loadWeek = async () => {
-      try {
+  const loadWeek = useCallback(async (skipLoadingState: boolean = false) => {
+    try {
+      if (!skipLoadingState) {
         setLoading(true);
-        setError(null);
+      }
+      setError(null);
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const startDate = formatDateLabel(today);
 
-        const start = new Date(today);
-        const week: WeeklyPlan[] = [];
+      // Fetch all 5 days in a single batch call
+      const res = await getWeeklyNutritionPlan(startDate);
 
-        for (let i = 0; i < 5; i++) {
-          const d = new Date(start);
-          d.setDate(start.getDate() + i);
-          const isoDate = formatDateLabel(d);
+      if (!res.success || !res.data || !Array.isArray(res.data)) {
+        throw new Error('Invalid response from server');
+      }
 
-          console.log(`[Nutrition Frontend] Fetching plan for date: ${isoDate}`);
-          // eslint-disable-next-line no-await-in-loop
-          const res = await getDailyNutritionPlan(isoDate);
-          console.log(`[Nutrition Frontend] Response for ${isoDate}:`, {
-            success: res.success,
-            hasData: !!res.data,
-            timeSlotsCount: res.data?.timeSlots?.length || 0,
-            totalOptions: res.data?.timeSlots?.reduce((sum, slot) => sum + (slot.options?.length || 0), 0) || 0,
-          });
+      const week: WeeklyPlan[] = res.data.map((plan, index) => {
+        const d = new Date(today);
+        d.setDate(today.getDate() + index);
+        const isoDate = formatDateLabel(d);
 
-          if (res.data?.timeSlots) {
-            res.data.timeSlots.forEach((slot, idx) => {
-              console.log(`[Nutrition Frontend] Slot ${idx} (${slot.time}): ${slot.options?.length || 0} options`);
-            });
-          }
+        return {
+          isoDate,
+          label: getDayName(d),
+          isToday: d.getTime() === today.getTime(),
+          plan: plan,
+        };
+      });
 
-          week.push({
-            isoDate,
-            label: getDayName(d),
-            isToday: d.getTime() === today.getTime(),
-            plan: res.data,
-          });
-        }
-
-        setWeeklyPlans(week);
-        if (!expandedDay && week.length > 0) {
-          const todayEntry =
-            week.find(d => d.isToday)?.label || week[0].label;
-          setExpandedDay(todayEntry);
-        }
-      } catch (e: any) {
-        setError(e?.message || 'Unable to load nutrition plan.');
-      } finally {
+      setWeeklyPlans(week);
+      
+      // Only set expandedDay on initial load
+      if (!hasInitialized.current && week.length > 0) {
+        const todayEntry =
+          week.find(d => d.isToday)?.label || week[0].label;
+        setExpandedDay(todayEntry);
+        hasInitialized.current = true;
+      }
+    } catch (e: any) {
+      setError(e?.message || 'Unable to load nutrition plan.');
+    } finally {
+      if (!skipLoadingState) {
         setLoading(false);
       }
-    };
+      setRefreshing(false);
+    }
+  }, []);
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadWeek(true);
+  }, [loadWeek]);
+
+  useEffect(() => {
     loadWeek();
-  }, [expandedDay]);
+  }, [loadWeek]); // Only run on mount, not when expandedDay changes
 
   const handleToggleMealCheck = async (
     day: WeeklyPlan,
@@ -172,7 +178,14 @@ export default function Nutrition() {
 
   const todayPhaseLabel = useMemo(() => {
     const todayPlan = weeklyPlans.find(d => d.isToday && d.plan)?.plan;
-    if (!todayPlan) return 'Today’s Nutrition';
+    if (!todayPlan) return "Today's Nutrition";
+    
+    // Check pregnancy/breastfeeding/postpartum status first (these take priority)
+    if (todayPlan.isPregnant) return 'Nourishing You & Baby';
+    if (todayPlan.isBreastfeeding) return 'Breastfeeding Nutrition';
+    if (todayPlan.isPostpartum) return 'Postpartum Recovery Nutrition';
+    
+    // Fall back to cycle phase labels
     const phase = todayPlan.phase;
     if (phase === 'follicular') return 'Follicular Phase Focus';
     if (phase === 'menstrual') return 'Menstrual Phase Support';
@@ -182,8 +195,12 @@ export default function Nutrition() {
   }, [weeklyPlans]);
 
   return (
-    <View>
-      <View style={styles.topContainer}>
+    <ScrollView
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      {/* <View style={styles.topContainer}>
         <View style={styles.iconCircle}>
           <Image source={images.mindfulIcon} style={styles.icon} />
         </View>
@@ -194,7 +211,7 @@ export default function Nutrition() {
             Your meals are optimized for Day 8 • Week 2
           </Text>
         </View>
-      </View>
+      </View> */}
 
       <View style={styles.todayContainer}>
         <View style={styles.todayHeader}>
@@ -310,7 +327,7 @@ export default function Nutrition() {
             )}
         </View>
       ))}
-    </View>
+    </ScrollView>
   );
 }
 

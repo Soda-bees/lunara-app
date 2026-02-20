@@ -123,6 +123,28 @@ const styles = StyleSheet.create({
     fontFamily: 'PlayfairDisplay-Medium',
     color: colors.black,
   },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  loadingText: {
+    fontSize: 12,
+    color: colors.darkGrey,
+    fontFamily: 'Inter-Regular',
+  },
+  errorContainer: {
+    padding: 12,
+    backgroundColor: '#FFEBEE',
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#C62828',
+    fontFamily: 'Inter-Regular',
+  },
 });
 
 export default styles;

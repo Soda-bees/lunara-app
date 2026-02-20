@@ -1,5 +1,5 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import GradientWrapper from '../GradientWrapper';
 import { sizes } from '../../constants/sizes';
 import images from '../../constants/images';
@@ -7,11 +7,53 @@ import { colors } from '../../constants/colors';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/stackNavigation';
+import { getPersonalizedMovementContent, PersonalizedMovementContent } from '../../services/api';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Workouts'>;
 
 export default function Movement() {
   const navigation = useNavigation<NavigationProp>();
+  const [content, setContent] = useState<PersonalizedMovementContent | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadPersonalizedContent = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const today = new Date().toISOString().split('T')[0];
+        const res = await getPersonalizedMovementContent(today);
+        if (res.success && res.data) {
+          setContent(res.data);
+        } else {
+          setError('Unable to load personalized movement content.');
+        }
+      } catch (e: any) {
+        console.error('[Movement] Error loading personalized content:', e);
+        setError(e?.message || 'Unable to load movement content.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPersonalizedContent();
+  }, []);
+
+  // Fallback content if API fails
+  const fallbackContent: PersonalizedMovementContent = {
+    title: 'Movement Focus',
+    description: 'Listen to your body and choose movement that feels right for you today.',
+    duration: '20-30 minutes',
+    benefit: 'Supports overall health and well-being',
+    activities: '• Walking\n• Yoga\n• Stretching\n• Any movement you enjoy',
+    energyLevel: 'Moderate',
+    phase: 'unknown',
+    isPregnant: false,
+    isBreastfeeding: false,
+    isPostpartum: false,
+  };
+
+  const displayContent = content || fallbackContent;
   return (
     <View>
       <View style={{ marginVertical: 16 }}>
@@ -27,19 +69,17 @@ export default function Movement() {
                 </View>
                 <View style={styles.phasesView}>
                   <Text style={styles.numberTextMedium}>Movement Focus</Text>
-                  <Text style={styles.forgotText}>Rising - Power Building</Text>
+                  <Text style={styles.forgotText}>{displayContent.title}</Text>
                 </View>
               </View>
               <Image source={images.dumbellIcon} style={styles.dumbellsIcon} />
             </View>
             <Text style={styles.textDarkGrey}>
-              Estrogen is rising, metabolism is increasing. Your body is primed
-              to build strength and endurance.
+              {displayContent.description}
             </Text>
-            <Text style={styles.durationText}>Duration: 30-45 minutes</Text>
+            <Text style={styles.durationText}>Duration: {displayContent.duration}</Text>
             <Text style={styles.durationText}>
-              Benefit: Supports estrogen metabolism, builds lean muscle,
-              enhances insulin sensitivity
+              Benefit: {displayContent.benefit}
             </Text>
           </View>
           <TouchableOpacity
@@ -50,20 +90,29 @@ export default function Movement() {
           </TouchableOpacity>
         </GradientWrapper>
       </View>
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading personalized movement content...</Text>
+        </View>
+      )}
+
+      {error && !content && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
       <View style={styles.movementBottomView}>
         <Text style={styles.todayHeading}>Movement Tips for Your Phase</Text>
         <Text style={styles.durationText}>
-          During your follicular phase, you have rising energy and are building
-          strength. This is the perfect time for challenging workouts.
+          {displayContent.description}
         </Text>
         <View style={styles.todayInnerBox}>
           <Text style={styles.heading}>Recommended Activities:</Text>
           <Text
             style={[styles.subHeading, { color: colors.green, marginTop: 4 }]}
           >
-            • HIIT workouts{'\n'}• Strength training{'\n'}• Dance or cardio
-            classes
-            {'\n'}• Try new activities
+            {displayContent.activities}
           </Text>
         </View>
       </View>
@@ -193,6 +242,27 @@ const styles = StyleSheet.create({
   subHeading: {
     color: colors.black,
     fontSize: 12,
+    fontFamily: 'Inter-Regular',
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontSize: 12,
+    color: colors.darkGrey,
+    fontFamily: 'Inter-Regular',
+  },
+  errorContainer: {
+    padding: 12,
+    backgroundColor: '#FFEBEE',
+    borderRadius: 8,
+    marginVertical: 12,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#C62828',
     fontFamily: 'Inter-Regular',
   },
 });
