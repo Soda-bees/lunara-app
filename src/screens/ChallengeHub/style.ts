@@ -52,9 +52,8 @@ const styles = StyleSheet.create({
 
   challengeName: {
     color: 'white',
-    textAlign: 'center',
     fontFamily: 'PlayfairDisplay-Medium',
-    fontSize: 24,
+    fontSize: 20,
   },
 
   challengesubTitle: {
@@ -76,12 +75,12 @@ const styles = StyleSheet.create({
     color: colors.disabledText,
     fontSize: 14,
     fontFamily: 'Inter-Regular',
-    marginLeft: 6,
   },
 
   flexRowStyle: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap :6
   },
 
   startChallenge: {

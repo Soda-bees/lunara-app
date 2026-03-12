@@ -1,76 +1,93 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
-import React from 'react';
+import { Image, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import GradientWrapper from '../GradientWrapper';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 import images from '../../constants/images';
+import { getChallengePathways } from '../../services/api';
 
-const pathwaysData = [
-  {
-    title: 'Liver Detox Pathways',
-    image: images.pregnancyHeart,
-    percentage: '58%',
-    accent: '#FF3864',
-    description:
-      'Your liver has 2 phases of detoxification that neutralize and eliminate toxins, excess hormones, and metabolic waste.',
-    whatItDoes: [
-      'Phase 1: Breaks down toxins into intermediate compounds',
-      'Phase 2: Converts intermediates into water-soluble forms',
-      'Metabolizes excess estrogen for hormonal balance',
-    ],
-    howWeAddress: [
-      'Castor oil packs over liver',
-      'Beets for liver detox support',
-      'Reduce toxic load (clean eating)',
-    ],
-  },
-  {
-    title: 'Gut Health & Elimination',
-    image: images.trackMovementIcon,
-    percentage: '48%',
-    accent: '#5BCE8B',
-    description:
-      'Your gut eliminates toxins through stool. A healthy microbiome and regular bowel movements are essential for hormone balance.',
-    whatItDoes: [
-      'Houses 70% of your immune system',
-      'Produces neurotransmitters (serotonin, GABA)',
-      'Eliminates estrogen via healthy bowel movements',
-    ],
-    howWeAddress: [
-      'Heal gut lining with bone broth',
-      'Support microbiome diversity',
-      'Optimize digestion',
-    ],
-  },
-  {
-    title: 'Lymphatic Drainage',
-    image: images.leaf,
-    percentage: '68%',
-    accent: '#3B82F6',
-    description:
-      'Your lymphatic system moves waste and toxins out of tissues. Unlike blood, it has no pump—it relies on movement and breathing.',
-    whatItDoes: [
-      'Collects cellular waste and toxins',
-      'Transports immune cells throughout body',
-      'Removes excess fluid from tissues',
-    ],
-    howWeAddress: [
-      'Rebounding or jumping',
-      'Deep breathing exercises',
-      'Lymphatic massage',
-    ],
-  },
-];
+interface PathwaysChallengeProps {
+  instanceId: string;
+}
 
-export default function PathwaysChallenge() {
+export default function PathwaysChallenge({ instanceId }: PathwaysChallengeProps) {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [headerWeek, setHeaderWeek] = useState<number | null>(null);
+  const [headerSubtitle, setHeaderSubtitle] = useState<string | null>(null);
+  const [challengeDuration, setChallengeDuration] = useState<number | null>(null);
+  const [challengeTitle, setChallengeTitle] = useState<string | null>(null);
+  const [challengeDescription, setChallengeDescription] = useState<string | null>(null);
+  const [pathways, setPathways] = useState<
+    {
+      title: string;
+      image: any;
+      percentage: number;
+      accent: string;
+      description: string;
+      whatItDoes: string[];
+      howWeAddress: string[];
+    }[]
+  >([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await getChallengePathways(instanceId);
+        if (!isMounted) return;
+        if (res.success && res.data) {
+          setHeaderWeek(res.data.currentWeek);
+          setChallengeDuration(res.data.duration ?? null);
+          setChallengeTitle(res.data.challengeTitle ?? null);
+          setChallengeDescription(res.data.challengeDescription ?? null);
+          setHeaderSubtitle(
+            res.data.currentPhase?.goal ||
+              res.data.currentPhase?.description ||
+              null,
+          );
+          const mapped =
+            res.data.pathways?.map(p => ({
+              title: p.title,
+              image:
+                p.title.includes('Gut') || p.title.includes('Elimination')
+                  ? images.trackMovementIcon
+                  : p.title.includes('Lymph')
+                  ? images.leaf
+                  : images.pregnancyHeart,
+              percentage: p.percentage,
+              accent: p.color || '#FF3864',
+              description: p.description,
+              whatItDoes: p.whatItDoes,
+              howWeAddress: p.howWeAddress,
+            })) || [];
+          setPathways(mapped);
+        }
+        setLoading(false);
+      } catch (e: any) {
+        if (!isMounted) return;
+        setError(e?.message || 'Unable to load pathways.');
+        setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [instanceId]);
   return (
     <View>
       <View style={{ marginVertical: 16 }}>
         <GradientWrapper variant="primary">
           <View style={styles.gradientMainView}>
-            <Text style={styles.gradientHeading}>Week 2: Restore</Text>
+            <Text style={styles.gradientHeading}>
+              {headerWeek ? `Week ${headerWeek}` : 'Week 1: Restore'}
+            </Text>
             <Text style={styles.gradientText}>
-              Repair function, reduce toxic burden
+              {headerSubtitle || 'Detox support for your liver, gut, and lymphatic systems'}
             </Text>
           </View>
         </GradientWrapper>
@@ -79,18 +96,36 @@ export default function PathwaysChallenge() {
       <GradientWrapper variant="basic">
         <View style={styles.gradientMainView}>
           <Text style={styles.detoxHeading}>
-            Understanding Your Detox Pathways
+            {challengeTitle
+              ? `Understanding the Pathways in ${challengeTitle}`
+              : 'Understanding Your Pathways'}
           </Text>
           <Text style={styles.detoxText}>
-            True detoxification happens through three interconnected systems.
-            This challenge addresses all three pathways systematically over 21
-            days, building sustainable habits that support your body's natural
-            cleansing processes.
+            {challengeDescription ||
+              'This challenge addresses key pathways systematically, building sustainable habits that support your body\'s natural processes.'}
           </Text>
         </View>
       </GradientWrapper>
 
-      {pathwaysData.map((item, index) => (
+      {loading && (
+        <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+          <ActivityIndicator size="small" color={colors.heading} />
+        </View>
+      )}
+      {error && !loading && (
+        <Text
+          style={{
+            marginTop: 8,
+            color: '#C62828',
+            fontSize: 12,
+            fontFamily: 'Inter-Regular',
+          }}
+        >
+          {error}
+        </Text>
+      )}
+
+      {pathways.map((item, index) => (
         <View key={index} style={styles.card}>
           <View style={[styles.row, { alignItems: 'flex-start' }]}>
             <View
@@ -116,20 +151,20 @@ export default function PathwaysChallenge() {
             >
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>{item.title}</Text>
-                <View
+                {/* <View
                   style={[
                     styles.percentageBadge,
                     { backgroundColor: `${item.accent}20` },
                   ]}
                 >
                   <Text style={styles.percentageText}>{item.percentage}</Text>
-                </View>
+                </View> */}
               </View>
               <Text style={styles.cardDesc}>{item.description}</Text>
 
-              <View style={styles.progressBackground}>
+              {/* <View style={styles.progressBackground}>
                 <View style={styles.progressBar} />
-              </View>
+              </View> */}
             </View>
           </View>
 
@@ -149,7 +184,7 @@ export default function PathwaysChallenge() {
           ))}
 
           <Text style={[styles.sectionTitle, { marginTop: 20 }]}>
-            How We’re Addressing It (Week 2):
+            {`How We’re Addressing It (Week ${headerWeek ?? 1}):`}
           </Text>
           {item.howWeAddress.map((text, i) => (
             <Text key={i} style={styles.subBulletText}>

@@ -1,95 +1,53 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
-import React from 'react';
+import { Image, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 import images from '../../constants/images';
+import { getChallengeHabits, ChallengePhaseHabits } from '../../services/api';
 
 type PathwayType = 'Lymphatic' | 'Liver' | 'Gut';
 
-export default function HabitsChallenge() {
+interface HabitsChallengeProps {
+  instanceId: string;
+}
+
+export default function HabitsChallenge({ instanceId }: HabitsChallengeProps) {
   const pathwayColors: Record<PathwayType, string> = {
     Lymphatic: '#6CA8F8',
     Liver: '#E98A9E',
     Gut: '#69C78A',
   };
 
-  const habitsData = [
-    {
-      week: 1,
-      mastered: true,
-      habits: [
-        {
-          title: '80oz water daily',
-          pathway: 'Lymphatic',
-          completed: 5,
-          target: 5,
-        },
-        {
-          title: 'Morning dry brushing',
-          pathway: 'Lymphatic',
-          completed: 5,
-          target: 5,
-        },
-        {
-          title: 'Daily greens (cruciferous vegetables)',
-          pathway: 'Liver',
-          completed: 4,
-          target: 5,
-        },
-      ],
-    },
-    {
-      week: 2,
-      mastered: false,
-      habits: [
-        {
-          title: 'NAC + Glutathione supplementation',
-          pathway: 'Liver',
-          completed: 4,
-          target: 5,
-        },
-        {
-          title: 'Daily probiotic-rich foods',
-          pathway: 'Gut',
-          completed: 3,
-          target: 5,
-        },
-        {
-          title: 'Daily movement (walk, yoga, rebounding)',
-          pathway: 'Lymphatic',
-          completed: 5,
-          target: 5,
-        },
-      ],
-    },
-  ];
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [phases, setPhases] = useState<ChallengePhaseHabits[]>([]);
+  const [currentDay, setCurrentDay] = useState<number>(1);
 
-  const lockedData = [
-    {
-      title: 'Weekly castor oil pack',
-      unlockText:
-        'Unlocks after completing "NAC + Glutathione supplementation" (4/5 days)',
-      week: 3,
-    },
-    {
-      title: 'Weekly castor oil pack',
-      unlockText:
-        'Unlocks after completing "NAC + Glutathione supplementation" (4/5 days)',
-      week: 3,
-    },
-    {
-      title: 'Weekly castor oil pack',
-      unlockText:
-        'Unlocks after completing "NAC + Glutathione supplementation" (4/5 days)',
-      week: 3,
-    },
-    {
-      title: 'Weekly castor oil pack',
-      unlockText:
-        'Unlocks after completing "NAC + Glutathione supplementation" (4/5 days)',
-      week: 3,
-    },
-  ];
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await getChallengeHabits(instanceId);
+        if (!isMounted) return;
+        if (res.success && res.data) {
+          setPhases(res.data.phases || []);
+          setCurrentDay(res.data.currentDay || 1);
+        }
+        setLoading(false);
+      } catch (e: any) {
+        if (!isMounted) return;
+        setError(e?.message || 'Unable to load habits.');
+        setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [instanceId]);
 
   return (
     <View>
@@ -100,116 +58,140 @@ export default function HabitsChallenge() {
           lasting change.
         </Text>
 
-        {habitsData.map((weekItem, wIndex) => (
-          <View key={wIndex}>
-            <View style={styles.weekHeader}>
-              <Text style={styles.cardTitle}>Week {weekItem.week}</Text>
+        {loading && (
+          <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+            <ActivityIndicator size="small" color={colors.heading} />
+          </View>
+        )}
+        {error && !loading && (
+          <Text
+            style={{
+              marginTop: 8,
+              color: '#C62828',
+              fontSize: 12,
+              fontFamily: 'Inter-Regular',
+            }}
+          >
+            {error}
+          </Text>
+        )}
 
-              {weekItem.mastered && (
-                <View style={styles.starTextMainView}>
-                  <Image
-                    source={images.starIcon}
-                    style={styles.starIconStyle}
-                  />
-                  <Text style={styles.starIconText}>Mastered</Text>
+        {phases.map((phase, pIndex) => {
+          const isUnlocked = phase.unlocked;
+          const lockedTasks = phase.tasks.filter(t => !isUnlocked);
+          const unlockedTasks = phase.tasks.filter(t => isUnlocked);
+
+          return (
+            <View key={pIndex}>
+              <View style={styles.phaseHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardTitle}>{phase.name}</Text>
+                  {phase.goal && (
+                    <Text style={styles.phaseGoal}>{phase.goal}</Text>
+                  )}
+                </View>
+
+                {phase.mastered && (
+                  <View style={styles.starTextMainView}>
+                    <Image
+                      source={images.starIcon}
+                      style={styles.starIconStyle}
+                    />
+                    <Text style={styles.starIconText}>Mastered</Text>
+                  </View>
+                )}
+                {!isUnlocked && (
+                  <View style={styles.lockedBadge}>
+                    <Text style={styles.lockedBadgeText}>
+                      Unlocks Day {phase.startDay}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {isUnlocked ? (
+                unlockedTasks.map((task, tIndex) => {
+                  const isCompleted = task.completedDays >= task.totalDays && task.totalDays > 0;
+                  const pathway = task.pathway as PathwayType | null;
+
+                  return (
+                    <View key={tIndex} style={styles.habitMainView}>
+                      <Image
+                        source={isCompleted ? images.starIcon : images.checkBox}
+                        style={styles.habitIcon}
+                      />
+
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <View style={styles.titleRow}>
+                          <Text
+                            style={[
+                              styles.titleText,
+                              {
+                                color: isCompleted ? colors.heading : colors.black,
+                              },
+                            ]}
+                          >
+                            {task.title}
+                          </Text>
+
+                          {pathway && (
+                            <View
+                              style={[
+                                styles.pathwayTag,
+                                {
+                                  backgroundColor: `${pathwayColors[pathway]}20`,
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.pathwayTagText,
+                                  {
+                                    color: pathwayColors[pathway],
+                                  },
+                                ]}
+                              >
+                                {pathway}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+
+                        <View style={styles.progressRow}>
+                          <View style={styles.progressBackground}>
+                            <View
+                              style={[
+                                styles.progressBar,
+                                {
+                                  width: `${
+                                    task.totalDays > 0
+                                      ? (task.completedDays / task.totalDays) * 100
+                                      : 0
+                                  }%`,
+                                },
+                              ]}
+                            />
+                          </View>
+
+                          <Text style={styles.progressText}>
+                            {task.completedDays}/{task.totalDays} days
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })
+              ) : (
+                <View style={styles.lockedPhaseCard}>
+                  <Image source={images.lockedIcon} style={styles.lockIcon} />
+                  <Text style={styles.lockedPhaseText}>
+                    This phase unlocks on Day {phase.startDay}
+                  </Text>
                 </View>
               )}
             </View>
-
-            {weekItem.habits.map((habit, hIndex) => {
-              const isCompleted = habit.completed >= habit.target;
-
-              return (
-                <View key={hIndex} style={styles.habitMainView}>
-                  <Image
-                    source={isCompleted ? images.starIcon : images.checkBox}
-                    style={styles.habitIcon}
-                  />
-
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <View style={styles.titleRow}>
-                      <Text
-                        style={[
-                          styles.titleText,
-                          {
-                            color: isCompleted ? colors.heading : colors.black,
-                          },
-                        ]}
-                      >
-                        {habit.title}
-                      </Text>
-
-                      <View
-                        style={[
-                          styles.pathwayTag,
-                          {
-                            backgroundColor: `${
-                              pathwayColors[habit.pathway as PathwayType]
-                            }20`,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.pathwayTagText,
-                            {
-                              color:
-                                pathwayColors[habit.pathway as PathwayType],
-                            },
-                          ]}
-                        >
-                          {habit.pathway}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.progressRow}>
-                      <View style={styles.progressBackground}>
-                        <View
-                          style={[
-                            styles.progressBar,
-                            {
-                              width: `${
-                                (habit.completed / habit.target) * 100
-                              }%`,
-                            },
-                          ]}
-                        />
-                      </View>
-
-                      <Text style={styles.progressText}>
-                        {habit.completed}/{habit.target} days
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        ))}
-
-        <View style={styles.headerRow}>
-          <Text style={styles.headerText}>Locked Habits</Text>
-
-          <View style={styles.countBubble}>
-            <Text style={styles.countText}>5</Text>
-          </View>
-        </View>
-        {lockedData.map((item, index) => (
-          <View key={index} style={styles.lockedCard}>
-            <Image source={images.lockedIcon} style={styles.lockIcon} />
-
-            <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.lockedTitleText}>{item.title}</Text>
-
-              <Text style={styles.unlockText}>{item.unlockText}</Text>
-            </View>
-
-            <View style={styles.weekTag}>
-              <Text style={styles.weekTagText}>Week {item.week}</Text>
-            </View>
-          </View>
-        ))}
+          );
+        })}
       </View>
     </View>
   );
@@ -239,10 +221,45 @@ const styles = StyleSheet.create({
     width: sizes.screenWidth * 0.75,
   },
 
-  weekHeader: {
+  phaseHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 14,
+    justifyContent: 'space-between',
+  },
+  phaseGoal: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.disabledText,
+    marginTop: 4,
+  },
+  lockedBadge: {
+    backgroundColor: '#EDF3F2',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 10,
+  },
+  lockedBadgeText: {
+    fontSize: 11,
+    fontFamily: 'Inter-Medium',
+    color: '#9FB7A7',
+  },
+  lockedPhaseCard: {
+    backgroundColor: '#EDF3F2',
+    borderRadius: 14,
+    padding: 16,
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0EAE3',
+  },
+  lockedPhaseText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#A9C2BE',
+    marginLeft: 10,
   },
   starTextMainView: {
     backgroundColor: colors.lightOranger,
@@ -332,72 +349,10 @@ const styles = StyleSheet.create({
     color: colors.disabledText,
   },
 
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  headerText: {
-    fontSize: 18,
-    fontFamily: 'PlayfairDisplay-Medium',
-    color: '#0E0E0E',
-  },
-  countBubble: {
-    backgroundColor: '#E8F1EB',
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-    borderRadius: 20,
-    marginLeft: 10,
-  },
-  countText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
-    color: '#4E6F54',
-  },
-
-  lockedCard: {
-    backgroundColor: '#EDF3F2',
-    borderRadius: 14,
-    padding: 8,
-    marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E0EAE3',
-  },
-
   lockIcon: {
     width: 22,
     height: 22,
     resizeMode: 'contain',
     tintColor: '#9FB7A7',
-    marginTop: 4,
-  },
-
-  lockedTitleText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
-    color: '#A9C2BE',
-  },
-
-  unlockText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#B5D3CE',
-    marginTop: 3,
-    // lineHeight: 18,
-  },
-
-  weekTag: {
-    backgroundColor: '#DFE9E3',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 20,
-    alignSelf: 'center',
-  },
-  weekTagText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
-    color: '#C6CAC8',
   },
 });

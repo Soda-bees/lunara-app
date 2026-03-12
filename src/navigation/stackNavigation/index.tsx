@@ -79,6 +79,7 @@ import { FuelAndJoy } from '../../screens/FuelAndJoy';
 import { DailyLifeMatters } from '../../screens/DailyLifeMatters';
 import { HealthStory } from '../../screens/HealthStory';
 import { AlmostThere } from '../../screens/AlmostThere';
+import { FastingHome } from '../../screens/FastingHome/FastingHome';
 
 export type RootStackParamList = {
   SignIn: any;
@@ -154,6 +155,7 @@ export type RootStackParamList = {
   AlmostThere: undefined;
   CycleHistory: undefined;
   SymptomHistory: undefined;
+  FastingHome: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -215,6 +217,7 @@ export default function MainStack() {
           <Stack.Screen name="DailyLifeMatters" component={DailyLifeMatters} />
           <Stack.Screen name="HealthStory" component={HealthStory} />
           <Stack.Screen name="AlmostThere" component={AlmostThere} />
+          <Stack.Screen name="FastingHome" component={FastingHome} />
 
           <Stack.Screen name="IntroSlider" component={IntroSlider} />
           <Stack.Screen name="TabNavigator" component={TabNavigator} />

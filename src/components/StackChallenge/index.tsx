@@ -1,35 +1,65 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
-import React from 'react';
+import { Image, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import images from '../../constants/images';
 import { sizes } from '../../constants/sizes';
 import { colors } from '../../constants/colors';
 import SupplementProtocol from '../SupplementProtocol';
+import { getChallengeStackContent, ChallengeStackPhase } from '../../services/api';
 
-export default function StackChallenge() {
-  const timingData = [
-    {
-      heading: 'Morning (Fasted):',
-      description: 'Opens detox pathways when your body is naturally cleansing',
-    },
-    {
-      heading: 'With First Meal:',
-      description:
-        'Fat-soluble vitamins (D3+K2, Omega-3) absorb best with food',
-    },
-    {
-      heading: ' Mid-Morning:',
-      description: 'Adaptogens support cortisol when it naturally peaks',
-    },
-    {
-      heading: 'Midday:',
-      description: 'Metabolic support aligns with your most active digestion',
-    },
-    {
-      heading: 'Evening:',
-      description:
-        'Magnesium and collagen support overnight repair and relaxation',
-    },
-  ];
+interface StackChallengeProps {
+  instanceId: string;
+}
+
+export default function StackChallenge({ instanceId }: StackChallengeProps) {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [content, setContent] = useState<{
+    stackTitle: string | null;
+    currentPhaseName: string | null;
+    description: string | null;
+    timingInfo: { heading: string; description: string }[];
+    duration: number | null;
+    phases: ChallengeStackPhase[];
+  }>({
+    stackTitle: null,
+    currentPhaseName: null,
+    description: null,
+    timingInfo: [],
+    duration: null,
+    phases: [],
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await getChallengeStackContent(instanceId);
+        if (!isMounted) return;
+        if (res.success && res.data?.stackContent) {
+          setContent({
+            stackTitle: res.data.stackContent.title || null,
+            currentPhaseName: res.data.currentPhase?.name || null,
+            description: res.data.stackContent.description || null,
+            timingInfo: res.data.stackContent.timingInfo || [],
+            duration: res.data.duration ?? null,
+            phases: res.data.stackContent.phases || [],
+          });
+        }
+        setLoading(false);
+      } catch (e: any) {
+        if (!isMounted) return;
+        setError(e?.message || 'Unable to load stack content.');
+        setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [instanceId]);
+
   return (
     <View>
       <View style={styles.topContainer}>
@@ -38,35 +68,59 @@ export default function StackChallenge() {
             <Image source={images.flowerIcon} style={styles.icon} />
           </View>
           <View style={{ marginLeft: 3 }}>
-            <Text style={styles.heading}>Lunara Core Reset Stack™</Text>
+            <Text style={styles.heading}>
+              {content.stackTitle || 'Challenge Supplement Stack'}
+            </Text>
             <Text style={[styles.subHeading, { fontSize: 11 }]}>
-              21-Day Detox, Metabolic, and Hormonal Harmony
+              {content.currentPhaseName
+                ? `${content.currentPhaseName} phase protocol`
+                : 'Supplement protocol for this challenge'}
             </Text>
           </View>
         </View>
         <Text style={[styles.subHeading, { marginTop: 14 }]}>
-          Your liver is your detox powerhouse. Today, focus on cruciferous
-          vegetables like broccoli, kale, and Brussels sprouts. These help
-          metabolize excess estrogen and support hormonal balance.
+          {content.description ||
+            'This stack is designed to support your body in a phased, sustainable way throughout this challenge.'}
         </Text>
       </View>
       <View>
         <View style={styles.movementMainView}>
           <Text style={styles.mainHeading}>⏰ Why Timing Matters</Text>
-          {timingData.map((item, index) => {
-            return (
+          {loading && (
+            <View style={{ paddingVertical: 12, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color={colors.heading} />
+            </View>
+          )}
+          {error && !loading && (
+            <Text
+              style={{
+                marginTop: 8,
+                color: '#C62828',
+                fontSize: 12,
+                fontFamily: 'Inter-Regular',
+              }}
+            >
+              {error}
+            </Text>
+          )}
+          {!loading &&
+            content.timingInfo.map((item, index) => (
               <Text style={styles.timingText} key={index}>
                 {item.heading}{' '}
                 <Text style={{ color: colors.green }}>{item.description}</Text>
               </Text>
-            );
-          })}
+            ))}
         </View>
-        <SupplementProtocol />
+        <SupplementProtocol phases={content.phases} />
         <View style={styles.visionBehindView}>
           <Text style={styles.bottomText}>
-            💫 This supplement protocol is designed to support your body's
-            natural detoxification and hormonal balance throughout all 21 days
+            💫{' '}
+            {content.stackTitle
+              ? `${content.stackTitle} is designed to support your body`
+              : 'This supplement protocol is designed to support your body'}
+            {content.duration
+              ? ` throughout all ${content.duration} days`
+              : ' throughout your challenge journey'}
           </Text>
         </View>
       </View>

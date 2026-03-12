@@ -81,7 +81,7 @@ export default function More() {
       title: 'Fasting Tracker',
       subtitle: 'Intermittent fasting logs',
       icon: images.currentPhaseIconMain,
-      // navigateTo: 'QuickTracking',
+      navigateTo: 'FastingHome',
     },
     {
       id: 8,

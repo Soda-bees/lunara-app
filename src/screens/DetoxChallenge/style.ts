@@ -79,6 +79,20 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 4,
     marginTop: 20,
+    minHeight: 40
+  },
+
+  startChallengeGradient:{
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    borderRadius: 16,
+  },
+
+  startChallengeText:{
+    color: colors.green,
+    textAlign: 'center',
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
   },
 });
 

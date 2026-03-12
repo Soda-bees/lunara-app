@@ -1,94 +1,69 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
-import React, { useState } from 'react';
+import { StyleSheet, Text, View, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React from 'react';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 import images from '../../constants/images';
 import GradientWrapper from '../GradientWrapper';
 import LinearGradient from 'react-native-linear-gradient';
 import { gradients } from '../../constants/gradientColors';
+import { useChallengeToday } from '../../hooks/useChallengeToday';
+import { useNavigation } from '@react-navigation/native';
+import { RootStackParamList } from '../../navigation/stackNavigation';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-export default function TodayChallenge() {
-  const actionData = [
-    {
-      image: images.nutritionApple,
-      action: 'Morning: Electrolyte Restore + Detox Support 💧',
-      checked: false,
-    },
-    {
-      image: images.nutritionApple,
-      action:
-        'Breakfast: B-Complex + Omega Balance + Vitamin D3+K2 + Amino Rebuild ⚡',
-      checked: false,
-    },
-    {
-      image: images.nutritionApple,
-      action: 'Mid-Morning: Adaptogen-R3 🌺',
-      checked: false,
-    },
-    {
-      image: images.nutritionApple,
-      action: 'Lunch: Metabolic Support + CoQ10 Energy 🔥',
-      checked: false,
-    },
-    {
-      image: images.nutritionApple,
-      action:
-        'Evening: Magnesium Calm + Collagen Restore + Probiotic Balance 🌙',
-      checked: false,
-    },
-    {
-      image: images.nutritionApple,
-      action: 'Liver-supportive foods (beets, greens)',
-      checked: false,
-    },
-    {
-      image: images.nutritionApple,
-      action: 'Castor oil pack',
-      checked: false,
-    },
-    {
-      image: images.nutritionApple,
-      action: '30-min walk',
-      checked: false,
-    },
-    {
-      image: images.nutritionApple,
-      action: 'Evening journal',
-      checked: false,
-    },
-  ];
+interface TodayChallengeProps {
+  instanceId: string;
+}
 
-  const [actions, setActions] = useState(
-    actionData.map(item => ({ ...item, checked: false })),
-  );
+type Nav = NativeStackNavigationProp<RootStackParamList, 'Nutrition' | 'Movements'>;
 
-  const checkedCount = actions.filter(item => item.checked).length;
+export default function TodayChallenge({ instanceId }: TodayChallengeProps) {
+  const navigation = useNavigation<Nav>();
+  const { day, loading, error, toggleTask } = useChallengeToday(instanceId);
 
-  const toggleCheckbox = (index: number) => {
-    const updated = actions.map((item, i) =>
-      i === index ? { ...item, checked: !item.checked } : item,
-    );
-    setActions(updated);
+  const checkedCount = day?.progress.completed ?? 0;
+  const totalCount = day?.progress.total ?? 0;
+
+  const handleCompleteAll = async () => {
+    if (!day || loading) return;
+    const incomplete = day.tasks.filter(t => !t.completed);
+    for (const task of incomplete) {
+      // eslint-disable-next-line no-await-in-loop
+      await toggleTask(task._id);
+    }
   };
-  const checkAll = () => {
-    const updated = actions.map(item => ({ ...item, checked: true }));
-    setActions(updated);
+
+  const goToNutrition = () => {
+    navigation.navigate('Nutrition');
   };
+
+  const goToMovements = () => {
+    navigation.navigate('Movements');
+  };
+
   return (
-    <View>
-      <TouchableOpacity style={styles.topContainer} activeOpacity={0.7}>
+    <View style={{ paddingTop: 20 }}>
+      {/* <TouchableOpacity style={styles.topContainer} activeOpacity={0.7}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Image source={images.nutritionsIcon} style={styles.icon} />
 
           <View style={{ marginLeft: 13 }}>
-            <Text style={styles.heading}>Your Meals are ready</Text>
-            <Text style={styles.subHeading}>
-              Week 2 detox-optimized nutrition plan
+            <Text style={styles.heading}>
+              {day?.mealPlanLink ? 'Your meals are ready' : 'Today’s focus'}
             </Text>
+            {day?.mealPlanLink && (
+              <Text style={styles.subHeading}>
+                Tap to view your nutrition plan for today
+              </Text>
+            )}
           </View>
         </View>
-        <Image source={images.arrow} style={styles.aarrowIcon} />
-      </TouchableOpacity>
+        {day?.mealPlanLink && (
+          <TouchableOpacity onPress={goToNutrition}>
+            <Image source={images.arrow} style={styles.aarrowIcon} />
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity> */}
       <GradientWrapper variant="basic">
         <View style={styles.gradientMainView}>
           <View style={styles.iconCircle}>
@@ -98,15 +73,17 @@ export default function TodayChallenge() {
             />
           </View>
           <View style={{ width: '90%', marginLeft: 10 }}>
-            <Text style={styles.supportText}>Support Your Liver</Text>
+            <Text style={styles.supportText}>
+              {day?.focusTitle || 'Today’s Focus'}
+            </Text>
             <Text style={[styles.subHeading, { color: colors.disabledText }]}>
-              Your liver is your detox powerhouse. Today, focus on cruciferous
-              vegetables like broccoli, kale, and Brussels sprouts. These help
-              metabolize excess estrogen and support hormonal balance.
+              {day?.focusDescription ||
+                'Daily education and action steps will appear here once the challenge is started.'}
             </Text>
             <View style={styles.servingTextView}>
               <Text style={styles.servingText}>
-                🎯 Add 2 servings of greens to your meals today
+                {day?.focusAction ||
+                  '🎯 Complete the actions below to stay on track today'}
               </Text>
             </View>
           </View>
@@ -116,45 +93,88 @@ export default function TodayChallenge() {
         <View style={styles.flexRowContainer}>
           <View>
             <Text style={styles.challengeText}>Today's Actions</Text>
-            <Text style={styles.daysText}>Support Your Liver</Text>
+            {day?.focusTitle ? (
+              <Text style={styles.daysText}>{day.focusTitle}</Text>
+            ) : null}
           </View>
           <View>
-            <Text style={styles.completionText}>{checkedCount}/9</Text>
+            <Text style={styles.completionText}>
+              {checkedCount}/{totalCount}
+            </Text>
             <Text style={styles.daysText}>Complete</Text>
           </View>
         </View>
-        {actions.map((item, index) => {
-          return (
-            <View style={styles.flexRowAnotherContainer} key={index}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Image source={item.image} style={styles.appleImageStyle} />
-                <Text style={styles.actionText}>{item.action}</Text>
-              </View>
-
-              <TouchableOpacity
-                onPress={() => toggleCheckbox(index)}
-                style={styles.checkBoxMainView}
-              >
-                <Image
-                  source={
-                    item.checked ? images.circleChecked : images.circleUnchecked
-                  }
-                  style={[styles.appleImageStyle, { alignSelf: 'flex-start' }]}
-                />
-              </TouchableOpacity>
-            </View>
-          );
-        })}
-        <TouchableOpacity style={styles.startChallenge} onPress={checkAll}>
-          <LinearGradient
-            colors={gradients.primary}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.startChallengeGradient}
+        {loading && (
+          <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+            <ActivityIndicator size="small" color={colors.heading} />
+            <Text
+              style={{
+                marginTop: 8,
+                fontSize: 12,
+                fontFamily: 'Inter-Regular',
+                color: colors.disabledText,
+              }}
+            >
+              Loading today&apos;s actions...
+            </Text>
+          </View>
+        )}
+        {error && !loading && (
+          <Text
+            style={{
+              marginTop: 8,
+              color: '#C62828',
+              fontSize: 12,
+              fontFamily: 'Inter-Regular',
+            }}
           >
-            <Text style={styles.startChallengeText}>Complete All tasks</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            {error}
+          </Text>
+        )}
+        {!loading &&
+          day?.tasks.map(task => {
+            return (
+              <View style={styles.flexRowAnotherContainer} key={task._id}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Image
+                    source={images.nutritionApple}
+                    style={styles.appleImageStyle}
+                  />
+                  <Text style={styles.actionText}>{task.title}</Text>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => toggleTask(task._id)}
+                  style={styles.checkBoxMainView}
+                >
+                  <Image
+                    source={
+                      task.completed
+                        ? images.circleChecked
+                        : images.circleUnchecked
+                    }
+                    style={[styles.appleImageStyle, { alignSelf: 'flex-start' }]}
+                  />
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+        {day && totalCount > 0 && (
+          <TouchableOpacity
+            style={styles.startChallenge}
+            onPress={handleCompleteAll}
+            disabled={loading}
+          >
+            <LinearGradient
+              colors={gradients.primary}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.startChallengeGradient}
+            >
+              <Text style={styles.startChallengeText}>Complete All tasks</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -269,7 +289,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     flexShrink: 1,
     flexWrap: 'wrap',
-    width: sizes.screenWidth * 0.74,
+    maxWidth: sizes.screenWidth * 0.6,
   },
 
   appleImageStyle: {

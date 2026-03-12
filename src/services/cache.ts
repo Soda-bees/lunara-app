@@ -98,6 +98,11 @@ export const CacheKeys = {
   movementScience: () => 'movement_science',
   phaseInfo: (date: string) => `phase_info_${date}`,
   movementMap: () => 'movement_map',
+  challengeList: () => 'challenge_list',
+  challengeDetail: (challengeId: string) => `challenge_detail_${challengeId}`,
+  challengeInstance: (instanceId: string) =>
+    `challenge_instance_${instanceId}`,
+  challengeToday: (instanceId: string) => `challenge_today_${instanceId}`,
 };
 
 /**
