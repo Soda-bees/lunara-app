@@ -25,7 +25,7 @@ import {
 } from '../../services/auth/socialAuth';
 import { useOnboarding } from '../../context/OnboardingContext';
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignUp'>;
 
 export default function SignUp() {
   const navigation = useNavigation<NavigationProp>();
@@ -40,7 +40,7 @@ export default function SignUp() {
   const [loader, setLoader] = useState(false);
 
   const navigateToSignIn = () => {
-    navigation.navigate('SignIn');
+    navigation.navigate('Login');
   };
 
   const handleSignUp = async () => {

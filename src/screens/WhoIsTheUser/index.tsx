@@ -17,7 +17,10 @@ import { useNavigation } from '@react-navigation/native';
 import Button from '../../components/Button';
 import GradientText from '../../components/GradientText';
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
+type NavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'WhoIsTheUser'
+>;
 
 export default function WhoIsTheUser() {
   const navigation = useNavigation<NavigationProp>();
@@ -27,7 +30,7 @@ export default function WhoIsTheUser() {
   const handlePress = () => {
     // Only allow navigation for personal use
     if (selectedOption === 'self') {
-      navigation.navigate('SignIn');
+      navigation.navigate('Login');
     }
   };
 

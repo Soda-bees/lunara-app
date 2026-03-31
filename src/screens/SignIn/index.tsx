@@ -27,7 +27,7 @@ import { login, storeToken } from '../../services/api';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { Alert } from 'react-native';
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn' | 'Login'>;
 
 export default function SignIn() {
   const navigation = useNavigation<NavigationProp>();
@@ -82,7 +82,7 @@ export default function SignIn() {
   const handleGoogleSignIn = async () => {
     try {
       const result = await signInWithGoogle();
-      
+
       if (result.success) {
         if (result.isNewUser && result.user && result.googleIdToken) {
           // New user - store Google ID token in onboarding context
@@ -91,7 +91,7 @@ export default function SignIn() {
             fullName: result.user.name,
             googleIdToken: result.googleIdToken,
           });
-          
+
           // Navigate to AccountSetup with pre-filled email/name
           navigation.navigate('AccountSetup', {
             googleUser: result.user,
@@ -173,7 +173,12 @@ export default function SignIn() {
             </TouchableOpacity>
           </View>
           <View>
-            <Button title="Sign In" onPress={handleSignIn} loader={loader} />
+            <Button
+              title="Sign In"
+              onPress={handleSignIn}
+              loader={loader}
+              small={true}
+            />
             <View style={styles.row4}>
               <View style={styles.hr}></View>
               <Text style={styles.textBlackSmall}>or continue with</Text>

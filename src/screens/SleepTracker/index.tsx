@@ -35,6 +35,7 @@ import {
 } from '../../services/api';
 import { useSleepData } from '../../context/SleepDataContext';
 import moment from 'moment';
+import BackButton from '../../components/BackButton';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 
@@ -101,17 +102,17 @@ export default function SleepTracker() {
 
     try {
       // Handle both "HH:MM" and "HHMM" formats
-      const bedParts = bedTime.includes(':') 
-        ? bedTime.split(':') 
-        : bedTime.length >= 2 
-          ? [bedTime.slice(0, 2), bedTime.slice(2, 4) || '0']
-          : [bedTime, '0'];
-      
+      const bedParts = bedTime.includes(':')
+        ? bedTime.split(':')
+        : bedTime.length >= 2
+        ? [bedTime.slice(0, 2), bedTime.slice(2, 4) || '0']
+        : [bedTime, '0'];
+
       const wakeParts = wakeTime.includes(':')
         ? wakeTime.split(':')
         : wakeTime.length >= 2
-          ? [wakeTime.slice(0, 2), wakeTime.slice(2, 4) || '0']
-          : [wakeTime, '0'];
+        ? [wakeTime.slice(0, 2), wakeTime.slice(2, 4) || '0']
+        : [wakeTime, '0'];
 
       const bedHour = parseInt(bedParts[0] || '0', 10);
       const bedMin = parseInt(bedParts[1] || '0', 10);
@@ -120,8 +121,14 @@ export default function SleepTracker() {
 
       // Validate hours (1-12) and minutes (0-59)
       if (
-        bedHour < 1 || bedHour > 12 || bedMin < 0 || bedMin > 59 ||
-        wakeHour < 1 || wakeHour > 12 || wakeMin < 0 || wakeMin > 59
+        bedHour < 1 ||
+        bedHour > 12 ||
+        bedMin < 0 ||
+        bedMin > 59 ||
+        wakeHour < 1 ||
+        wakeHour > 12 ||
+        wakeMin < 0 ||
+        wakeMin > 59
       ) {
         setTotalSleepHours(null);
         return;
@@ -242,14 +249,14 @@ export default function SleepTracker() {
       const bedParts = bedTime.includes(':')
         ? bedTime.split(':')
         : bedTime.length >= 2
-          ? [bedTime.slice(0, 2), bedTime.slice(2, 4) || '0']
-          : [bedTime, '0'];
+        ? [bedTime.slice(0, 2), bedTime.slice(2, 4) || '0']
+        : [bedTime, '0'];
 
       const wakeParts = wakeTime.includes(':')
         ? wakeTime.split(':')
         : wakeTime.length >= 2
-          ? [wakeTime.slice(0, 2), wakeTime.slice(2, 4) || '0']
-          : [wakeTime, '0'];
+        ? [wakeTime.slice(0, 2), wakeTime.slice(2, 4) || '0']
+        : [wakeTime, '0'];
 
       const bedHour = parseInt(bedParts[0] || '0', 10);
       const bedMin = parseInt(bedParts[1] || '0', 10);
@@ -258,10 +265,19 @@ export default function SleepTracker() {
 
       // Validate
       if (
-        bedHour < 1 || bedHour > 12 || bedMin < 0 || bedMin > 59 ||
-        wakeHour < 1 || wakeHour > 12 || wakeMin < 0 || wakeMin > 59
+        bedHour < 1 ||
+        bedHour > 12 ||
+        bedMin < 0 ||
+        bedMin > 59 ||
+        wakeHour < 1 ||
+        wakeHour > 12 ||
+        wakeMin < 0 ||
+        wakeMin > 59
       ) {
-        Alert.alert('Error', 'Please enter valid times (hours 1-12, minutes 0-59)');
+        Alert.alert(
+          'Error',
+          'Please enter valid times (hours 1-12, minutes 0-59)',
+        );
         setSaving(false);
         return;
       }
@@ -346,8 +362,8 @@ export default function SleepTracker() {
         backgroundColor="transparent"
         barStyle="dark-content"
       />
-
-      <Header />
+      <BackButton />
+      {/* <Header /> */}
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -359,7 +375,10 @@ export default function SleepTracker() {
             <View style={styles.phaseBody}>
               <View style={styles.rowBetween}>
                 <Text style={styles.heading}>Sleep Tracking</Text>
-                <TouchableOpacity style={styles.plusBtn} onPress={handleOpenModal}>
+                <TouchableOpacity
+                  style={styles.plusBtn}
+                  onPress={handleOpenModal}
+                >
                   <Text style={styles.textMaroon}>+</Text>
                 </TouchableOpacity>
               </View>
@@ -408,9 +427,7 @@ export default function SleepTracker() {
 
               {!isColdStart && !hasSleepStats && (
                 <View style={{ marginTop: 12 }}>
-                  <Text style={styles.textDarkGrey}>
-                    No sleep data yet.
-                  </Text>
+                  <Text style={styles.textDarkGrey}>No sleep data yet.</Text>
                   <Text
                     style={[
                       styles.textDarkGrey,
@@ -503,7 +520,9 @@ export default function SleepTracker() {
             <View style={styles.container2}>
               <View style={styles.row}>
                 <Image source={images.btCycleActive} style={styles.smallIcon} />
-                <Text style={styles.cardHeading}>Sleep Patterns by Cycle Phase</Text>
+                <Text style={styles.cardHeading}>
+                  Sleep Patterns by Cycle Phase
+                </Text>
               </View>
 
               {isColdStart && loading ? (
@@ -513,7 +532,7 @@ export default function SleepTracker() {
               ) : null}
               {!isColdStart && phasePatterns.length > 0 ? (
                 phasePatterns
-                  .filter((p) => p.avgDuration !== null)
+                  .filter(p => p.avgDuration !== null)
                   .map((item, i) => {
                     const phaseNames: Record<string, string> = {
                       menstrual: 'Menstrual',
@@ -543,7 +562,10 @@ export default function SleepTracker() {
 
                         <View style={styles.phaseProgressBarBackground2}>
                           <LinearGradient
-                            style={[styles.phaseProgress, { width: `${progressWidth}%` }]}
+                            style={[
+                              styles.phaseProgress,
+                              { width: `${progressWidth}%` },
+                            ]}
                             colors={['#E4AF5D', '#E799AD']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
@@ -583,11 +605,19 @@ export default function SleepTracker() {
                     <View style={styles.rowBetween}>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.logDate}>{dateStr}</Text>
-                        {isPregnant && item.pregnancyWeek !== null && item.trimester !== null && (
-                          <Text style={[styles.logTime, { marginTop: 2, fontSize: 11 }]}>
-                            Week {item.pregnancyWeek} • Trimester {item.trimester}
-                          </Text>
-                        )}
+                        {isPregnant &&
+                          item.pregnancyWeek !== null &&
+                          item.trimester !== null && (
+                            <Text
+                              style={[
+                                styles.logTime,
+                                { marginTop: 2, fontSize: 11 },
+                              ]}
+                            >
+                              Week {item.pregnancyWeek} • Trimester{' '}
+                              {item.trimester}
+                            </Text>
+                          )}
                       </View>
                       <Text style={styles.logHours}>
                         {item.duration.toFixed(1)}h
@@ -600,7 +630,10 @@ export default function SleepTracker() {
                       <View
                         style={[
                           styles.badge,
-                          { backgroundColor: getQualityColor(item.quality) + '20' },
+                          {
+                            backgroundColor:
+                              getQualityColor(item.quality) + '20',
+                          },
                         ]}
                       >
                         <Text
@@ -720,12 +753,10 @@ export default function SleepTracker() {
                   keyboardType="numeric"
                   maxLength={5}
                   value={bedTime}
-                  onChangeText={(t) => setBedTime(format12HourTime(t))}
+                  onChangeText={t => setBedTime(format12HourTime(t))}
                 />
                 <TouchableOpacity
-                  onPress={() =>
-                    setBedPeriod(bedPeriod === 'AM' ? 'PM' : 'AM')
-                  }
+                  onPress={() => setBedPeriod(bedPeriod === 'AM' ? 'PM' : 'AM')}
                   style={styles.periodBtn}
                 >
                   <Text style={styles.periodText}>{bedPeriod}</Text>
@@ -744,7 +775,7 @@ export default function SleepTracker() {
                   keyboardType="numeric"
                   maxLength={5}
                   value={wakeTime}
-                  onChangeText={(t) => setWakeTime(format12HourTime(t))}
+                  onChangeText={t => setWakeTime(format12HourTime(t))}
                 />
                 <TouchableOpacity
                   onPress={() =>
@@ -771,7 +802,7 @@ export default function SleepTracker() {
           {/* Sleep Quality */}
           <Text style={styles.sectionLabel}>Sleep Quality</Text>
           <View style={styles.qualityRow}>
-            {[1, 2, 3, 4, 5].map((num) => (
+            {[1, 2, 3, 4, 5].map(num => (
               <TouchableOpacity
                 key={num}
                 style={[

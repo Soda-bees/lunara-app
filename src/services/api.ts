@@ -1,31 +1,26 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { API_BASE_URL as RUNTIME_API_BASE_URL } from '../config/runtimeConfig';
+import { DeviceEventEmitter } from 'react-native';
+
+// `react-native-encrypted-storage` is a native module. If it isn't correctly
+// linked/available on the device, importing it can break the entire module.
+// We use a guarded require and fall back to AsyncStorage to keep the app booting.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+let EncryptedStorage: any = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const mod = require('react-native-encrypted-storage');
+  EncryptedStorage = mod?.default ?? mod;
+} catch {
+  EncryptedStorage = null;
+}
 
 // API configuration
 // For Android emulator, use 10.0.2.2 instead of localhost
 // For iOS simulator, localhost works fine
 // For physical devices, use your computer's IP address (e.g., http://192.168.1.100:3000/api)
 
-const getBaseURL = () => {
-  if (!__DEV__) {
-    return 'https://lunaranew-e6853745dbd7.herokuapp.com/api'; // Production
-  }
-
-  // For Android
-  if (Platform.OS === 'android') {
-    // Use your computer's IP address for physical device
-    // Change this to your computer's IPv4 address when testing on physical device
-    // Use '10.0.2.2' for Android emulator
-    const PHYSICAL_DEVICE_IP = '192.168.100.207'; // Your computer's IP address
-    return `http://${PHYSICAL_DEVICE_IP}:3000/api`; // Physical device
-    // return 'http://10.0.2.2:3000/api'; // Uncomment this for Android emulator
-  }
-
-  // For iOS simulator
-  return 'http://localhost:3000/api'; // iOS simulator
-};
-
-const API_BASE_URL = getBaseURL();
+const API_BASE_URL = RUNTIME_API_BASE_URL;
 
 // Types
 export interface SignupRequest {
@@ -181,6 +176,17 @@ async function apiCall<T>(
           errorObj.retryable = true;
         }
 
+        // Centralized session-expired handling.
+        // Emit an app-wide signal so navigation can reset to `Welcome` (logout behavior).
+        if (response.status === 401) {
+          try {
+            await clearToken();
+          } catch {
+            // Token clearing is best-effort; navigation still follows.
+          }
+          DeviceEventEmitter.emit('session_expired');
+        }
+
         // Retry on server errors (5xx) or network errors
         if (errorObj.retryable && attempt < retries) {
           await new Promise<void>(resolve =>
@@ -234,9 +240,17 @@ async function apiCall<T>(
   throw lastError || new Error('Request failed after multiple attempts');
 }
 
-// Token storage helpers (using AsyncStorage in React Native)
+// Token storage helpers (encrypted-at-rest)
 export async function getStoredToken(): Promise<string | null> {
   try {
+    if (EncryptedStorage?.getItem) {
+      const encryptedToken = await EncryptedStorage.getItem('authToken');
+      if (encryptedToken !== null) {
+        return encryptedToken;
+      }
+      // Migration path: older app versions stored tokens in plain AsyncStorage.
+      return await AsyncStorage.getItem('authToken');
+    }
     return await AsyncStorage.getItem('authToken');
   } catch (error) {
     console.error('Error getting token:', error);
@@ -246,6 +260,10 @@ export async function getStoredToken(): Promise<string | null> {
 
 export async function storeToken(token: string): Promise<void> {
   try {
+    if (EncryptedStorage?.setItem) {
+      await EncryptedStorage.setItem('authToken', token);
+      return;
+    }
     await AsyncStorage.setItem('authToken', token);
   } catch (error) {
     console.error('Error storing token:', error);
@@ -255,6 +273,10 @@ export async function storeToken(token: string): Promise<void> {
 
 export async function clearToken(): Promise<void> {
   try {
+    if (EncryptedStorage?.removeItem) {
+      await EncryptedStorage.removeItem('authToken');
+    }
+    // Always clear the fallback store as well.
     await AsyncStorage.removeItem('authToken');
   } catch (error) {
     console.error('Error clearing token:', error);
@@ -992,9 +1014,7 @@ export interface UpdateSleepRequest {
 }
 
 // Sleep API Functions
-export async function logSleep(
-  data: LogSleepRequest,
-): Promise<SleepResponse> {
+export async function logSleep(data: LogSleepRequest): Promise<SleepResponse> {
   return apiCall<SleepResponse>('/sleep', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -1018,9 +1038,12 @@ export async function getSleepLogs(
   if (filters?.limit) params.append('limit', filters.limit.toString());
 
   const queryString = params.toString();
-  return apiCall<SleepsResponse>(`/sleep${queryString ? `?${queryString}` : ''}`, {
-    method: 'GET',
-  });
+  return apiCall<SleepsResponse>(
+    `/sleep${queryString ? `?${queryString}` : ''}`,
+    {
+      method: 'GET',
+    },
+  );
 }
 
 export async function getSleepStatistics(): Promise<SleepStatisticsResponse> {
@@ -1092,7 +1115,14 @@ export async function getCyclePhaseContent(): Promise<CyclePhaseContentResponse>
 export interface WeeklyUpdate {
   title: string;
   message: string;
-  iconType: 'energy' | 'mental' | 'metabolism' | 'mood' | 'fertility' | 'nutrition' | 'movement';
+  iconType:
+    | 'energy'
+    | 'mental'
+    | 'metabolism'
+    | 'mood'
+    | 'fertility'
+    | 'nutrition'
+    | 'movement';
   color: string;
   iconColor?: string;
   order: number;
@@ -1128,25 +1158,34 @@ export interface PersonalizedInsightResponse {
 export async function getWeeklyUpdatesByPhase(
   phase: string,
 ): Promise<WeeklyUpdatesResponse> {
-  return apiCall<WeeklyUpdatesResponse>(`/cycle-phase-content/${phase}/weekly-updates`, {
-    method: 'GET',
-  });
+  return apiCall<WeeklyUpdatesResponse>(
+    `/cycle-phase-content/${phase}/weekly-updates`,
+    {
+      method: 'GET',
+    },
+  );
 }
 
 // Did You Know API Functions
 export async function getDidYouKnowByPhase(
   phase: string,
 ): Promise<DidYouKnowResponse> {
-  return apiCall<DidYouKnowResponse>(`/cycle-phase-content/${phase}/did-you-know`, {
-    method: 'GET',
-  });
+  return apiCall<DidYouKnowResponse>(
+    `/cycle-phase-content/${phase}/did-you-know`,
+    {
+      method: 'GET',
+    },
+  );
 }
 
 // Personalized Insight API Functions
 export async function getPersonalizedInsight(): Promise<PersonalizedInsightResponse> {
-  return apiCall<PersonalizedInsightResponse>('/cycle-phase-content/personalized-insight', {
-    method: 'GET',
-  });
+  return apiCall<PersonalizedInsightResponse>(
+    '/cycle-phase-content/personalized-insight',
+    {
+      method: 'GET',
+    },
+  );
 }
 
 // User API
@@ -1253,7 +1292,12 @@ export interface Meal {
   _id: string;
   title: string;
   description: string;
-  timeSlot: 'breakfast' | 'mid_morning_snack' | 'lunch' | 'afternoon_snack' | 'dinner';
+  timeSlot:
+    | 'breakfast'
+    | 'mid_morning_snack'
+    | 'lunch'
+    | 'afternoon_snack'
+    | 'dinner';
   protein: number;
   carbs: number;
   fat: number;
@@ -1505,9 +1549,7 @@ export interface PhaseInfoResponse {
   data: PhaseInfo;
 }
 
-export async function getPhaseInfo(
-  date?: string,
-): Promise<PhaseInfoResponse> {
+export async function getPhaseInfo(date?: string): Promise<PhaseInfoResponse> {
   const params = new URLSearchParams();
   if (date) {
     params.append('date', date);
@@ -1545,7 +1587,9 @@ export interface WorkoutDetailResponse {
   data: Workout;
 }
 
-export async function getWorkoutDetail(id: string): Promise<WorkoutDetailResponse> {
+export async function getWorkoutDetail(
+  id: string,
+): Promise<WorkoutDetailResponse> {
   return apiCall<WorkoutDetailResponse>(`/workouts/workouts/${id}`, {
     method: 'GET',
   });
@@ -1819,9 +1863,7 @@ export async function completeChallengeTask(
     `/challenges/instances/${instanceId}/tasks/${taskId}/complete`,
     {
       method: 'POST',
-      body: JSON.stringify(
-        typeof completed === 'boolean' ? { completed } : {},
-      ),
+      body: JSON.stringify(typeof completed === 'boolean' ? { completed } : {}),
     },
   );
 }
@@ -1935,7 +1977,8 @@ export interface CreateFastingProtocolRequest {
   isDefault?: boolean;
 }
 
-export type UpdateFastingProtocolRequest = Partial<CreateFastingProtocolRequest>;
+export type UpdateFastingProtocolRequest =
+  Partial<CreateFastingProtocolRequest>;
 
 export interface StartFastingSessionRequest {
   protocolId?: string;
@@ -1958,10 +2001,13 @@ export async function getFastingProtocols(): Promise<GetFastingProtocolsResponse
 export async function createFastingProtocol(
   data: CreateFastingProtocolRequest,
 ): Promise<{ success: boolean; data: FastingProtocol }> {
-  return apiCall<{ success: boolean; data: FastingProtocol }>('/fasting/protocols', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  return apiCall<{ success: boolean; data: FastingProtocol }>(
+    '/fasting/protocols',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    },
+  );
 }
 
 export async function updateFastingProtocol(
@@ -1980,9 +2026,12 @@ export async function updateFastingProtocol(
 export async function deleteFastingProtocolApi(
   id: string,
 ): Promise<{ success: boolean; message?: string }> {
-  return apiCall<{ success: boolean; message?: string }>(`/fasting/protocols/${id}`, {
-    method: 'DELETE',
-  });
+  return apiCall<{ success: boolean; message?: string }>(
+    `/fasting/protocols/${id}`,
+    {
+      method: 'DELETE',
+    },
+  );
 }
 
 export async function getFastingCurrent(): Promise<GetFastingCurrentResponse> {
@@ -2013,9 +2062,12 @@ export async function cancelFastingSession(): Promise<{
   success: boolean;
   data: FastingSession;
 }> {
-  return apiCall<{ success: boolean; data: FastingSession }>('/fasting/cancel', {
-    method: 'POST',
-  });
+  return apiCall<{ success: boolean; data: FastingSession }>(
+    '/fasting/cancel',
+    {
+      method: 'POST',
+    },
+  );
 }
 
 export interface UpdateFastingSessionRequest {
@@ -2025,10 +2077,13 @@ export interface UpdateFastingSessionRequest {
 export async function updateFastingSession(
   data: UpdateFastingSessionRequest,
 ): Promise<{ success: boolean; data: FastingSession }> {
-  return apiCall<{ success: boolean; data: FastingSession }>('/fasting/current', {
-    method: 'PATCH',
-    body: JSON.stringify(data),
-  });
+  return apiCall<{ success: boolean; data: FastingSession }>(
+    '/fasting/current',
+    {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    },
+  );
 }
 
 export interface GetFastingHistoryParams {

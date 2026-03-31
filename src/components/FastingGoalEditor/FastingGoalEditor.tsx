@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import Modal from 'react-native-modal';
 import { colors } from '../../constants/colors';
+import { sizes } from '../../constants/sizes';
 
 interface FastingGoalEditorProps {
   visible: boolean;
@@ -212,16 +213,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
     marginBottom: 8,
+    height: sizes.screenHeight * 0.07,
   },
   presetButtonSelected: {
-    borderColor: colors.primary || '#E4AF5D',
+    borderColor: colors.heading,
     backgroundColor: '#FFFBF0',
   },
   presetButtonText: {
@@ -234,8 +235,8 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     fontFamily: 'Inter-Bold',
-    fontSize: 18,
-    color: colors.primary || '#E4AF5D',
+    fontSize: 20,
+    color: colors.heading,
   },
   actions: {
     flexDirection: 'row',
@@ -258,7 +259,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   saveButton: {
-    backgroundColor: colors.primary || '#E4AF5D',
+    backgroundColor: colors.heading,
   },
   saveButtonText: {
     fontFamily: 'Inter-SemiBold',

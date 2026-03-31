@@ -32,6 +32,7 @@ import PeriodStartModal, {
   PeriodLogData,
 } from '../../components/PeriodStartModal';
 import { updatePeriod } from '../../services/api';
+import BackButton from '../../components/BackButton';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -78,9 +79,7 @@ export default function CycleHistory() {
           setPeriods(prev => [...prev, ...response.data]);
         }
 
-        setHasMore(
-          response.pagination.page < response.pagination.pages,
-        );
+        setHasMore(response.pagination.page < response.pagination.pages);
         setPage(pageNum);
       }
     } catch (error: any) {
@@ -190,7 +189,9 @@ export default function CycleHistory() {
 
   const formatDateRange = (statistics: PeriodStatisticsResponse['data']) => {
     if (!statistics?.dateRange) return '—';
-    const first = moment(statistics.dateRange.firstPeriodDate).format('MMM YYYY');
+    const first = moment(statistics.dateRange.firstPeriodDate).format(
+      'MMM YYYY',
+    );
     const last = moment(statistics.dateRange.lastPeriodDate).format('MMM YYYY');
     return `${first} - ${last}`;
   };
@@ -225,43 +226,46 @@ export default function CycleHistory() {
         backgroundColor="transparent"
         barStyle="dark-content"
       />
-      <Header />
+      {/* <Header /> */}
+      <BackButton />
       <View style={styles.content}>
         {/* Statistics Summary */}
-        {statistics && statistics.totalPeriods && statistics.totalPeriods > 0 && (
-          <View style={styles.statisticsCard}>
-            <View style={styles.statisticsHeader}>
-              <Text style={styles.statisticsTitle}>Summary</Text>
-            </View>
-            <View style={styles.statisticsRow}>
-              <View style={styles.statisticItem}>
-                <Text style={styles.statisticValue}>
-                  {statistics.totalPeriods}
-                </Text>
-                <Text style={styles.statisticLabel}>Total Periods</Text>
+        {statistics &&
+          statistics.totalPeriods &&
+          statistics.totalPeriods > 0 && (
+            <View style={styles.statisticsCard}>
+              <View style={styles.statisticsHeader}>
+                <Text style={styles.statisticsTitle}>Summary</Text>
               </View>
-              {statistics.cycleLength?.average && (
+              <View style={styles.statisticsRow}>
                 <View style={styles.statisticItem}>
                   <Text style={styles.statisticValue}>
-                    {statistics.cycleLength.average}
+                    {statistics.totalPeriods}
                   </Text>
-                  <Text style={styles.statisticLabel}>Avg Cycle (days)</Text>
+                  <Text style={styles.statisticLabel}>Total Periods</Text>
                 </View>
-              )}
-              {statistics.periodLength?.average && (
-                <View style={styles.statisticItem}>
-                  <Text style={styles.statisticValue}>
-                    {statistics.periodLength.average}
-                  </Text>
-                  <Text style={styles.statisticLabel}>Avg Period (days)</Text>
-                </View>
-              )}
+                {statistics.cycleLength?.average && (
+                  <View style={styles.statisticItem}>
+                    <Text style={styles.statisticValue}>
+                      {statistics.cycleLength.average}
+                    </Text>
+                    <Text style={styles.statisticLabel}>Avg Cycle (days)</Text>
+                  </View>
+                )}
+                {statistics.periodLength?.average && (
+                  <View style={styles.statisticItem}>
+                    <Text style={styles.statisticValue}>
+                      {statistics.periodLength.average}
+                    </Text>
+                    <Text style={styles.statisticLabel}>Avg Period (days)</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.dateRangeText}>
+                Tracked from {formatDateRange(statistics)}
+              </Text>
             </View>
-            <Text style={styles.dateRangeText}>
-              Tracked from {formatDateRange(statistics)}
-            </Text>
-          </View>
-        )}
+          )}
 
         {/* Filters */}
         <View style={styles.filtersContainer}>
@@ -326,4 +330,3 @@ export default function CycleHistory() {
     </SafeAreaView>
   );
 }
-

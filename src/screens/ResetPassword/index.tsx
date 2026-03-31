@@ -23,7 +23,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { resetPassword } from '../../services/api';
 import { Alert } from 'react-native';
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
+type NavigationProp =
+  NativeStackNavigationProp<RootStackParamList, 'ResetPassword'>;
 type Props = NativeStackScreenProps<RootStackParamList, 'ResetPassword'>;
 
 export default function ResetPassword({ navigation, route }: Props) {
@@ -73,7 +74,7 @@ export default function ResetPassword({ navigation, route }: Props) {
           {
             text: 'OK',
             onPress: () => {
-              navigation.navigate('SignIn');
+              navigation.navigate('Login');
             },
           },
         ]);

@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   checkIcon: {
     width: 18,
     height: 18,
-    tintColor: '#9FADBD',
+    // tintColor: '#9FADBD',
   },
 
   itemTitle: {
@@ -345,6 +345,159 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'PlayfairDisplay-SemiBold',
     color: colors.black,
+  },
+  symptomCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  symptomHistoryLink: {
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    color: colors.heading,
+  },
+  symptomStatusText: {
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    color: colors.black,
+    marginTop: 2,
+  },
+  todaySymptomsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  symptomChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  symptomChipName: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: colors.black,
+  },
+  symptomSeverityBadge: {
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  symptomSeverityText: {
+    fontSize: 11,
+    fontFamily: 'Inter-SemiBold',
+    textTransform: 'capitalize',
+  },
+  symptomEmptyText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: colors.darkGrey,
+  },
+  symptomSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 2,
+    gap: 12,
+  },
+  symptomSummaryLabel: {
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+    color: colors.darkGrey,
+  },
+  symptomSummaryValue: {
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    color: colors.black,
+    flex: 1,
+    textAlign: 'right',
+  },
+  symptomLogButton: {
+    marginTop: 6,
+  },
+  symptomLogButtonGradient: {
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  symptomLogButtonText: {
+    color: colors.white,
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 15,
+  },
+  sleepCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sleepDetailsLink: {
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    color: colors.heading,
+  },
+  sleepStatusText: {
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    color: colors.black,
+  },
+  sleepSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 2,
+    gap: 12,
+  },
+  sleepSummaryLabel: {
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+    color: colors.darkGrey,
+  },
+  sleepSummaryValue: {
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    color: colors.black,
+    flex: 1,
+    textAlign: 'right',
+  },
+  sleepQualityBadge: {
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+  },
+  sleepQualityBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+  },
+  sleepStreakPill: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    backgroundColor: '#FFF8EB',
+    borderWidth: 1,
+    borderColor: '#E4AF5D66',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  sleepStreakText: {
+    color: colors.heading,
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 12,
+  },
+  sleepLogButton: {
+    marginTop: 6,
+  },
+  sleepLogButtonGradient: {
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  sleepLogButtonText: {
+    color: colors.white,
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 15,
   },
   sectionTitleGreen: {
     fontSize: 14,
@@ -518,6 +671,51 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: colors.darkGrey,
     lineHeight: 18,
+  },
+  journalHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+  },
+  journalIcon: {
+    resizeMode: 'contain',
+    width: sizes.screenWidth * 0.05,
+    height: sizes.screenWidth * 0.05,
+  },
+  journalTitle: {
+    marginLeft: 10,
+    color: colors.black,
+    fontFamily: 'PlayfairDisplay-Regular',
+    fontSize: 14,
+  },
+  journalSubtitle: {
+    marginTop: 10,
+    color: colors.black,
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+  },
+  journalButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  journalActionButton: {
+    paddingHorizontal: sizes.screenWidth * 0.1,
+    paddingVertical: 9,
+    borderRadius: sizes.screenWidth * 0.03,
+    marginTop: sizes.screenHeight * 0.02,
+  },
+  journalActionButtonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+  },
+  journalHistoryButton: {
+    marginLeft: 8,
+    backgroundColor: colors.borderPink,
+  },
+  journalHistoryButtonText: {
+    color: colors.maroonText,
   },
 });
 

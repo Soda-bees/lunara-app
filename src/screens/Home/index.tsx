@@ -1,14 +1,10 @@
-import React, { JSX, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Image,
-  Keyboard,
-  Platform,
   ScrollView,
   StatusBar,
   Text,
-  TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
   ActivityIndicator,
   Alert,
@@ -29,11 +25,18 @@ import {
   getPregnancyStatus,
   PregnancyStatusResponse,
   updatePregnancyInfo,
+  createPeriod,
 } from '../../services/api';
 import { getPhaseDataStatus } from '../../utils/cycleUtils';
 import PregnancyPromptModal, {
   PregnancyPromptData,
 } from '../../components/PregnancyPromptModal';
+import { useHomeRituals } from '../../hooks/useHomeRituals';
+import SleepLogModal from '../../components/SleepLogModal';
+import PeriodStartModal, {
+  PeriodLogData,
+} from '../../components/PeriodStartModal';
+import SymptomLogModal from '../../components/SymptomLogModal';
 import moment from 'moment';
 import { useCycleData } from '../../context/CycleDataContext';
 import { colors } from '../../constants/colors';
@@ -48,29 +51,90 @@ export default function Home() {
   } = useCycleData();
   const cycleStatus = cycleStatusState.data;
   const periodList = periodsState.data || [];
-  const loading =
-    cycleStatusState.loading || periodsState.loading;
+  const loading = cycleStatusState.loading || periodsState.loading;
+
+  const {
+    ritualsLoading,
+    progress,
+    todayRituals,
+    symptomSummary,
+    sleepSummary,
+    refreshAll,
+  } = useHomeRituals();
+
+  const [sleepModalVisible, setSleepModalVisible] = useState(false);
+  const [periodModalVisible, setPeriodModalVisible] = useState(false);
+  const [symptomsModalVisible, setSymptomsModalVisible] = useState(false);
+  const [sleepSelectedDate, setSleepSelectedDate] = useState<Date>(new Date());
 
   const [showInsightDetails, setShowInsightDetails] = useState<Boolean>(false);
-  const [selectedMood, setSelectedMood] = useState<number | null>(null);
-  const [selectedFeeling, setSelectedFeeling] = useState<number | null>(null);
-  const [selectedEnergy, setSelectedEnergy] = useState<number | null>(null);
-  const [selectedSleep, setSelectedSleep] = useState<number | null>(null);
   const [pregnancyStatus, setPregnancyStatus] = useState<
     PregnancyStatusResponse['data'] | null
   >(null);
   const [showPregnancyPrompt, setShowPregnancyPrompt] = useState(false);
   const [updatingPregnancy, setUpdatingPregnancy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const emojis = ['😄', '🙂', '😐', '😞'];
-  const energyEmojis = [
-    images.energizedEmoji,
-    images.highEmoji,
-    images.mediumEmoji,
-  ];
+  const handleSleepConfirm = () => {
+    void refreshAll();
+  };
 
-  const handleSleepTracker = () => {
-    navigation.navigate('SleepTracker');
+  const handleSymptomsConfirm = () => {
+    void refreshAll();
+  };
+
+  const handlePeriodConfirm = async (data: PeriodLogData) => {
+    try {
+      const response = await createPeriod({
+        startDate: data.startDate.toISOString(),
+        endDate: data.endDate?.toISOString(),
+        flow: data.flow,
+        symptoms: data.symptoms,
+        notes: data.notes,
+      });
+
+      if (response.success) {
+        setPeriodModalVisible(false);
+        await refreshAll();
+        Alert.alert('Success', 'Period logged successfully!');
+      } else {
+        Alert.alert('Error', response.message || 'Failed to log period.');
+      }
+    } catch (error: any) {
+      console.error('Error creating period from Home:', error);
+      Alert.alert('Error', error.message || 'Failed to log period.');
+    }
+  };
+
+  const handleRitualPress = async (ritualType: string) => {
+    if (ritualType === 'sleep') {
+      setSleepSelectedDate(new Date());
+      setSleepModalVisible(true);
+      return;
+    }
+
+    if (ritualType === 'periods') {
+      setPeriodModalVisible(true);
+      return;
+    }
+
+    if (ritualType === 'symptoms') {
+      setSleepSelectedDate(new Date());
+      setSymptomsModalVisible(true);
+      return;
+    }
+
+    if (ritualType === 'nutrition') {
+      navigation.navigate('Nutrition');
+      return;
+    }
+
+    if (ritualType === 'movement') {
+      // Movement completion is managed inside the movement screen.
+      navigation.navigate('Workouts');
+      return;
+    }
+
+    return;
   };
 
   // Fetch pregnancy status on mount and when cycle data changes
@@ -80,9 +144,7 @@ export default function Home() {
         const pregnancyResponse = await getPregnancyStatus();
         if (pregnancyResponse.success) {
           setPregnancyStatus(
-            pregnancyResponse.data.isPregnant
-              ? pregnancyResponse.data
-              : null,
+            pregnancyResponse.data.isPregnant ? pregnancyResponse.data : null,
           );
         }
       } catch (error: any) {
@@ -96,22 +158,20 @@ export default function Home() {
   // Background refresh on focus (only if stale) - silent, no loaders
   useFocusEffect(
     React.useCallback(() => {
-      refreshCycleData();
-    }, [refreshCycleData]),
+      void refreshAll();
+    }, [refreshAll]),
   );
 
   // Pull-to-refresh handler
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
-      await refreshCycleData({ force: true });
+      await refreshAll();
       // Also refresh pregnancy status
       const pregnancyResponse = await getPregnancyStatus();
       if (pregnancyResponse.success) {
         setPregnancyStatus(
-          pregnancyResponse.data.isPregnant
-            ? pregnancyResponse.data
-            : null,
+          pregnancyResponse.data.isPregnant ? pregnancyResponse.data : null,
         );
       }
     } catch (error) {
@@ -119,7 +179,7 @@ export default function Home() {
     } finally {
       setRefreshing(false);
     }
-  }, [refreshCycleData]);
+  }, [refreshAll]);
 
   // Helper functions
   const getPhaseDisplayName = (phase?: string): string => {
@@ -158,6 +218,73 @@ export default function Home() {
     }
   };
 
+  const getSymptomSeverityColor = (severity?: string) => {
+    switch ((severity || '').toLowerCase()) {
+      case 'severe':
+      case 'low':
+      case 'poor':
+        return '#E85C5C';
+      case 'moderate':
+      case 'medium':
+      case 'neutral':
+      case 'fair':
+        return '#E68C3A';
+      case 'mild':
+      case 'high':
+      case 'good':
+        return '#5DBB63';
+      default:
+        return colors.darkGrey;
+    }
+  };
+
+  const getTrendLabel = (
+    trend: 'increasing' | 'decreasing' | 'stable' | null,
+  ): string => {
+    if (trend === 'decreasing') return 'Improving';
+    if (trend === 'increasing') return 'Worsening';
+    if (trend === 'stable') return 'Stable';
+    return '—';
+  };
+
+  const formatDuration = (minutes: number | null): string => {
+    if (!minutes || minutes <= 0) return '—';
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h === 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}m`;
+  };
+
+  const formatTime = (isoTime?: string | null): string => {
+    if (!isoTime) return '—';
+    const dt = new Date(isoTime);
+    if (Number.isNaN(dt.getTime())) return '—';
+    return moment(dt).format('h:mm A');
+  };
+
+  const getSleepQualityMeta = (
+    quality: number | null,
+  ): { label: string; textColor: string; bgColor: string } => {
+    if (!quality || quality <= 0) {
+      return { label: '—', textColor: colors.darkGrey, bgColor: '#F3F3F3' };
+    }
+    // Sleep quality is on a 1-5 scale where 5 is best.
+    if (quality >= 5) {
+      return { label: 'Excellent', textColor: '#2E7D32', bgColor: '#E8F5E9' };
+    }
+    if (quality >= 4) {
+      return { label: 'Good', textColor: '#5A8F29', bgColor: '#F1F8E9' };
+    }
+    if (quality >= 3) {
+      return { label: 'Okay', textColor: '#E68C3A', bgColor: '#FFF3E0' };
+    }
+    if (quality >= 2) {
+      return { label: 'Poor', textColor: '#D35400', bgColor: '#FDEBD0' };
+    }
+    return { label: 'Very Poor', textColor: '#C62828', bgColor: '#FFEBEE' };
+  };
+
   const calculateProgressPercentage = (
     cycleDay?: number,
     cycleLength?: number,
@@ -185,7 +312,7 @@ export default function Home() {
         navAny.jumpTo('Cycle');
         return;
       }
-      
+
       // Method 2: Try to get parent tab navigator
       let parent = navAny.getParent?.();
       // Keep going up the parent chain to find the tab navigator
@@ -196,7 +323,7 @@ export default function Home() {
         }
         parent = parent.getParent?.();
       }
-      
+
       // Method 3: Fallback - navigate to CycleInsight as a stack screen
       // This is registered in the stack navigator and will work
       navigation.navigate('CycleInsight');
@@ -252,9 +379,7 @@ export default function Home() {
         const pregnancyResponse = await getPregnancyStatus();
         if (pregnancyResponse.success) {
           setPregnancyStatus(
-            pregnancyResponse.data.isPregnant
-              ? pregnancyResponse.data
-              : null,
+            pregnancyResponse.data.isPregnant ? pregnancyResponse.data : null,
           );
         }
         await refreshCycleData({ force: true });
@@ -403,8 +528,8 @@ export default function Home() {
                     >
                       <Text style={styles.spacedText}>CYCLE HISTORY</Text>
                       <Text style={styles.textDarkGrey}>
-                        View your past cycles and insights from before pregnancy.
-                        Your cycle data is preserved.
+                        View your past cycles and insights from before
+                        pregnancy. Your cycle data is preserved.
                       </Text>
                       <Text
                         style={[
@@ -479,7 +604,9 @@ export default function Home() {
                           <Text style={styles.predictionBannerText}>
                             Your period was expected{' '}
                             {cycleStatus.daysUntilNextPeriod
-                              ? `${Math.abs(cycleStatus.daysUntilNextPeriod)} days ago`
+                              ? `${Math.abs(
+                                  cycleStatus.daysUntilNextPeriod,
+                                )} days ago`
                               : 'recently'}
                             . Are you possibly pregnant?
                           </Text>
@@ -529,9 +656,8 @@ export default function Home() {
                     </View>
                     <View style={styles.phaseTextContainer}>
                       <Text style={styles.textPrimary}>
-                        {phaseDataStatus.isPredicted
-                          ? 'Predicted: '
-                          : ''}{getPhaseDisplayName(cycleStatus.phase)} - Day{' '}
+                        {phaseDataStatus.isPredicted ? 'Predicted: ' : ''}
+                        {getPhaseDisplayName(cycleStatus.phase)} - Day{' '}
                         {cycleStatus.cycleDay || '—'}
                       </Text>
                     </View>
@@ -540,60 +666,63 @@ export default function Home() {
                       <Text style={styles.textBlackMedium}>{todayDate}</Text>
                     </View>
                     <View style={styles.cyclePhaseCard}>
-                    <Text style={styles.spacedText}>CYCLE PROGRESS</Text>
+                      <Text style={styles.spacedText}>CYCLE PROGRESS</Text>
 
-                    <View style={styles.rowFull}>
-                      <View style={styles.rowBottom}>
-                        <GradientText fontSize={46} fontFamily="Inter-Regular">
-                          {cycleStatus.cycleDay || '—'}
-                        </GradientText>
-                        <Text style={[styles.numberTextMedium, { top: 8 }]}>
-                          {' '}
-                          / {cycleStatus.averageCycleLength || 28}
-                        </Text>
+                      <View style={styles.rowFull}>
+                        <View style={styles.rowBottom}>
+                          <GradientText
+                            fontSize={46}
+                            fontFamily="Inter-Regular"
+                          >
+                            {cycleStatus.cycleDay || '—'}
+                          </GradientText>
+                          <Text style={[styles.numberTextMedium, { top: 8 }]}>
+                            {' '}
+                            / {cycleStatus.averageCycleLength || 28}
+                          </Text>
+                        </View>
+                        <View style={styles.dayTextContainer}>
+                          <Text style={styles.textBlackNormal}>
+                            Day {cycleStatus.cycleDay || '—'}
+                          </Text>
+                        </View>
                       </View>
-                      <View style={styles.dayTextContainer}>
-                        <Text style={styles.textBlackNormal}>
-                          Day {cycleStatus.cycleDay || '—'}
-                        </Text>
+                      <View style={styles.progressIndicator}>
+                        <LinearGradient
+                          style={[
+                            styles.progress,
+                            {
+                              width: `${calculateProgressPercentage(
+                                cycleStatus.cycleDay,
+                                cycleStatus.averageCycleLength || 28,
+                              )}%`,
+                            },
+                          ]}
+                          colors={['#E4AF5D', '#E799AD']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                        ></LinearGradient>
                       </View>
-                    </View>
-                    <View style={styles.progressIndicator}>
-                      <LinearGradient
-                        style={[
-                          styles.progress,
-                          {
-                            width: `${calculateProgressPercentage(
-                              cycleStatus.cycleDay,
-                              cycleStatus.averageCycleLength || 28,
-                            )}%`,
-                          },
-                        ]}
-                        colors={['#E4AF5D', '#E799AD']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                      ></LinearGradient>
-                    </View>
-                    <View style={styles.rowFull}>
-                      <View>
-                        <Text style={styles.spacedText}>CURRENT PHASE</Text>
-                        <GradientText
-                          fontSize={24}
-                          fontFamily="PlayfairDisplay-SemiBold"
-                        >
-                          {getPhaseDisplayName(cycleStatus.phase)}
-                        </GradientText>
+                      <View style={styles.rowFull}>
+                        <View>
+                          <Text style={styles.spacedText}>CURRENT PHASE</Text>
+                          <GradientText
+                            fontSize={24}
+                            fontFamily="PlayfairDisplay-SemiBold"
+                          >
+                            {getPhaseDisplayName(cycleStatus.phase)}
+                          </GradientText>
+                        </View>
+                        <Image
+                          source={getPhaseIcon(cycleStatus.phase)}
+                          style={styles.lutealIcon}
+                        />
                       </View>
-                      <Image
-                        source={getPhaseIcon(cycleStatus.phase)}
-                        style={styles.lutealIcon}
-                      />
-                    </View>
 
-                    <Text style={styles.textDarkGrey}>
-                      {cycleStatus.tagline || '—'}
-                    </Text>
-                  </View>
+                      <Text style={styles.textDarkGrey}>
+                        {cycleStatus.tagline || '—'}
+                      </Text>
+                    </View>
                   </View>
                   <View style={styles.softCopyContainer}>
                     <Text style={styles.textDarkGrey}>
@@ -605,13 +734,13 @@ export default function Home() {
                   {phaseDataStatus.isPredicted && (
                     <View style={styles.predictionInfoContainer}>
                       <Text style={styles.predictionInfoText}>
-                        This information is based on our advanced cycle prediction
-                        calculations. To get the most accurate cycle tracking
-                        personalized to your body, please log your period start
-                        date.
+                        This information is based on our advanced cycle
+                        prediction calculations. To get the most accurate cycle
+                        tracking personalized to your body, please log your
+                        period start date.
                       </Text>
                     </View>
-                   )} 
+                  )}
                 </>
               )}
 
@@ -652,7 +781,9 @@ export default function Home() {
                       <Image source={images.sparkle} style={styles.icon} />
                       <Text style={styles.greenText}>Best For</Text>
                       <Text style={styles.textBlackSmall}>
-                        {cycleStatus.bestFor && Array.isArray(cycleStatus.bestFor) && cycleStatus.bestFor.length > 0
+                        {cycleStatus.bestFor &&
+                        Array.isArray(cycleStatus.bestFor) &&
+                        cycleStatus.bestFor.length > 0
                           ? cycleStatus.bestFor.join(', ')
                           : '—'}
                       </Text>
@@ -727,7 +858,9 @@ export default function Home() {
                             {cycleStatus.mindset.map((item, index) => (
                               <View key={index} style={styles.row}>
                                 <View style={styles.bulletPoint}></View>
-                                <Text style={styles.textBlackNormal}>{item}</Text>
+                                <Text style={styles.textBlackNormal}>
+                                  {item}
+                                </Text>
                               </View>
                             ))}
                           </View>
@@ -762,234 +895,237 @@ export default function Home() {
             {/* Header */}
             <View style={styles.headerRow}>
               <Text style={styles.headerTitle}>Today’s Rituals</Text>
-              <Text style={styles.headerProgress}>0/9 Complete</Text>
+              <Text style={styles.headerProgress}>
+                {progress.completed}/{progress.total} Complete
+              </Text>
             </View>
 
-            {/* MORNING */}
-            <Text style={styles.sectionHeading}>MORNING</Text>
+            {/* TODAY'S RITUALS */}
             <View style={styles.ritualsSection}>
-              <RitualItem
-                title="Log last night’s sleep"
-                tag="Rest"
-                description="💡 Tracking sleep patterns helps identify what supports your best rest"
-                actionLabel="Log Sleep"
-              />
-
-              <RitualItem
-                title="Hydrate with minerals + morning light"
-                tag="Nourish"
-                description="💡 Morning light sets your circadian rhythm and hormone balance"
-                actionLabel="View Guide"
-              />
-
-              <RitualItem
-                title="5-min breathwork practice"
-                tag="Mindful"
-                description="💡 Breathwork activates your parasympathetic nervous system"
-                actionLabel="Practice"
-              />
-
-              <RitualItem
-                title="Protein-rich breakfast (20–30g)"
-                tag="Nourish"
-                description="💡 Protein stabilizes blood sugar and supports hormone production"
-                actionLabel="View Guide"
-              />
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* MIDDAY */}
-            <Text style={styles.sectionHeading}>MIDDAY</Text>
-            <View style={styles.ritualsSection}>
-              <RitualItem
-                title="Movement session (any time)"
-                tag="Move"
-                description="💡 Exercise when it fits your schedule and energy levels"
-              />
-
-              <RitualItem
-                title="Protein at lunch (20–30g)"
-                tag="Nourish"
-                description="💡 Consistent protein supports metabolic health and satiety"
-                actionLabel="View Guide"
-              />
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* EVENING */}
-            <Text style={styles.sectionHeading}>EVENING</Text>
-            <View style={styles.ritualsSection}>
-              <RitualItem
-                title="Gentle stretching or walk"
-                tag="Move"
-                description="💡 Light movement aids digestion and circulation"
-              />
-
-              <RitualItem
-                title="Wind-down ritual"
-                tag="Mindful"
-                description="💡 Creating separation from day helps cortisol naturally decline"
-                actionLabel="Practice"
-              />
-
-              <RitualItem
-                title="Magnesium supplement (evening)"
-                tag="Rest"
-                description="💡 Evening magnesium supports deep sleep and muscle recovery"
-              />
+              {ritualsLoading ? (
+                <ActivityIndicator size="small" color={colors.green} />
+              ) : null}
+              {todayRituals.length > 0 ? (
+                todayRituals.map(ritual => (
+                  <RitualItem
+                    key={ritual.id}
+                    title={ritual.title}
+                    tag={ritual.tag}
+                    description={ritual.description}
+                    completed={ritual.completed}
+                    onToggle={() => handleRitualPress(ritual.type)}
+                  />
+                ))
+              ) : (
+                <Text style={{ color: colors.green, fontSize: 12 }}>
+                  Nothing due today
+                </Text>
+              )}
             </View>
 
             {/* Bottom Gradient Button */}
-            <TouchableOpacity style={styles.updateButton}>
+            {/* <TouchableOpacity
+              style={styles.updateButton}
+              onPress={handleUpdateRituals}
+              disabled={updatingRituals}
+            >
               <LinearGradient
                 colors={gradients.primary}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.updateButtonGradient}
               >
-                <Text style={styles.updateButtonText}>Update Rituals</Text>
+                {updatingRituals ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text style={styles.updateButtonText}>Update Rituals</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity> */}
+          </View>
+
+          <View style={styles.container2}>
+            <View style={styles.symptomCardHeader}>
+              <Text style={styles.sectionTitle}>Symptom Summary</Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('SymptomHistory')}
+              >
+                <Text style={styles.symptomHistoryLink}>See History</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.symptomStatusText}>{symptomSummary.statusText}</Text>
+
+            {symptomSummary.todaySymptoms.length > 0 ? (
+              <View style={styles.todaySymptomsWrap}>
+                {symptomSummary.todaySymptoms.map((item, index) => {
+                  const severityColor = getSymptomSeverityColor(item.severity);
+                  return (
+                    <View key={`${item.symptom}-${index}`} style={styles.symptomChip}>
+                      <Text style={styles.symptomChipName}>{item.symptom}</Text>
+                      <View
+                        style={[
+                          styles.symptomSeverityBadge,
+                          { backgroundColor: `${severityColor}20` },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.symptomSeverityText,
+                            { color: severityColor },
+                          ]}
+                        >
+                          {item.severity}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <Text style={styles.symptomEmptyText}>
+                Log symptoms to start seeing daily highlights.
+              </Text>
+            )}
+
+            <View style={styles.symptomSummaryRow}>
+              <Text style={styles.symptomSummaryLabel}>Last log date</Text>
+              <Text style={styles.symptomSummaryValue}>
+                {symptomSummary.lastLoggedDate
+                  ? moment(symptomSummary.lastLoggedDate).format('MMM D, YYYY')
+                  : '—'}
+              </Text>
+            </View>
+
+            <View style={styles.symptomSummaryRow}>
+              <Text style={styles.symptomSummaryLabel}>Top symptoms</Text>
+              <Text style={styles.symptomSummaryValue}>
+                {symptomSummary.topSymptoms.length > 0
+                  ? symptomSummary.topSymptoms.join(', ')
+                  : '—'}
+              </Text>
+            </View>
+
+            <View style={styles.symptomSummaryRow}>
+              <Text style={styles.symptomSummaryLabel}>Trend</Text>
+              <Text style={styles.symptomSummaryValue}>
+                {getTrendLabel(symptomSummary.trend)}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.symptomLogButton}
+              onPress={() => {
+                setSleepSelectedDate(new Date());
+                setSymptomsModalVisible(true);
+              }}
+              disabled={symptomSummary.loading}
+            >
+              <LinearGradient
+                colors={gradients.primary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.symptomLogButtonGradient}
+              >
+                {symptomSummary.loading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text style={styles.symptomLogButtonText}>Log Symptoms</Text>
+                )}
               </LinearGradient>
             </TouchableOpacity>
           </View>
 
           <View style={styles.container2}>
-            <Text style={styles.sectionTitle}>Today's Tracking</Text>
-            {/* 1. FEELING */}
-            <View>
-              <View style={styles.row}>
-                <Image source={images.movementIcon} style={styles.icon} />
-                <Text style={styles.label}>How are you feeling?</Text>
-              </View>
+            <View style={styles.sleepCardHeader}>
+              <Text style={styles.sectionTitle}>Sleep Summary</Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('SleepTracker')}
+              >
+                <Text style={styles.sleepDetailsLink}>View Details</Text>
+              </TouchableOpacity>
+            </View>
 
-              <View style={styles.row2}>
-                {['Great', 'Good', 'Okay', 'Poor'].map((mood, index) => {
-                  const isSelected = selectedFeeling === index;
+            <Text style={styles.sleepStatusText}>{sleepSummary.statusText}</Text>
 
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      onPress={() => setSelectedFeeling(index)}
-                      style={[
-                        styles.optionBox,
-                        isSelected && styles.selectedOptionBox,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.optionEmojiText,
-                          isSelected && styles.selectedOptionEmojiText,
-                        ]}
-                      >
-                        {emojis[index]}
-                      </Text>
+            <View style={styles.sleepSummaryRow}>
+              <Text style={styles.sleepSummaryLabel}>Last night duration</Text>
+              <Text style={styles.sleepSummaryValue}>
+                {formatDuration(sleepSummary.lastNightDurationMinutes)}
+              </Text>
+            </View>
 
-                      <Text
-                        style={[
-                          styles.optionText,
-                          isSelected && styles.selectedOptionText,
-                        ]}
-                      >
-                        {mood}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+            <View style={styles.sleepSummaryRow}>
+              <Text style={styles.sleepSummaryLabel}>Sleep quality</Text>
+              <View
+                style={[
+                  styles.sleepQualityBadge,
+                  {
+                    backgroundColor: getSleepQualityMeta(
+                      sleepSummary.lastNightQuality,
+                    ).bgColor,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.sleepQualityBadgeText,
+                    {
+                      color: getSleepQualityMeta(sleepSummary.lastNightQuality)
+                        .textColor,
+                    },
+                  ]}
+                >
+                  {getSleepQualityMeta(sleepSummary.lastNightQuality).label}
+                </Text>
               </View>
             </View>
 
-            {/* 2. ENERGY LEVEL */}
-            <View>
-              <View style={styles.row}>
-                <Image source={images.energyIcon} style={styles.icon} />
-                <Text style={styles.label}>Energy Level</Text>
-              </View>
-
-              <View style={styles.row2}>
-                {['High', 'Medium', 'Low'].map((level, index) => {
-                  const isSelected = selectedEnergy === index;
-
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      onPress={() => setSelectedEnergy(index)}
-                      style={[
-                        styles.optionBox,
-                        isSelected && styles.selectedOptionBox,
-                      ]}
-                    >
-                      <Image
-                        source={energyEmojis[index]}
-                        style={styles.optionEmoji}
-                      />
-
-                      <Text
-                        style={[
-                          styles.optionText,
-                          isSelected && styles.selectedOptionText,
-                        ]}
-                      >
-                        {level}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+            <View style={styles.sleepSummaryRow}>
+              <Text style={styles.sleepSummaryLabel}>Bed / Wake</Text>
+              <Text style={styles.sleepSummaryValue}>
+                {`${formatTime(sleepSummary.bedTime)} / ${formatTime(
+                  sleepSummary.wakeTime,
+                )}`}
+              </Text>
             </View>
 
-            {/* 3. SLEEP QUALITY */}
-            <View>
-              <View style={styles.row}>
-                <Image source={images.sleepQualityIcon} style={styles.icon} />
-                <Text style={styles.label}>How was your sleep quality?</Text>
-              </View>
-
-              <View style={styles.row2}>
-                {['Great', 'Good', 'Okay', 'Poor'].map((mood, index) => {
-                  const isSelected = selectedSleep === index;
-
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      onPress={() => setSelectedSleep(index)}
-                      style={[
-                        styles.optionBox,
-                        isSelected && styles.selectedOptionBox,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.optionEmojiText,
-                          isSelected && styles.selectedOptionEmojiText,
-                        ]}
-                      >
-                        {emojis[index]}
-                      </Text>
-
-                      <Text
-                        style={[
-                          styles.optionText,
-                          isSelected && styles.selectedOptionText,
-                        ]}
-                      >
-                        {mood}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+            <View style={styles.sleepSummaryRow}>
+              <Text style={styles.sleepSummaryLabel}>Last logged</Text>
+              <Text style={styles.sleepSummaryValue}>
+                {sleepSummary.lastLogDate
+                  ? moment(sleepSummary.lastLogDate).format('MMM D, YYYY')
+                  : '—'}
+              </Text>
             </View>
+
+            <View style={styles.sleepStreakPill}>
+              <Text style={styles.sleepStreakText}>
+                {sleepSummary.streakDays > 0
+                  ? `${sleepSummary.streakDays}-day streak`
+                  : 'No active streak'}
+              </Text>
+            </View>
+
             <TouchableOpacity
-              style={styles.linkRow}
-              onPress={handleSleepTracker}
+              style={styles.sleepLogButton}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('SleepTracker')}
             >
-              <Text style={styles.link}>View Sleep Details </Text>
-              <Image source={images.arrow} style={styles.arrow} />
+              <LinearGradient
+                colors={gradients.primary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.sleepLogButtonGradient}
+              >
+                <Text style={styles.sleepLogButtonText}>Log Sleep</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.container2}>
+          {/* <View style={styles.container2}>
             <Text style={styles.sectionTitle}>Cycle Insights</Text>
 
             <View style={styles.insightRow}>
@@ -1038,8 +1174,8 @@ export default function Home() {
                 sauna use
               </Text>
             </View>
-          </View>
-          <GradientWrapper variant="basic">
+          </View> */}
+          {/* <GradientWrapper variant="basic">
             <View style={styles.container}>
               <Text style={styles.sectionTitleGreen}>Active Challenge</Text>
 
@@ -1059,9 +1195,69 @@ export default function Home() {
                 </LinearGradient>
               </TouchableOpacity>
             </View>
+          </GradientWrapper> */}
+          <GradientWrapper variant="basic">
+            <View style={styles.phaseBody}>
+              <View style={styles.journalHeaderRow}>
+                <Image source={images.journal} style={styles.journalIcon} />
+                <Text style={styles.journalTitle}>Wellness Journal</Text>
+              </View>
+              <Text style={styles.journalSubtitle}>
+                Your story unfolds one note at a time. Reflect on your journey,
+                express gratitude, and celebrate your progress.
+              </Text>
+              <View style={styles.journalButtonsRow}>
+                <TouchableOpacity activeOpacity={0.8}>
+                  <LinearGradient
+                    style={styles.journalActionButton}
+                    colors={['#E4AF5D', '#E799AD']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                  >
+                    <Text style={styles.journalActionButtonText}>
+                      New Entry
+                    </Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.journalActionButton,
+                    styles.journalHistoryButton,
+                  ]}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.journalActionButtonText,
+                      styles.journalHistoryButtonText,
+                    ]}
+                  >
+                    See History
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </GradientWrapper>
         </View>
       </ScrollView>
+      <SleepLogModal
+        visible={sleepModalVisible}
+        onClose={() => setSleepModalVisible(false)}
+        onConfirm={handleSleepConfirm}
+        selectedDate={sleepSelectedDate}
+      />
+      <PeriodStartModal
+        visible={periodModalVisible}
+        onClose={() => setPeriodModalVisible(false)}
+        onConfirm={handlePeriodConfirm}
+        editingPeriod={null}
+      />
+      <SymptomLogModal
+        visible={symptomsModalVisible}
+        onClose={() => setSymptomsModalVisible(false)}
+        onConfirm={handleSymptomsConfirm}
+        selectedDate={sleepSelectedDate}
+      />
       <PregnancyPromptModal
         visible={showPregnancyPrompt}
         onClose={() => setShowPregnancyPrompt(false)}
@@ -1076,30 +1272,35 @@ const RitualItem = ({
   title,
   tag,
   description,
-  actionLabel,
+  completed,
+  onToggle,
 }: {
   title: string;
   tag: string;
   description: string;
-  actionLabel?: string;
+  completed: boolean;
+  onToggle: () => void | Promise<void>;
 }) => {
   return (
     <View style={styles.itemContainer}>
       <View style={styles.itemHeaderRow}>
-        <TouchableOpacity>
-          <Image source={images.circleUnchecked} style={styles.checkIcon} />
+        <TouchableOpacity onPress={onToggle} activeOpacity={0.7}>
+          <Image
+            source={completed ? images.circleChecked : images.circleUnchecked}
+            // source={images.circleChecked}
+            style={styles.checkIcon}
+          />
         </TouchableOpacity>
-        <View>
+        <TouchableOpacity
+          onPress={onToggle}
+          activeOpacity={0.7}
+          style={{ flex: 1 }}
+        >
           <Text style={styles.itemTitle}>{title}</Text>
           <View style={styles.tagRow}>
             <Text style={styles.tagText}>● {tag}</Text>
           </View>
-        </View>
-        {/* {actionLabel && (
-          <TouchableOpacity>
-            <Text style={styles.actionLabel}>{actionLabel} →</Text>
-          </TouchableOpacity>
-        )} */}
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.itemDescription}>{description}</Text>

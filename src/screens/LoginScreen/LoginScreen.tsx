@@ -127,6 +127,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
             title={isLoading ? 'Signing in...' : 'Sign in'}
             onPress={handleLogin}
             disabled={!canSubmit}
+            small={true}
           />
 
           <View style={styles.footer}>

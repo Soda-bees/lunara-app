@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, Animated, Easing } from 'react-native';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 interface CircularProgressProps {
   progress: number; // 0 to 1
@@ -7,6 +8,7 @@ interface CircularProgressProps {
   strokeWidth: number;
   color: string;
   backgroundColor?: string;
+  gradientColors?: string[]; // Optional gradient colors [startColor, endColor]
   children?: React.ReactNode;
 }
 
@@ -16,131 +18,76 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
   strokeWidth,
   color,
   backgroundColor = '#F3F4F6',
+  gradientColors,
   children,
 }) => {
   const animatedProgress = useRef(new Animated.Value(0)).current;
+  const [strokeDashoffset, setStrokeDashoffset] = useState(0);
+
+  // Calculate circumference
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
 
   useEffect(() => {
     Animated.timing(animatedProgress, {
       toValue: Math.min(Math.max(progress, 0), 1),
-      duration: 300,
-      useNativeDriver: true,
+      duration: 500,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: false, // strokeDashoffset doesn't support native driver
     }).start();
-  }, [progress]);
+  }, [progress, animatedProgress]);
 
-  const radius = size / 2 - strokeWidth / 2;
-  const circumference = 2 * Math.PI * radius;
+  // Update strokeDashoffset based on animated progress
+  useEffect(() => {
+    const listener = animatedProgress.addListener(({ value }) => {
+      setStrokeDashoffset(circumference * (1 - value));
+    });
+    return () => {
+      animatedProgress.removeListener(listener);
+    };
+  }, [animatedProgress, circumference]);
 
-  // Create rotation for the progress arc starting from top (-90deg)
-  const rotation = animatedProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['-90deg', '270deg'],
-  });
-
-  // Determine opacity for left and right halves
-  const leftHalfOpacity = animatedProgress.interpolate({
-    inputRange: [0, 0.5, 0.5, 1],
-    outputRange: [1, 1, 0, 0],
-  });
-
-  const rightHalfOpacity = animatedProgress.interpolate({
-    inputRange: [0, 0.5, 0.5, 1],
-    outputRange: [0, 0, 1, 1],
-  });
-
-  // For right half, calculate rotation based on progress
-  const rightHalfRotation = animatedProgress.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: ['0deg', '0deg', '180deg'],
-  });
+  // Use gradient if provided, otherwise use solid color
+  const useGradient = gradientColors && gradientColors.length >= 2;
+  const gradientId = 'progressGradient';
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>
-      {/* Background circle */}
-      <View
-        style={[
-          styles.backgroundCircle,
-          {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            borderWidth: strokeWidth,
-            borderColor: backgroundColor,
-          },
-        ]}
-      />
+      <Svg width={size} height={size}>
+        {useGradient && (
+          <Defs>
+            <LinearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0%" stopColor={gradientColors![0]} />
+              <Stop offset="100%" stopColor={gradientColors![1]} />
+            </LinearGradient>
+          </Defs>
+        )}
 
-      {/* Progress overlay */}
-      <View
-        style={[
-          styles.progressContainer,
-          {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-          },
-        ]}
-        pointerEvents="none"
-      >
-        {/* Left half - visible for first 50% */}
-        <Animated.View
-          style={[
-            styles.halfCircle,
-            {
-              width: size / 2,
-              height: size,
-              borderTopLeftRadius: size / 2,
-              borderBottomLeftRadius: size / 2,
-              borderWidth: strokeWidth,
-              borderColor: color,
-              borderRightWidth: 0,
-              opacity: leftHalfOpacity,
-            },
-          ]}
+        {/* Background Circle */}
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={backgroundColor}
+          strokeWidth={strokeWidth}
+          fill="none"
         />
 
-        {/* Right half - visible for second 50% */}
-        <Animated.View
-          style={[
-            styles.halfCircle,
-            {
-              width: size / 2,
-              height: size,
-              left: size / 2,
-              borderTopRightRadius: size / 2,
-              borderBottomRightRadius: size / 2,
-              borderWidth: strokeWidth,
-              borderColor: color,
-              borderLeftWidth: 0,
-              opacity: rightHalfOpacity,
-              transform: [{ rotate: rightHalfRotation }],
-            },
-          ]}
+        {/* Progress Circle */}
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={useGradient ? `url(#${gradientId})` : color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          rotation="-90"
+          origin={`${size / 2}, ${size / 2}`}
         />
-
-        {/* Mask to clip progress based on rotation */}
-        <Animated.View
-          style={[
-            styles.maskContainer,
-            {
-              width: size,
-              height: size,
-              transform: [{ rotate: rotation }],
-            },
-          ]}
-        >
-          <View
-            style={[
-              styles.maskHalf,
-              {
-                width: size / 2,
-                height: size,
-                backgroundColor: '#FDFBF7', // Match background
-              },
-            ]}
-          />
-        </Animated.View>
-      </View>
+      </Svg>
 
       {/* Center content */}
       <View style={[styles.centerContent]}>{children}</View>
@@ -153,30 +100,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-  },
-  backgroundCircle: {
-    position: 'absolute',
-    borderStyle: 'solid',
-  },
-  progressContainer: {
-    position: 'absolute',
-    overflow: 'hidden',
-  },
-  halfCircle: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  maskContainer: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    overflow: 'hidden',
-  },
-  maskHalf: {
-    position: 'absolute',
-    left: '50%',
-    top: 0,
   },
   centerContent: {
     position: 'absolute',

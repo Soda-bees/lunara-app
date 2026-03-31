@@ -65,7 +65,6 @@ import { ProfileScreen } from '../../screens/ProfileScreen/ProfileScreen';
 import { CycleInsightsScreen } from '../../screens/CycleInsightsScreen/CycleInsightsScreen';
 import { SleepTrackingScreen } from '../../screens/SleepTrackingScreen/SleepTrackingScreen';
 import { TrackScreen } from '../../screens/TrackScreen/TrackScreen';
-import { LoginScreen } from '../../screens/LoginScreen/LoginScreen';
 import { NavigationHandler } from '../../components/NavigationHandler/NavigationHandler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { OnboardingProvider } from '../../context/OnboardingContext';
@@ -167,9 +166,19 @@ export default function MainStack() {
         <StatusBar barStyle="dark-content" />
         {/* <NavigationContainer> */}
         <NavigationHandler />
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            // Native-stack performance improvements for large navigation trees.
+            freezeOnBlur: true,
+            detachInactiveScreens: true,
+            // Delay initial screen rendering until first focus.
+            // Helpful for cold start when the stack registers many screens.
+            lazy: true,
+          }}
+        >
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
-          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Login" component={SignIn} />
           <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
           <Stack.Screen name="ResetPassword" component={ResetPassword} />
           <Stack.Screen name="AccountSetup" component={AccountSetupScreen} />

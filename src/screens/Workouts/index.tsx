@@ -16,11 +16,19 @@ import Header from '../../components/Header';
 import MovementLogged from '../../components/MovementLogged';
 import MovementMap from '../../components/MovementMap';
 import { sizes } from '../../constants/sizes';
-import { getPhaseInfo, getMovementScience, PhaseInfo, MovementScienceItem } from '../../services/api';
+import {
+  getPhaseInfo,
+  getMovementScience,
+  PhaseInfo,
+  MovementScienceItem,
+} from '../../services/api';
+import BackButton from '../../components/BackButton';
 
 export default function Workouts() {
   const [phaseInfo, setPhaseInfo] = useState<PhaseInfo | null>(null);
-  const [movementScienceData, setMovementScienceData] = useState<MovementScienceItem[]>([]);
+  const [movementScienceData, setMovementScienceData] = useState<
+    MovementScienceItem[]
+  >([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +38,7 @@ export default function Workouts() {
         setLoading(true);
         setError(null);
         const today = new Date().toISOString().split('T')[0];
-        
+
         // Load phase info and movement science in parallel
         const [phaseRes, scienceRes] = await Promise.all([
           getPhaseInfo(today),
@@ -48,12 +56,14 @@ export default function Workouts() {
           setMovementScienceData([
             {
               title: 'Muscle & Insulin',
-              description: 'Muscle contraction increases insulin sensitivity—helping regulate blood sugar and hormone balance.',
+              description:
+                'Muscle contraction increases insulin sensitivity—helping regulate blood sugar and hormone balance.',
               image: '💪',
             },
             {
               title: 'Walking After Meals',
-              description: 'A 10-minute walk after eating can reduce estrogen dominance and improve digestion.',
+              description:
+                'A 10-minute walk after eating can reduce estrogen dominance and improve digestion.',
               image: '🚶‍♀️',
             },
           ]);
@@ -72,9 +82,10 @@ export default function Workouts() {
   const fallbackPhaseInfo: PhaseInfo = {
     phaseName: 'Your Current Phase',
     phaseTitle: 'Movement Focus',
-    description: 'Listen to your body and choose movement that feels right for you today.',
+    description:
+      'Listen to your body and choose movement that feels right for you today.',
     benefit: 'Supports overall health and well-being',
-    avoid: 'Overexertion or ignoring your body\'s signals',
+    avoid: "Overexertion or ignoring your body's signals",
     phase: 'unknown',
     isPregnant: false,
     isBreastfeeding: false,
@@ -90,7 +101,8 @@ export default function Workouts() {
         backgroundColor="transparent"
         barStyle="dark-content"
       />
-      <Header />
+      {/* <Header /> */}
+      <BackButton />
       <ScrollView>
         <View style={{ marginVertical: 16 }}>
           <Text style={styles.forgotText}>Hormone-Intelligent Movement</Text>
@@ -153,10 +165,12 @@ export default function Workouts() {
           </GradientWrapper>
           <MovementLogged />
           <MovementMap />
-          
+
           {loading && (
             <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Loading movement science...</Text>
+              <Text style={styles.loadingText}>
+                Loading movement science...
+              </Text>
             </View>
           )}
 

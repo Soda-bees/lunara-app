@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Animated,
+  Image,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/stackNavigation';
@@ -34,6 +35,8 @@ import {
   FastingStage,
   CycleFastingGuide,
 } from './fastingData';
+import images from '../../constants/images';
+import BackButton from '../../components/BackButton';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'FastingHome'>;
 
@@ -298,6 +301,8 @@ export const FastingHome: React.FC<Props> = () => {
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
     >
+
+<BackButton />
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Metabolic Timer</Text>
@@ -310,8 +315,9 @@ export const FastingHome: React.FC<Props> = () => {
           <CircularProgress
             progress={isFasting ? progress : 0}
             size={circleSize}
-            strokeWidth={12}
-            color={colors.primary || '#E4AF5D'}
+            strokeWidth={18}
+            // color={colors.primary || '#E4AF5D'}
+            color='#E4AF5D'
             backgroundColor="#F3F4F6"
           >
             <View style={styles.timerCenterContent}>
@@ -334,19 +340,7 @@ export const FastingHome: React.FC<Props> = () => {
           </CircularProgress>
 
           {/* Flame icon at 7 o'clock */}
-          <View
-            style={[
-              styles.flameIconPositioned,
-              {
-                left: flameX - 15,
-                top: flameY - 15,
-              },
-            ]}
-          >
-            <View style={styles.flameIconCircle}>
-              <Text style={styles.flameIconText}>🔥</Text>
-            </View>
-          </View>
+
         </View>
 
         {/* Time info sections */}
@@ -359,7 +353,6 @@ export const FastingHome: React.FC<Props> = () => {
                   {formatDateDisplay(new Date(currentSession.startTime))},{' '}
                   {formatTime(currentSession.startTime)}
                 </Text>
-                <Text style={styles.editLinkDisabled}>Edit start</Text>
               </>
             ) : (
               <>
@@ -409,7 +402,7 @@ export const FastingHome: React.FC<Props> = () => {
       />
 
       {/* Current Stage / Milestones */}
-      {currentStage && (
+      {/* {currentStage && (
         <View style={styles.milestoneCard}>
           <View style={styles.milestoneHeader}>
             <Text style={styles.milestoneIcon}>{currentStage.icon}</Text>
@@ -438,7 +431,7 @@ export const FastingHome: React.FC<Props> = () => {
             </View>
           )}
         </View>
-      )}
+      )} */}
 
       {/* Stats Row */}
       <View style={styles.statsRow}>
@@ -480,7 +473,7 @@ export const FastingHome: React.FC<Props> = () => {
         </Text>
 
         {fastingMechanisms.map(mechanism => (
-          <View key={mechanism.title} style={styles.mechanismCard}>
+          <View key={mechanism.title} style={expandedMechanism === mechanism.title ? [styles.mechanismCard, {borderColor: '#FFF4E3'}] : styles.mechanismCard}>
             <TouchableOpacity
               style={styles.mechanismHeader}
               onPress={() =>
@@ -498,9 +491,11 @@ export const FastingHome: React.FC<Props> = () => {
                   {mechanism.description}
                 </Text>
               </View>
-              <Text style={styles.chevron}>
+              {/* <Text style={styles.chevron}>
                 {expandedMechanism === mechanism.title ? '▼' : '▶'}
-              </Text>
+              </Text> */}
+              <Image source={expandedMechanism === mechanism.title ? images.rightArrow : images.rightArrow}
+               style={expandedMechanism === mechanism.title ? styles.chevronInverted : styles.chevron}/>
             </TouchableOpacity>
 
             {expandedMechanism === mechanism.title && (
@@ -509,11 +504,11 @@ export const FastingHome: React.FC<Props> = () => {
               </View>
             )}
           </View>
-        ))}
+        ))} 
       </View>
 
       {/* Fasting Timeline Visual */}
-      <View style={styles.section}>
+      {/* <View style={styles.section}>
         <Text style={styles.sectionTitle}>Your Fasting Timeline</Text>
         <View style={styles.timelineCard}>
           <View style={styles.timelineLineContainer}>
@@ -572,7 +567,7 @@ export const FastingHome: React.FC<Props> = () => {
             })}
           </View>
         </View>
-      </View>
+      </View> */}
 
       {/* Cycle-Synced Fasting */}
       <View style={styles.section}>
@@ -617,7 +612,9 @@ export const FastingHome: React.FC<Props> = () => {
                   </View>
                   <Text style={styles.phaseWindow}>{phase.window} window</Text>
                 </View>
-                <Text style={styles.chevron}>{isExpanded ? '▼' : '▶'}</Text>
+                {/* <Text style={styles.chevron}>{isExpanded ? '▼' : '▶'}</Text> */}
+                <Image source={isExpanded ? images.rightArrow : images.rightArrow}
+                 style={isExpanded ? styles.chevronInverted : styles.chevron}/>
               </TouchableOpacity>
 
               {isExpanded && (
@@ -631,7 +628,7 @@ export const FastingHome: React.FC<Props> = () => {
                     <Text style={styles.phaseSectionTitle}>✓ Recommendations</Text>
                     {phase.recommendations.map((rec, i) => (
                       <Text key={i} style={styles.phaseListItem}>
-                        • {rec}
+                        <Text style={{ color: '#E4AF5D',}}>•</Text> {rec}
                       </Text>
                     ))}
                   </View>
@@ -642,7 +639,7 @@ export const FastingHome: React.FC<Props> = () => {
                     </Text>
                     {phase.avoid.map((item, i) => (
                       <Text key={i} style={styles.phaseListItem}>
-                        • {item}
+                        <Text style={{ color: '#EF4444',}}>•</Text> {item}
                       </Text>
                     ))}
                   </View>
@@ -731,7 +728,7 @@ export const FastingHome: React.FC<Props> = () => {
       </View>
 
       {/* Recent History */}
-      <View style={styles.section}>
+      <View style={styles.reentSection}>
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Recent History</Text>
           {/* <TouchableOpacity>
@@ -1000,9 +997,11 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
     padding: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 20,
   },
   statIcon: {
     fontSize: 24,
@@ -1021,6 +1020,15 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
+  },
+
+  reentSection: {
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1045,15 +1053,19 @@ const styles = StyleSheet.create({
   sectionIntro: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
-    color: '#6B7280',
+    // color: '#6B7280',
+    color:'#7DA38D',
     lineHeight: 20,
     marginBottom: 16,
   },
   mechanismCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    // borderRadius: 12,
     marginBottom: 8,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor:  '#E5E7EB',
+    borderRadius: 20,
   },
   mechanismHeader: {
     flexDirection: 'row',
@@ -1084,12 +1096,23 @@ const styles = StyleSheet.create({
   mechanismDescription: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
-    color: '#6B7280',
+    // color: '#6B7280',
+    color:'#7DA38D',
   },
+
   chevron: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    color: '#9CA3AF',
+    width: 11,
+    height: 11  ,
+    resizeMode: 'contain',
+    tintColor: '#7DA38D',
+  },
+
+  chevronInverted: {
+    width: 11 ,
+    height: 11  ,
+    resizeMode: 'contain',
+    transform: [{ rotate: '90deg' }],
+    tintColor: '#7DA38D',
   },
   mechanismDetail: {
     paddingHorizontal: 16,
@@ -1276,7 +1299,8 @@ const styles = StyleSheet.create({
   phaseSectionTitle: {
     fontFamily: 'Inter-Medium',
     fontSize: 13,
-    color: '#10B981',
+    // color: '#10B981',
+    color: '#E4AF5D',
     marginBottom: 6,
   },
   phaseSectionTitleAvoid: {
@@ -1336,7 +1360,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: colors.primary || '#E4AF5D',
+    borderColor: colors.primary || '#FFF4E3',
   },
   phaseGuideHeader: {
     flexDirection: 'row',
@@ -1450,20 +1474,21 @@ const styles = StyleSheet.create({
   historyItemDuration: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 14,
-    color: colors.primary || '#E4AF5D',
+    // color: colors.primary || '#E4AF5D',
+    color: '#E4AF5D',
   },
   completedBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#10B981',
+    width: 25,
+    height: 22,
+    borderRadius: 7,
+    backgroundColor: '#F7DEE7',
     alignItems: 'center',
     justifyContent: 'center',
   },
   completedBadgeText: {
     fontFamily: 'Inter-Bold',
     fontSize: 12,
-    color: '#FFFFFF',
+    // color: '#FFFFFF',
   },
   emptyHistoryText: {
     fontFamily: 'Inter-Regular',

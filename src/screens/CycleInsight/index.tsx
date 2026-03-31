@@ -1829,51 +1829,6 @@ export default function CycleInsight() {
               )}
             </View>
           </View>
-          <GradientWrapper variant="basic">
-            <View style={styles.phaseBody}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' , alignSelf: 'flex-start'}}>
-                <Image source={images.journal} style={styles.journalStyle} />
-                <Text style={[styles.infoText, { marginLeft: 10 }]}>
-                  Wellness Journal
-                </Text>
-              </View>
-              <Text style={[styles.infoSubText, { marginTop: 10 }]}>
-                Your story unfolds one note at a time. Reflect on your journey,
-                express gratitude, and celebrate your progress.
-              </Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <TouchableOpacity activeOpacity={0.8}>
-                  <LinearGradient
-                    style={styles.bottomEntryButton}
-                    colors={['#E4AF5D', '#E799AD']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                  >
-                    <Text style={styles.buttonText}>New Entry</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.bottomEntryButton,
-                    { marginLeft: 8, backgroundColor: colors.borderPink },
-                  ]}
-                  activeOpacity={0.8}
-                >
-                  <Text
-                    style={[styles.buttonText, { color: colors.maroonText }]}
-                  >
-                    See History
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </GradientWrapper>
         </View>
       </ScrollView>
     </SafeAreaView>
