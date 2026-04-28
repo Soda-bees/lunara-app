@@ -27,7 +27,6 @@ import PeriodDuration from '../../screens/PeriodDuration';
 import CyclePattern from '../../screens/CyclePattern';
 import QuickTracking from '../../screens/QuickTracking';
 import TabNavigator from '../tabNavigator';
-import { TabRouteName } from '../../constants/content/tabNavigatorIcons';
 import SleepTracker from '../../screens/SleepTracker';
 import CycleInsight from '../../screens/CycleInsight';
 import Workouts from '../../screens/Workouts';
@@ -52,8 +51,10 @@ import { ChallengeDetailScreen } from '../../screens/ChallengeDetailScreen/Chall
 import { MovementsScreen } from '../../screens/MovementsScreen/MovementsScreen';
 import { WorkoutDetailScreen } from '../../screens/WorkoutDetailScreen/WorkoutDetailScreen';
 import { SymptomsScreen } from '../../screens/SymptomsScreen/SymptomsScreen';
-import { JournalScreen } from '../../screens/JournalScreen/JournalScreen';
 import { PeriodsScreen } from '../../screens/PeriodsScreen/PeriodsScreen';
+import Journal from '../../screens/Journal';
+import Journals from '../../screens/Journals';
+import WriteJournal from '../../screens/WriteJournal';
 import CycleHistory from '../../screens/CycleHistory';
 // PregnancyDashboard is now merged into CycleInsight (Insights tab)
 // import PregnancyDashboard from '../../screens/PregnancyDashboard';
@@ -69,7 +70,6 @@ import { NavigationHandler } from '../../components/NavigationHandler/Navigation
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { OnboardingProvider } from '../../context/OnboardingContext';
 import { StatusBar } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
 import { WelcomeScreen } from '../../screens/WelcomeScreen';
 import { LetsGetStarted } from '../../screens/LetsGetStarted';
 import { YoureDoingGreat } from '../../screens/YoureDoingGreat';
@@ -79,6 +79,8 @@ import { DailyLifeMatters } from '../../screens/DailyLifeMatters';
 import { HealthStory } from '../../screens/HealthStory';
 import { AlmostThere } from '../../screens/AlmostThere';
 import { FastingHome } from '../../screens/FastingHome/FastingHome';
+import { JournalProvider } from '../../context/JournalContext';
+import { JournalType } from '../../types';
 
 export type RootStackParamList = {
   SignIn: any;
@@ -118,7 +120,6 @@ export type RootStackParamList = {
   DetoxChallenge: any;
   Welcome: undefined;
   Login: { from?: string } | undefined;
-
   AccountSetup: { googleUser?: { email: string; name: string } } | undefined;
   BasicInfo: undefined;
   Goals: undefined;
@@ -136,7 +137,9 @@ export type RootStackParamList = {
   WorkoutDetail: undefined;
   Symptoms: undefined;
   Periods: undefined;
-  Journal: undefined;
+  Journal: { id: string };
+  Journals: undefined;
+  WriteJournal: { journal?: JournalType } | undefined;
   Profile: undefined;
   CycleInsights: undefined;
   SleepTracking: undefined;
@@ -166,17 +169,18 @@ export default function MainStack() {
         <StatusBar barStyle="dark-content" />
         {/* <NavigationContainer> */}
         <NavigationHandler />
-        <Stack.Navigator
-          screenOptions={{
-            headerShown: false,
-            // Native-stack performance improvements for large navigation trees.
-            freezeOnBlur: true,
-            detachInactiveScreens: true,
-            // Delay initial screen rendering until first focus.
-            // Helpful for cold start when the stack registers many screens.
-            lazy: true,
-          }}
-        >
+        <JournalProvider>
+          <Stack.Navigator
+            screenOptions={{
+              headerShown: false,
+              // Native-stack performance improvements for large navigation trees.
+              freezeOnBlur: true,
+              detachInactiveScreens: true,
+              // Delay initial screen rendering until first focus.
+              // Helpful for cold start when the stack registers many screens.
+              lazy: true,
+            }}
+          >
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
           <Stack.Screen name="Login" component={SignIn} />
           <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
@@ -214,8 +218,10 @@ export default function MainStack() {
           <Stack.Screen name="PregnancyHistory" component={PregnancyHistory} />
           <Stack.Screen name="SymptomHistory" component={SymptomHistory} />
           <Stack.Screen name="PostpartumTransition" component={PostpartumTransition} />
-          <Stack.Screen name="Journal" component={JournalScreen} />
-          <Stack.Screen name="Profile" component={ProfileScreen} />
+          <Stack.Screen name="Journal" component={Journal} />
+          <Stack.Screen name="Journals" component={Journals} />
+          <Stack.Screen name="WriteJournal" component={WriteJournal} />
+          <Stack.Screen name="Profile" component={Profile} />
           <Stack.Screen name="CycleInsights" component={CycleInsightsScreen} />
           <Stack.Screen name="SleepTracking" component={SleepTrackingScreen} />
           <Stack.Screen name="Track" component={TrackScreen} />
@@ -279,7 +285,8 @@ export default function MainStack() {
           <Stack.Screen name="UserProfile" component={Profile} />
           <Stack.Screen name="ChallengeHub" component={ChallengeHub} />
           <Stack.Screen name="DetoxChallenge" component={DetoxChallenge} />
-        </Stack.Navigator>
+          </Stack.Navigator>
+        </JournalProvider>
         {/* </NavigationContainer> */}
       </OnboardingProvider>
     </SafeAreaProvider>

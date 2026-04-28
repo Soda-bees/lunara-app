@@ -123,6 +123,12 @@ import twinkleStar from '../../assets/images/twinkleStar.png';
 import healthApple from '../../assets/images/healthApple.png';
 import celebrationIcon from '../../assets/images/celebrationIcon.png';
 import backgroundEffect from '../../assets/images/backgroundEffect.png';
+import searchIcon from '../../assets/images/searchIcon.png';
+import addJournalIcon from '../../assets/images/addJournalIcon.png';
+import edit from '../../assets/images/edit.png';
+import pin from '../../assets/images/pin.png';
+import deleteIcon from '../../assets/images/deleteIcon.png';
+import editDots from '../../assets/images/editDots.png';
 
 const images: { [key: string]: any } = {
   googleIcon,
@@ -250,6 +256,12 @@ const images: { [key: string]: any } = {
   healthApple,
   celebrationIcon,
   backgroundEffect,
+  searchIcon,
+  addJournalIcon,
+  edit,
+  pin,
+  deleteIcon,
+  editDots,
 };
 
 export default images;

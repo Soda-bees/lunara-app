@@ -1207,7 +1207,10 @@ export default function Home() {
                 express gratitude, and celebrate your progress.
               </Text>
               <View style={styles.journalButtonsRow}>
-                <TouchableOpacity activeOpacity={0.8}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => navigation.navigate('WriteJournal')}
+                >
                   <LinearGradient
                     style={styles.journalActionButton}
                     colors={['#E4AF5D', '#E799AD']}
@@ -1225,6 +1228,7 @@ export default function Home() {
                     styles.journalHistoryButton,
                   ]}
                   activeOpacity={0.8}
+                  onPress={() => navigation.navigate('Journals')}
                 >
                   <Text
                     style={[
