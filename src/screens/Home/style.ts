@@ -266,6 +266,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
   },
 
+  headerLink: {
+    fontSize: 14,
+    color: colors.green,
+    fontFamily: 'Inter-Medium',
+    marginRight: 8,
+  },
+
   sectionHeading: {
     fontSize: 14,
     fontFamily: 'PlayfairDisplay-SemiBold',
@@ -698,12 +705,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    width: '100%',
   },
   journalActionButton: {
-    paddingHorizontal: sizes.screenWidth * 0.1,
     paddingVertical: 9,
     borderRadius: sizes.screenWidth * 0.03,
     marginTop: sizes.screenHeight * 0.02,
+    width: sizes.screenWidth * 0.4,
+    alignItems: 'center',
   },
   journalActionButtonText: {
     color: colors.white,
@@ -711,7 +720,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Medium',
   },
   journalHistoryButton: {
-    marginLeft: 8,
     backgroundColor: colors.borderPink,
   },
   journalHistoryButtonText: {

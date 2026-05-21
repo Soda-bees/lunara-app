@@ -29,6 +29,7 @@ import CycleCalendar from '../../components/CycleCalender';
 import SymptomTrends from '../../components/SymptomTrends';
 import { colors } from '../../constants/colors';
 import PhaseGuide from '../../components/PhaseGuide';
+import CycleIndicatorCard from '../../components/CycleIndicatorCard';
 import PeriodStartModal, {
   PeriodLogData,
 } from '../../components/PeriodStartModal';
@@ -134,26 +135,23 @@ export default function CycleInsight() {
   const [showCycleHistory, setShowCycleHistory] = useState(false);
   const [showSymptomModal, setShowSymptomModal] = useState(false);
   const [showPregnancyPrompt, setShowPregnancyPrompt] = useState(false);
-  const [pregnancySymptoms, setPregnancySymptoms] =
-    useState<PregnancySymptom[]>([]);
+  const [pregnancySymptoms, setPregnancySymptoms] = useState<
+    PregnancySymptom[]
+  >([]);
   const [weeklyUpdates, setWeeklyUpdates] = useState<WeeklyUpdate[]>([]);
   const [didYouKnow, setDidYouKnow] = useState<DidYouKnow | null>(null);
-  const [personalizedInsight, setPersonalizedInsight] = useState<string | null>(null);
+  const [personalizedInsight, setPersonalizedInsight] = useState<string | null>(
+    null,
+  );
   const [loadingWeeklyUpdates, setLoadingWeeklyUpdates] = useState(false);
   const [loadingDidYouKnow, setLoadingDidYouKnow] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loggingPeriod, setLoggingPeriod] = useState(false);
-  const {
-    cycleStatus,
-    periods,
-    analytics,
-    refreshCycleData,
-  } = useCycleData();
+  const { cycleStatus, periods, analytics, refreshCycleData } = useCycleData();
   const cycle = cycleStatus.data;
   const periodList = periods.data || [];
   const analyticsData = analytics.data;
-  const loading =
-    cycleStatus.loading || periods.loading || analytics.loading;
+  const loading = cycleStatus.loading || periods.loading || analytics.loading;
   const hasCycleData =
     !!cycle ||
     periodList.length > 0 ||
@@ -215,7 +213,7 @@ export default function CycleInsight() {
     try {
       // Refresh cycle data first
       await refreshCycleData({ force: true });
-      
+
       // Also refresh pregnancy status
       const pregnancyResponse = await getPregnancyStatus();
       if (pregnancyResponse.success && pregnancyResponse.data.isPregnant) {
@@ -229,7 +227,7 @@ export default function CycleInsight() {
         setIsPregnant(false);
         setPregnancyStatus(null);
       }
-      
+
       // Refresh phase content using the cycle from context
       // The cycle variable is reactive and will be updated after refreshCycleData
       if (cycle && cycle.phase) {
@@ -273,10 +271,10 @@ export default function CycleInsight() {
           // Close modal first
           setShowModal(false);
           setEditingPeriod(null);
-          
+
           // Refresh data
           await refreshCycleData({ force: true });
-          
+
           // Show success alert after modal closes
           Alert.alert('Success', 'Period updated successfully!');
         }
@@ -294,10 +292,10 @@ export default function CycleInsight() {
           // Close modal first
           setShowModal(false);
           setEditingPeriod(null);
-          
+
           // Refresh data
           await refreshCycleData({ force: true });
-          
+
           // Show success alert after modal closes
           Alert.alert(
             'Success',
@@ -416,21 +414,37 @@ export default function CycleInsight() {
       setLoadingDidYouKnow(true);
 
       // Fetch weekly updates, did you know, and personalized insight in parallel
-      const [weeklyUpdatesResponse, didYouKnowResponse, personalizedInsightResponse] = await Promise.all([
-        getWeeklyUpdatesByPhase(phase).catch(() => ({ success: false, data: [] })),
-        getDidYouKnowByPhase(phase).catch(() => ({ success: false, data: FALLBACK_DID_YOU_KNOW })),
+      const [
+        weeklyUpdatesResponse,
+        didYouKnowResponse,
+        personalizedInsightResponse,
+      ] = await Promise.all([
+        getWeeklyUpdatesByPhase(phase).catch(() => ({
+          success: false,
+          data: [],
+        })),
+        getDidYouKnowByPhase(phase).catch(() => ({
+          success: false,
+          data: FALLBACK_DID_YOU_KNOW,
+        })),
         getPersonalizedInsight().catch(() => ({ success: false, data: null })),
       ]);
 
       // Set weekly updates
-      if (weeklyUpdatesResponse.success && weeklyUpdatesResponse.data.length > 0) {
+      if (
+        weeklyUpdatesResponse.success &&
+        weeklyUpdatesResponse.data.length > 0
+      ) {
         setWeeklyUpdates(weeklyUpdatesResponse.data);
       } else {
         setWeeklyUpdates(FALLBACK_WEEKLY_UPDATES);
       }
 
       // Set personalized insight if available, otherwise use phase-specific fact
-      if (personalizedInsightResponse.success && personalizedInsightResponse.data?.insight) {
+      if (
+        personalizedInsightResponse.success &&
+        personalizedInsightResponse.data?.insight
+      ) {
         setPersonalizedInsight(personalizedInsightResponse.data.insight);
         setDidYouKnow(null);
       } else if (didYouKnowResponse.success && didYouKnowResponse.data.fact) {
@@ -521,7 +535,10 @@ export default function CycleInsight() {
 
   // Get next period text
   const getNextPeriodText = (): string => {
-    if (cycle?.daysUntilNextPeriod === null || cycle?.daysUntilNextPeriod === undefined) {
+    if (
+      cycle?.daysUntilNextPeriod === null ||
+      cycle?.daysUntilNextPeriod === undefined
+    ) {
       return 'Unknown';
     }
     const days = cycle.daysUntilNextPeriod;
@@ -890,7 +907,10 @@ export default function CycleInsight() {
               {pregnancySymptoms.length > 0 ? (
                 <>
                   {pregnancySymptoms
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .sort(
+                      (a, b) =>
+                        new Date(b.date).getTime() - new Date(a.date).getTime(),
+                    )
                     .slice(0, 3)
                     .map((symptom, index) => (
                       <View key={index} style={styles.symptomItem}>
@@ -898,7 +918,9 @@ export default function CycleInsight() {
                           <Text style={styles.symptomItemDate}>
                             {moment(symptom.date).format('MMM D, YYYY')}
                           </Text>
-                          <Text style={styles.symptomItemName}>{symptom.symptom}</Text>
+                          <Text style={styles.symptomItemName}>
+                            {symptom.symptom}
+                          </Text>
                         </View>
                         <View
                           style={[
@@ -908,8 +930,8 @@ export default function CycleInsight() {
                                 symptom.severity === 'mild'
                                   ? '#5BCE8B20'
                                   : symptom.severity === 'moderate'
-                                    ? '#E7A16920'
-                                    : '#D9770620',
+                                  ? '#E7A16920'
+                                  : '#D9770620',
                             },
                           ]}
                         >
@@ -921,8 +943,8 @@ export default function CycleInsight() {
                                   symptom.severity === 'mild'
                                     ? '#5BCE8B'
                                     : symptom.severity === 'moderate'
-                                      ? '#E7A169'
-                                      : '#D97706',
+                                    ? '#E7A169'
+                                    : '#D97706',
                               },
                             ]}
                           >
@@ -943,7 +965,8 @@ export default function CycleInsight() {
                 </>
               ) : (
                 <Text style={styles.noSymptomsText}>
-                  No symptoms logged yet. Log your first symptom to start tracking.
+                  No symptoms logged yet. Log your first symptom to start
+                  tracking.
                 </Text>
               )}
             </View>
@@ -1048,7 +1071,8 @@ export default function CycleInsight() {
                                   color:
                                     analyticsData.cycleTrend === 'increasing'
                                       ? colors.heading
-                                      : analyticsData.cycleTrend === 'decreasing'
+                                      : analyticsData.cycleTrend ===
+                                        'decreasing'
                                       ? colors.maroonText
                                       : colors.green,
                                 },
@@ -1074,44 +1098,46 @@ export default function CycleInsight() {
                         </View>
                       )}
                       {/* Period Trend */}
-                      {analyticsData.periodTrend && analyticsData.periodRange && (
-                        <View style={styles.analyticsRow}>
-                          <Text style={styles.analyticsLabel}>
-                            Period Length Trend:
-                          </Text>
-                          <View style={styles.trendContainer}>
-                            <Text
-                              style={[
-                                styles.trendText,
-                                {
-                                  color:
-                                    analyticsData.periodTrend === 'increasing'
-                                      ? colors.heading
-                                      : analyticsData.periodTrend === 'decreasing'
-                                      ? colors.maroonText
-                                      : colors.green,
-                                },
-                              ]}
-                            >
-                              {analyticsData.periodTrend === 'increasing'
-                                ? '↑ Increasing'
-                                : analyticsData.periodTrend === 'decreasing'
-                                ? '↓ Decreasing'
-                                : '→ Stable'}
+                      {analyticsData.periodTrend &&
+                        analyticsData.periodRange && (
+                          <View style={styles.analyticsRow}>
+                            <Text style={styles.analyticsLabel}>
+                              Period Length Trend:
                             </Text>
-                            {analyticsData.periodRange.min &&
-                              analyticsData.periodRange.max &&
-                              analyticsData.periodRange.average && (
-                                <Text style={styles.analyticsValue}>
-                                  Range: {analyticsData.periodRange.min}–
-                                  {analyticsData.periodRange.max} days
-                                  {' • '}Avg: {analyticsData.periodRange.average}{' '}
-                                  days
-                                </Text>
-                              )}
+                            <View style={styles.trendContainer}>
+                              <Text
+                                style={[
+                                  styles.trendText,
+                                  {
+                                    color:
+                                      analyticsData.periodTrend === 'increasing'
+                                        ? colors.heading
+                                        : analyticsData.periodTrend ===
+                                          'decreasing'
+                                        ? colors.maroonText
+                                        : colors.green,
+                                  },
+                                ]}
+                              >
+                                {analyticsData.periodTrend === 'increasing'
+                                  ? '↑ Increasing'
+                                  : analyticsData.periodTrend === 'decreasing'
+                                  ? '↓ Decreasing'
+                                  : '→ Stable'}
+                              </Text>
+                              {analyticsData.periodRange.min &&
+                                analyticsData.periodRange.max &&
+                                analyticsData.periodRange.average && (
+                                  <Text style={styles.analyticsValue}>
+                                    Range: {analyticsData.periodRange.min}–
+                                    {analyticsData.periodRange.max} days
+                                    {' • '}Avg:{' '}
+                                    {analyticsData.periodRange.average} days
+                                  </Text>
+                                )}
+                            </View>
                           </View>
-                        </View>
-                      )}
+                        )}
                       {/* Top Symptoms */}
                       {analyticsData.topSymptoms &&
                         analyticsData.topSymptoms.length > 0 && (
@@ -1180,6 +1206,14 @@ export default function CycleInsight() {
             )}
             <GradientWrapper variant="basic">
               <View style={styles.phaseBody}>
+                <CycleIndicatorCard
+                  loading={loading}
+                  isTracking={false}
+                  isPregnant={false}
+                  widthMultiplier={0.9}
+                  backgroundGradientColors={['#FBFAF8', '#DFE7F7']}
+                />
+                <View style={{ height: 10 }} />
                 <Text style={styles.textDarkGrey}>
                   Cycle tracking is not enabled. Please enable it in your
                   profile settings.
@@ -1219,6 +1253,17 @@ export default function CycleInsight() {
               Your complete hormonal intelligence dashboard
             </Text>
           </View>
+          <CycleIndicatorCard
+            loading={loading}
+            isTracking={Boolean(cycle?.isTracking)}
+            isPregnant={isPregnant}
+            cycleDay={cycle?.cycleDay}
+            averageCycleLength={cycle?.averageCycleLength || 28}
+            phase={cycle?.phase}
+            tagline={cycle?.tagline}
+            widthMultiplier={0.9}
+            backgroundGradientColors={['#FBFAF8', '#DFE7F7']}
+          />
           {isOverdue && !isPregnant && (
             <View style={styles.overdueCard}>
               <Text style={styles.overdueTitle}>
@@ -1317,11 +1362,9 @@ export default function CycleInsight() {
                           styles.regularityBadge,
                           {
                             backgroundColor:
-                              cycle?.regularityClassification ===
-                              'very_regular'
+                              cycle?.regularityClassification === 'very_regular'
                                 ? '#E6FFF5'
-                                : cycle?.regularityClassification ===
-                                  'regular'
+                                : cycle?.regularityClassification === 'regular'
                                 ? '#FFF8EB'
                                 : cycle?.regularityClassification ===
                                   'irregular'
@@ -1385,8 +1428,7 @@ export default function CycleInsight() {
                         Based on {periodList.length} logged period
                         {periodList.length === 1 ? '' : 's'}
                         {cycle?.regularityClassification === 'irregular' ||
-                        cycle?.regularityClassification ===
-                          'very_irregular'
+                        cycle?.regularityClassification === 'very_irregular'
                           ? ' • Your cycle varies. Predictions may be less accurate.'
                           : ''}
                       </Text>
@@ -1395,15 +1437,15 @@ export default function CycleInsight() {
                 )}
               {/* Irregular Cycle Warning */}
               {cycle?.hasIrregularCycles && cycle?.irregularCycleMessage && (
-                  <View style={styles.irregularCycleCard}>
-                    <Text style={styles.irregularCycleTitle}>
-                      Cycle Variation Detected
-                    </Text>
-                    <Text style={styles.irregularCycleText}>
-                      {cycle.irregularCycleMessage}
-                    </Text>
-                  </View>
-                )}
+                <View style={styles.irregularCycleCard}>
+                  <Text style={styles.irregularCycleTitle}>
+                    Cycle Variation Detected
+                  </Text>
+                  <Text style={styles.irregularCycleText}>
+                    {cycle.irregularCycleMessage}
+                  </Text>
+                </View>
+              )}
 
               {phaseDataStatus.isPredicted && (
                 <View style={styles.predictionInfoContainer}>
@@ -1417,7 +1459,9 @@ export default function CycleInsight() {
               )}
 
               {/* Missing Period Warning - Hide if overdue card is showing */}
-              {cycle?.hasMissingPeriods && cycle?.missingPeriodMessage && !isOverdue && (
+              {cycle?.hasMissingPeriods &&
+                cycle?.missingPeriodMessage &&
+                !isOverdue && (
                   <View style={styles.missingPeriodCard}>
                     <Text style={styles.missingPeriodTitle}>
                       Missing Period Detected
@@ -1425,7 +1469,8 @@ export default function CycleInsight() {
                     <Text style={styles.missingPeriodText}>
                       {cycle.missingPeriodMessage}
                     </Text>
-                    {cycle?.missingPeriods && cycle.missingPeriods.length > 0 && (
+                    {cycle?.missingPeriods &&
+                      cycle.missingPeriods.length > 0 && (
                         <TouchableOpacity
                           style={styles.missingPeriodButton}
                           onPress={handleOpenNewPeriodModal}
@@ -1437,29 +1482,8 @@ export default function CycleInsight() {
                       )}
                   </View>
                 )}
-
             </View>
           </GradientWrapper>
-          {/* First Period Welcome Card */}
-          {/* {periods.length === 0 && (
-            <View style={styles.firstPeriodCard}>
-              <Text style={styles.firstPeriodTitle}>
-                Welcome to Cycle Tracking!
-              </Text>
-              <Text style={styles.firstPeriodText}>
-                Log your first period to get started. We'll use this to predict
-                your cycle phases and provide personalized insights.
-              </Text>
-              <TouchableOpacity
-                style={styles.firstPeriodButton}
-                onPress={handleOpenNewPeriodModal}
-              >
-                <Text style={styles.firstPeriodButtonText}>
-                  Log Your First Period
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )} */}
 
           <TouchableOpacity
             style={styles.logButton}
@@ -1469,8 +1493,6 @@ export default function CycleInsight() {
             <Image source={images.logWaterDrop} style={styles.dropImg} />
             <Text style={styles.text}>Log Period Start</Text>
           </TouchableOpacity>
-
-
 
           <PeriodStartModal
             visible={showModal}
@@ -1598,9 +1620,9 @@ export default function CycleInsight() {
             </View>
           )}
           {/* Analytics Section */}
-                {analyticsData &&
-                  analyticsData.totalPeriods &&
-                  analyticsData.totalPeriods > 0 && (
+          {analyticsData &&
+            analyticsData.totalPeriods &&
+            analyticsData.totalPeriods > 0 && (
               <View style={styles.analyticsCard}>
                 <View style={styles.headerRow}>
                   <Image
@@ -1620,10 +1642,10 @@ export default function CycleInsight() {
                         style={[
                           styles.trendText,
                           {
-                                  color:
-                                    analyticsData.cycleTrend === 'increasing'
+                            color:
+                              analyticsData.cycleTrend === 'increasing'
                                 ? colors.heading
-                                      : analyticsData.cycleTrend === 'decreasing'
+                                : analyticsData.cycleTrend === 'decreasing'
                                 ? colors.maroonText
                                 : colors.green,
                           },
@@ -1658,10 +1680,10 @@ export default function CycleInsight() {
                         style={[
                           styles.trendText,
                           {
-                                  color:
-                                    analyticsData.periodTrend === 'increasing'
+                            color:
+                              analyticsData.periodTrend === 'increasing'
                                 ? colors.heading
-                                      : analyticsData.periodTrend === 'decreasing'
+                                : analyticsData.periodTrend === 'decreasing'
                                 ? colors.maroonText
                                 : colors.green,
                           },
@@ -1688,21 +1710,21 @@ export default function CycleInsight() {
                 {/* Top Symptoms */}
                 {analyticsData.topSymptoms &&
                   analyticsData.topSymptoms.length > 0 && (
-                  <View style={styles.analyticsRow}>
-                    <Text style={styles.analyticsLabel}>
-                      Most Common Symptoms:
-                    </Text>
-                    <View style={styles.symptomsContainer}>
-                    {analyticsData.topSymptoms.map((item, index) => (
-                        <View key={index} style={styles.symptomTag}>
-                          <Text style={styles.symptomTagText}>
-                            {item.symptom} ({item.count})
-                          </Text>
-                        </View>
-                      ))}
+                    <View style={styles.analyticsRow}>
+                      <Text style={styles.analyticsLabel}>
+                        Most Common Symptoms:
+                      </Text>
+                      <View style={styles.symptomsContainer}>
+                        {analyticsData.topSymptoms.map((item, index) => (
+                          <View key={index} style={styles.symptomTag}>
+                            <Text style={styles.symptomTagText}>
+                              {item.symptom} ({item.count})
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
                     </View>
-                  </View>
-                )}
+                  )}
               </View>
             )}
           {!isPregnant && (
@@ -1778,8 +1800,8 @@ export default function CycleInsight() {
               {(loadingWeeklyUpdates && weeklyUpdates.length === 0
                 ? FALLBACK_WEEKLY_UPDATES
                 : weeklyUpdates.length > 0
-                  ? weeklyUpdates
-                  : FALLBACK_WEEKLY_UPDATES
+                ? weeklyUpdates
+                : FALLBACK_WEEKLY_UPDATES
               ).map((item, index) => (
                 <View key={index} style={styles.weeklyItem}>
                   <View
@@ -1817,14 +1839,16 @@ export default function CycleInsight() {
                 <>
                   <Text style={styles.infoSubText}>
                     {personalizedInsight ||
-                      (didYouKnow?.fact || FALLBACK_DID_YOU_KNOW.fact)}
+                      didYouKnow?.fact ||
+                      FALLBACK_DID_YOU_KNOW.fact}
                   </Text>
-                  {!personalizedInsight && (didYouKnow?.author || FALLBACK_DID_YOU_KNOW.author) && (
-                    <Text style={styles.creditText}>
-                      "Your cycle is your fifth vital sign."{'\n'} —{' '}
-                      {didYouKnow?.author || FALLBACK_DID_YOU_KNOW.author}
-                    </Text>
-                  )}
+                  {!personalizedInsight &&
+                    (didYouKnow?.author || FALLBACK_DID_YOU_KNOW.author) && (
+                      <Text style={styles.creditText}>
+                        "Your cycle is your fifth vital sign."{'\n'} —{' '}
+                        {didYouKnow?.author || FALLBACK_DID_YOU_KNOW.author}
+                      </Text>
+                    )}
                 </>
               )}
             </View>

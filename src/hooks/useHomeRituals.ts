@@ -4,30 +4,57 @@ import {
   getCycleSymptomPatterns,
   getCycleSymptoms,
   setMealCompletedApi,
+  getRitualDefinitions,
+  getRitualPreferences,
+  getRitualCompletions,
+  postRitualDayToggle,
   type CycleSymptomHistoryItem,
   type CycleSymptomPattern,
+  type RitualDefinitionDto,
+  type RitualSection,
+  type UserRitualPreferenceDto,
   type Sleep,
 } from '../services/api';
 import { useSleepData } from '../context/SleepDataContext';
 import { useCycleData } from '../context/CycleDataContext';
 import { useNutritionPlan } from './useNutritionPlan';
 import { useWorkoutPlan } from './useWorkoutPlan';
+import { mealSlotSection } from '../utils/ritualSections';
+import {
+  pickGapFillMovementLogs,
+  pickPlannedMovementWinners,
+} from '../utils/movementRitualPick';
 
-type HomeRitualType = 'sleep' | 'periods' | 'symptoms' | 'movement' | 'nutrition';
+export type HomeRitualType =
+  | 'sleep'
+  | 'symptoms'
+  | 'movement'
+  | 'nutrition'
+  | 'optional';
+
+export type RitualInteraction = 'check' | 'action';
 
 export type HomeRitual = {
   id: string;
   type: HomeRitualType;
-  section: 'morning' | 'midday' | 'evening';
+  section: RitualSection;
   title: string;
   tag: string;
   description: string;
   completed: boolean;
+  interaction: RitualInteraction;
+  orderIndex: number;
+  ritualKey?: string;
+  navigationTarget?: string | null;
+  actionParams?: Record<string, unknown>;
+  mealSlotTime?: string;
+  mealSlotIndex?: number;
 };
 
 export type SymptomSummary = {
   loggedTodayCount: number;
   statusText: string;
+  hasAnyLogged: boolean;
   todaySymptoms: Array<{
     symptom: string;
     severity: string;
@@ -39,6 +66,7 @@ export type SymptomSummary = {
 };
 
 export type SleepSummary = {
+  hasAnyLogged: boolean;
   lastNightDurationMinutes: number | null;
   lastNightQuality: number | null;
   bedTime: string | null;
@@ -48,11 +76,9 @@ export type SleepSummary = {
   statusText: string;
 };
 
-/** YYYY-MM-DD for the calendar day in the device local timezone (not UTC). */
 const toLocalDateKey = (input: Date | string): string => {
   if (typeof input === 'string') {
     const trimmed = input.trim();
-    // Plain YYYY-MM-DD must be interpreted as a local calendar day (not UTC midnight).
     const plain = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
     if (plain) {
       const y = Number(plain[1]);
@@ -74,7 +100,6 @@ const toLocalDateKey = (input: Date | string): string => {
   return `${y}-${m}-${day}`;
 };
 
-/** Shift a local calendar YYYY-MM-DD by delta whole days (same timezone rules as toLocalDateKey). */
 const addLocalCalendarDays = (yyyyMmDd: string, deltaDays: number): string => {
   const parts = yyyyMmDd.split('-').map(Number);
   if (parts.length !== 3 || parts.some(n => Number.isNaN(n))) return '';
@@ -100,15 +125,21 @@ const normalizeWorkoutId = (workoutId: any): string | null => {
   return null;
 };
 
+const sortByOrder = (a: HomeRitual, b: HomeRitual) => a.orderIndex - b.orderIndex;
+
 export function useHomeRituals() {
   const { logs: sleepLogsState, refreshSleepData } = useSleepData();
-  const { periods: periodsState, cycleStatus, refreshCycleData } = useCycleData();
+  const { periods: periodsState, cycleStatus, refreshCycleData } =
+    useCycleData();
 
-  const { weeklyPlans, loading: nutritionLoading, refetch: refetchNutrition } =
-    useNutritionPlan();
+  const {
+    weeklyPlans,
+    hasWeeklyPlan,
+    planningStatus,
+    loading: nutritionLoading,
+    refetch: refetchNutrition,
+  } = useNutritionPlan();
 
-  // Workout plan hook expects an optional date; we pass today's local calendar day.
-  // Using local YYYY-MM-DD (not UTC via toISOString) keeps rituals/symptoms aligned with the user's "today".
   const todayISO = useMemo(() => toLocalDateKey(new Date()), []);
 
   const {
@@ -132,6 +163,16 @@ export function useHomeRituals() {
     [],
   );
 
+  const [ritualDefinitions, setRitualDefinitions] = useState<RitualDefinitionDto[]>(
+    [],
+  );
+  const [ritualPreferences, setRitualPreferences] = useState<
+    UserRitualPreferenceDto[]
+  >([]);
+  const [ritualCompletions, setRitualCompletions] = useState<Record<string, boolean>>(
+    {},
+  );
+
   const refreshSymptoms = useCallback(async () => {
     try {
       setSymptomsLoading(true);
@@ -141,16 +182,22 @@ export function useHomeRituals() {
         getCycleSymptomPatterns(),
       ]);
 
-      setSymptomsCountToday(
-        todayRes.success && Array.isArray(todayRes.data) ? todayRes.data.length : 0,
-      );
-      setTodaySymptoms(
+      const uniqueTodaySymptoms =
         todayRes.success && Array.isArray(todayRes.data)
-          ? todayRes.data
-              .slice(0, 3)
-              .map(item => ({ symptom: item.symptom, severity: item.severity }))
-          : [],
-      );
+          ? todayRes.data.reduce<Array<{ symptom: string; severity: string }>>(
+              (acc, item) => {
+                if (acc.some(existing => existing.symptom === item.symptom)) {
+                  return acc;
+                }
+                acc.push({ symptom: item.symptom, severity: item.severity });
+                return acc;
+              },
+              [],
+            )
+          : [];
+
+      setSymptomsCountToday(uniqueTodaySymptoms.length);
+      setTodaySymptoms(uniqueTodaySymptoms.slice(0, 3));
       setSymptomHistory(
         historyRes.success && Array.isArray(historyRes.data) ? historyRes.data : [],
       );
@@ -160,8 +207,6 @@ export function useHomeRituals() {
           : [],
       );
     } catch {
-      // Never block the Home UI loader forever.
-      // If this endpoint fails, we fall back to "0 symptoms" (so symptoms stay due).
       setSymptomsCountToday(0);
       setTodaySymptoms([]);
       setSymptomHistory([]);
@@ -171,17 +216,41 @@ export function useHomeRituals() {
     }
   }, [todayISO]);
 
+  const refreshRitualPack = useCallback(async () => {
+    try {
+      const [defsRes, prefsRes, compRes] = await Promise.all([
+        getRitualDefinitions(),
+        getRitualPreferences(),
+        getRitualCompletions(todayISO),
+      ]);
+      if (defsRes.success && Array.isArray(defsRes.data)) {
+        setRitualDefinitions(defsRes.data);
+      }
+      if (prefsRes.success && Array.isArray(prefsRes.data)) {
+        setRitualPreferences(prefsRes.data);
+      }
+      if (compRes.success && compRes.data && typeof compRes.data === 'object') {
+        setRitualCompletions(compRes.data);
+      }
+    } catch {
+      // Offline / API missing: keep empty catalog; core still renders from fallbacks
+    }
+  }, [todayISO]);
+
   useEffect(() => {
-    // Initial fetch for symptom count (so we can decide due/completed).
-    // We avoid doing async work during render.
     refreshSymptoms();
   }, [refreshSymptoms]);
+
+  useEffect(() => {
+    refreshRitualPack().catch(() => {});
+  }, [refreshRitualPack]);
 
   const refreshSleepDataRef = useRef(refreshSleepData);
   const refreshCycleDataRef = useRef(refreshCycleData);
   const refetchNutritionRef = useRef(refetchNutrition);
   const refetchWorkoutRef = useRef(refetchWorkout);
   const refreshSymptomsRef = useRef(refreshSymptoms);
+  const refreshRitualPackRef = useRef(refreshRitualPack);
 
   useEffect(() => {
     refreshSleepDataRef.current = refreshSleepData;
@@ -198,24 +267,23 @@ export function useHomeRituals() {
   useEffect(() => {
     refreshSymptomsRef.current = refreshSymptoms;
   }, [refreshSymptoms]);
+  useEffect(() => {
+    refreshRitualPackRef.current = refreshRitualPack;
+  }, [refreshRitualPack]);
 
   const refreshAll = useCallback(async () => {
-    // Force refresh for contexts + refetch for hooks.
-    // Use refs so this callback stays stable and doesn't retrigger
-    // `useFocusEffect` on every render.
     await Promise.all([
       refreshSleepDataRef.current({ force: true }),
       refreshCycleDataRef.current({ force: true }),
       refetchNutritionRef.current(),
       refetchWorkoutRef.current(),
       refreshSymptomsRef.current(),
+      refreshRitualPackRef.current(),
     ]);
   }, []);
 
   const sleepCompleted = useMemo(() => {
     const logs: Sleep[] = sleepLogsState.data || [];
-    // "Last night's sleep" is stored as the night you went to bed (often yesterday's calendar day)
-    // or as today when the picker uses wake-up day — accept either local today or yesterday.
     const yesterdayKey = addLocalCalendarDays(todayISO, -1);
     return logs.some(
       l =>
@@ -223,15 +291,6 @@ export function useHomeRituals() {
         isSameLocalDate(l.date, yesterdayKey),
     );
   }, [sleepLogsState.data, todayISO]);
-
-  const periodsTouchedToday = useMemo(() => {
-    const periods = periodsState.data || [];
-    return periods.some(p => {
-      if (isSameLocalDate(p.startDate, todayISO)) return true;
-      if (p.endDate && isSameLocalDate(p.endDate, todayISO)) return true;
-      return false;
-    });
-  }, [periodsState.data, todayISO]);
 
   const symptomsCompleted = useMemo(() => {
     if (symptomsCountToday === null) return false;
@@ -242,6 +301,7 @@ export function useHomeRituals() {
     const logs: Sleep[] = sleepLogsState.data || [];
     if (logs.length === 0) {
       return {
+        hasAnyLogged: false,
         lastNightDurationMinutes: null,
         lastNightQuality: null,
         bedTime: null,
@@ -271,7 +331,6 @@ export function useHomeRituals() {
         Math.round((parsedWake.getTime() - parsedBed.getTime()) / 60000),
       );
     } else if (typeof latest?.duration === 'number' && latest.duration > 0) {
-      // Backend may return duration in hours (decimal) or minutes; normalize to minutes.
       durationMinutes =
         latest.duration > 24
           ? Math.round(latest.duration)
@@ -294,6 +353,7 @@ export function useHomeRituals() {
     }
 
     return {
+      hasAnyLogged: true,
       lastNightDurationMinutes: durationMinutes,
       lastNightQuality:
         typeof latest?.quality === 'number' ? latest.quality : null,
@@ -323,9 +383,11 @@ export function useHomeRituals() {
       .sort((a, b) => b.count - a.count)[0];
     const trend = topPattern?.trend ?? null;
     const loggedTodayCount = symptomsCountToday ?? 0;
+    const hasAnyLogged = normalizedHistory.length > 0 || loggedTodayCount > 0;
 
     return {
       loggedTodayCount,
+      hasAnyLogged,
       statusText:
         loggedTodayCount > 0
           ? `${loggedTodayCount} symptom${loggedTodayCount > 1 ? 's' : ''} logged today`
@@ -344,106 +406,223 @@ export function useHomeRituals() {
     todaySymptoms,
   ]);
 
-  const nutritionRituals = useMemo(() => {
-    const todayPlan = weeklyPlans.find(p => p.isToday)?.plan;
-    const slots = todayPlan?.timeSlots || [];
-    const mealRituals = slots.map((slot, idx) => {
-      const activeOption =
-        // Some slots may have options missing depending on backend response
-        slot.options?.[slot.selectedOptionIndex] || slot.options?.[0];
+  const defByKey = useMemo(() => {
+    const m = new Map<string, RitualDefinitionDto>();
+    ritualDefinitions.forEach(d => m.set(d.keyId, d));
+    return m;
+  }, [ritualDefinitions]);
 
-      return {
-        id: `nutrition_${slot.time}_${idx}`,
-        type: 'nutrition' as const,
-        section: 'midday' as const,
-        title: slot.label || slot.time,
-        tag: 'Nourish',
-        description: activeOption
-          ? `${activeOption.title}`
-          : 'Complete this meal slot',
-        completed: Boolean(slot.completed),
-      };
-    });
+  const ritualsBySection = useMemo(() => {
+    const morning: HomeRitual[] = [];
+    const midday: HomeRitual[] = [];
+    const evening: HomeRitual[] = [];
 
-    return mealRituals;
-  }, [weeklyPlans]);
+    const push = (section: RitualSection, row: HomeRitual) => {
+      if (section === 'morning') morning.push(row);
+      else if (section === 'midday') midday.push(row);
+      else evening.push(row);
+    };
 
-  const morningRituals = useMemo<HomeRitual[]>(() => {
-    return [
-      {
+    const coreSleep = defByKey.get('core_sleep');
+    const coreSymptoms = defByKey.get('core_symptoms');
+
+    if (coreSleep) {
+      push(coreSleep.defaultSection, {
+        id: 'sleep',
+        type: 'sleep',
+        section: coreSleep.defaultSection,
+        title: coreSleep.title,
+        tag: coreSleep.tag,
+        description: coreSleep.description,
+        completed: sleepCompleted,
+        interaction: coreSleep.interaction as RitualInteraction,
+        orderIndex: coreSleep.defaultSortOrder,
+      });
+    } else {
+      push('morning', {
         id: 'sleep',
         type: 'sleep',
         section: 'morning',
-        title: "Log last night’s sleep",
+        title: 'Log last night’s sleep',
         tag: 'Rest',
         description:
-          '💡 Tracking sleep patterns helps identify what supports your best rest',
+          'When you’re ready, logging sleep can help you notice patterns over time.',
         completed: sleepCompleted,
-      },
-      {
-        id: 'periods',
-        type: 'periods',
-        section: 'morning',
-        title: 'Log your period',
-        tag: 'Rest',
-        description:
-          '💡 Logging your period helps keep your cycle predictions accurate',
-        completed: periodsTouchedToday,
-      },
-      {
+        interaction: 'action',
+        orderIndex: 1,
+      });
+    }
+
+    if (coreSymptoms) {
+      push(coreSymptoms.defaultSection, {
+        id: 'symptoms',
+        type: 'symptoms',
+        section: coreSymptoms.defaultSection,
+        title: coreSymptoms.title,
+        tag: coreSymptoms.tag,
+        description: coreSymptoms.description,
+        completed: symptomsCompleted,
+        interaction: coreSymptoms.interaction as RitualInteraction,
+        orderIndex: coreSymptoms.defaultSortOrder,
+      });
+    } else {
+      push('morning', {
         id: 'symptoms',
         type: 'symptoms',
         section: 'morning',
         title: 'Log today’s symptoms',
         tag: 'Mindful',
         description:
-          '💡 Tracking symptoms helps identify patterns and support your hormonal health',
+          'If it feels helpful, a quick symptom log can support pattern awareness.',
         completed: symptomsCompleted,
-      },
-    ];
-  }, [sleepCompleted, periodsTouchedToday, symptomsCompleted]);
+        interaction: 'action',
+        orderIndex: 2,
+      });
+    }
 
-  const movementRituals = useMemo<HomeRitual[]>(() => {
+    const enabledPrefs = ritualPreferences.filter(p => p.enabled !== false);
+    enabledPrefs.forEach((pref, i) => {
+      const def = defByKey.get(pref.ritualKey);
+      if (!def || def.isCore) return;
+      const desc =
+        pref.userNote && pref.userNote.trim().length > 0
+          ? pref.userNote.trim()
+          : def.description;
+      push(pref.section, {
+        id: `optional_${pref.ritualKey}`,
+        type: 'optional',
+        section: pref.section,
+        title: def.title,
+        tag: def.tag,
+        description: desc,
+        completed:
+          def.interaction === 'check'
+            ? Boolean(ritualCompletions[pref.ritualKey])
+            : false,
+        interaction: def.interaction as RitualInteraction,
+        orderIndex: 100 + i,
+        ritualKey: pref.ritualKey,
+        navigationTarget: def.navigationTarget || undefined,
+        actionParams: def.actionParams || {},
+      });
+    });
+
+    if (hasWeeklyPlan) {
+      const todayPlan = weeklyPlans.find(p => p.isToday)?.plan;
+      const slots = todayPlan?.timeSlots || [];
+      slots.forEach((slot, idx) => {
+        const activeOption =
+          slot.options?.[slot.selectedOptionIndex] || slot.options?.[0];
+        const section = mealSlotSection(slot);
+        push(section, {
+          id: `nutrition_${slot.time}_${idx}`,
+          type: 'nutrition',
+          section,
+          title: slot.label || slot.time,
+          tag: 'Nourish',
+          description: activeOption
+            ? activeOption.title
+            : 'Meal slot from your plan',
+          completed: Boolean(slot.completed),
+          interaction: 'action',
+          orderIndex: 200 + idx,
+          mealSlotTime: slot.time,
+          mealSlotIndex: idx,
+        });
+      });
+    } else if (planningStatus !== 'skipped') {
+      push('morning', {
+        id: 'nutrition_plan_week',
+        type: 'nutrition',
+        section: 'morning',
+        title: "Plan this week's meals",
+        tag: 'Nourish',
+        description:
+          'Set up Mon–Sun meals and your grocery list for the week.',
+        completed: false,
+        interaction: 'action',
+        orderIndex: 200,
+        navigationTarget: 'WeeklyMealPlanning',
+      });
+    }
+
     const planned = workoutPlan?.workouts || [];
-    if (planned.length === 0) return [];
-
     const logged = workoutPlan?.loggedWorkouts || [];
     const loggedIds = logged
       .map(l => normalizeWorkoutId(l.workoutId))
       .filter(Boolean) as string[];
     const loggedSet = new Set(loggedIds);
 
-    return planned
-      .map((w, idx) => {
-        const plannedId = normalizeWorkoutId(w.workout);
-        const id = plannedId ? `movement_${plannedId}` : `movement_${idx}`;
-        const completed = plannedId ? loggedSet.has(plannedId) : false;
+    const plannedWinners = pickPlannedMovementWinners(planned);
+    const sectionsWithPlanned = new Set(
+      plannedWinners.map(w => w.section),
+    );
 
-        return {
-          id,
-          type: 'movement' as const,
-          section: 'midday' as const,
-          title: w.title,
+    plannedWinners.forEach(({ section, planned: w, originalIndex: idx }) => {
+      const plannedId = normalizeWorkoutId(w.workout);
+      const id = plannedId ? `movement_${plannedId}` : `movement_${idx}`;
+      const completed = plannedId ? loggedSet.has(plannedId) : false;
+      push(section, {
+        id,
+        type: 'movement',
+        section,
+        title: w.title,
+        tag: 'Move',
+        description: w.description,
+        completed,
+        interaction: 'action',
+        orderIndex: 300 + idx,
+      });
+    });
+
+    pickGapFillMovementLogs(logged, sectionsWithPlanned, planned.length).forEach(
+      ({ section, log: l }, gapIdx) => {
+        push(section, {
+          id: `movement_custom_${l._id ?? gapIdx}`,
+          type: 'movement',
+          section,
+          title: l.workoutTitleSnapshot || 'Custom movement',
           tag: 'Move',
-          description: w.description,
-          completed,
-        };
-      })
-      // In case of duplicate IDs, keep stable order by idx
-      .filter(Boolean);
-  }, [workoutPlan?.workouts, workoutPlan?.loggedWorkouts]);
+          description: `${l.durationMinutes || 30} min`,
+          completed: true,
+          interaction: 'action',
+          orderIndex: 350 + gapIdx,
+        });
+      },
+    );
 
-  const todayRituals = useMemo(() => {
-    return [...morningRituals, ...movementRituals, ...nutritionRituals];
-  }, [morningRituals, movementRituals, nutritionRituals]);
+    morning.sort(sortByOrder);
+    midday.sort(sortByOrder);
+    evening.sort(sortByOrder);
 
-  const completedCount = useMemo(() => {
-    return todayRituals.filter(r => r.completed).length;
-  }, [todayRituals]);
+    return { morning, midday, evening };
+  }, [
+    defByKey,
+    ritualPreferences,
+    ritualCompletions,
+    weeklyPlans,
+    hasWeeklyPlan,
+    planningStatus,
+    workoutPlan,
+    sleepCompleted,
+    symptomsCompleted,
+  ]);
 
-  const totalCount = useMemo(() => {
-    return todayRituals.length;
-  }, [todayRituals]);
+  const todayRituals = useMemo(
+    () => [
+      ...ritualsBySection.morning,
+      ...ritualsBySection.midday,
+      ...ritualsBySection.evening,
+    ],
+    [ritualsBySection],
+  );
+
+  const completedCount = useMemo(
+    () => todayRituals.filter(r => r.completed).length,
+    [todayRituals],
+  );
+
+  const totalCount = useMemo(() => todayRituals.length, [todayRituals]);
 
   const ritualsLoading = useMemo(() => {
     return (
@@ -463,7 +642,6 @@ export function useHomeRituals() {
   const completeMovement = useCallback(async () => {
     if (!workoutPlan) return;
 
-    // Only mark as done (due -> completed). For MVP we don't support undo from Home.
     const planned = workoutPlan.workouts || [];
     const plannedIds = planned
       .map(w => normalizeWorkoutId(w.workout))
@@ -495,25 +673,41 @@ export function useHomeRituals() {
     const incompleteSlots = slots.filter(s => !s.completed);
     if (incompleteSlots.length === 0) return;
 
-    // Mark all remaining slots complete.
     for (const slot of incompleteSlots) {
-      // eslint-disable-next-line no-await-in-loop
       await setMealCompletedApi(date, { time: slot.time, completed: true });
     }
 
     await refetchNutrition();
   }, [weeklyPlans, todayISO, refetchNutrition]);
 
+  const toggleOptionalRitual = useCallback(
+    async (ritualKey: string, completed: boolean) => {
+      const res = await postRitualDayToggle({
+        date: todayISO,
+        ritualKey,
+        completed,
+      });
+      if (res.success) {
+        setRitualCompletions(prev => ({ ...prev, [ritualKey]: completed }));
+      }
+    },
+    [todayISO],
+  );
+
   return {
     ritualsLoading,
     progress: { completed: completedCount, total: totalCount },
     todayRituals,
+    ritualsBySection,
     symptomSummary,
     sleepSummary,
     completeMovement,
     completeNutrition,
+    toggleOptionalRitual,
     refreshAll,
     cycleStatus,
+    ritualDefinitions,
+    ritualPreferences,
+    refreshRitualPack,
   };
 }
-

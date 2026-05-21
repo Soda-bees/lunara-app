@@ -5,13 +5,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Animated,
   Image,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import {
-  cancelFastingSession,
   endFastingSession,
   getFastingCurrent,
   getFastingInsights,
@@ -20,23 +18,19 @@ import {
   updateFastingSession,
   FastingSession,
   FastingInsights,
-  getCyclePhaseContent,
-  CyclePhaseContent,
 } from '../../services/api';
 import { colors } from '../../constants/colors';
+import { useCycleData } from '../../context/CycleDataContext';
 import { CircularProgress } from '../../components/CircularProgress/CircularProgress';
 import { FastingGoalEditor } from '../../components/FastingGoalEditor/FastingGoalEditor';
 import {
   fastingMechanisms,
-  fastingTimeline,
   cycleSyncGuidance,
   fastingResearch,
-  FastingMechanism,
-  FastingStage,
-  CycleFastingGuide,
 } from './fastingData';
 import images from '../../constants/images';
 import BackButton from '../../components/BackButton';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'FastingHome'>;
 
@@ -46,28 +40,6 @@ const formatDuration = (minutes: number | null | undefined) => {
   const m = Math.round(minutes % 60);
   const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
   return `${h}h ${pad(m)}m`;
-};
-
-const formatDurationWithSeconds = (totalSeconds: number): string => {
-  if (totalSeconds <= 0) return '0s';
-
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = Math.floor(totalSeconds % 60);
-  const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-
-  // Less than 1 minute: show only seconds
-  if (totalSeconds < 60) {
-    return `${s}s`;
-  }
-
-  // Less than 1 hour: show minutes and seconds
-  if (totalSeconds < 3600) {
-    return `${m}m ${pad(s)}s`;
-  }
-
-  // 1 hour or more: show hours, minutes, and seconds
-  return `${h}h ${pad(m)}m ${pad(s)}s`;
 };
 
 const formatTimerHHMMSS = (totalSeconds: number): string => {
@@ -100,22 +72,21 @@ const getElapsedSeconds = (session: FastingSession | null): number => {
   return Math.floor(diffMs / 1000);
 };
 
-const getElapsedHours = (session: FastingSession | null): number => {
-  if (!session) return 0;
-  return getElapsedSeconds(session) / 3600;
-};
-
 export const FastingHome: React.FC<Props> = () => {
-  const [currentSession, setCurrentSession] = useState<FastingSession | null>(null);
+  const { cycleStatus } = useCycleData();
+  const [currentSession, setCurrentSession] = useState<FastingSession | null>(
+    null,
+  );
   const [insights, setInsights] = useState<FastingInsights | null>(null);
   const [history, setHistory] = useState<FastingSession[]>([]);
-  const [cyclePhases, setCyclePhases] = useState<CyclePhaseContent[]>([]);
   const [loading, setLoading] = useState(false);
-  const [expandedMechanism, setExpandedMechanism] = useState<string | null>(null);
+  const [expandedMechanism, setExpandedMechanism] = useState<string | null>(
+    null,
+  );
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
   const [showAllResearch, setShowAllResearch] = useState(false);
   const [showGoalEditor, setShowGoalEditor] = useState(false);
-  const [goalEditorMode, setGoalEditorMode] = useState<'start' | 'update'>('update');
+  const [, setGoalEditorMode] = useState<'start' | 'update'>('update');
 
   // Update elapsed time every second when there is an active session
   const [tick, setTick] = useState(0);
@@ -137,25 +108,45 @@ export const FastingHome: React.FC<Props> = () => {
   const elapsedSeconds = useMemo(
     () => getElapsedSeconds(currentSession),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [currentSession?._id, currentSession?.startTime, currentSession?.endTime, tick],
+    [
+      currentSession?._id,
+      currentSession?.startTime,
+      currentSession?.endTime,
+      tick,
+    ],
   );
-
-  const elapsedHours = useMemo(() => getElapsedHours(currentSession), [elapsedSeconds]);
 
   const targetMinutes = currentSession?.targetDurationMinutes;
 
+  const isFasting = !!currentSession && currentSession.status === 'active';
+
+  const currentPhase = useMemo(() => {
+    const raw = cycleStatus.data?.phase;
+    if (
+      raw === 'menstrual' ||
+      raw === 'follicular' ||
+      raw === 'ovulatory' ||
+      raw === 'luteal'
+    ) {
+      return raw;
+    }
+    return 'follicular';
+  }, [cycleStatus.data?.phase]);
+
+  const currentPhaseGuide =
+    cycleSyncGuidance.find(g => g.phase === currentPhase) ||
+    cycleSyncGuidance[1];
+
   const loadData = async () => {
     try {
-      const [currentRes, insightsRes, historyRes, phasesRes] = await Promise.all([
+      const [currentRes, insightsRes, historyRes] = await Promise.all([
         getFastingCurrent(),
         getFastingInsights(7),
         getFastingHistory({ limit: 5 }),
-        getCyclePhaseContent().catch(() => ({ success: true, data: [] })),
       ]);
       setCurrentSession(currentRes.data || null);
       setInsights(insightsRes.data);
       setHistory(historyRes.data || []);
-      setCyclePhases(phasesRes.data || []);
     } catch (error) {
       console.error('Error loading fasting data', error);
     }
@@ -174,7 +165,9 @@ export const FastingHome: React.FC<Props> = () => {
   const handleStartWithGoal = async (targetDurationMinutes: number) => {
     try {
       setLoading(true);
-      const res = await startFastingSession({ customDurationMinutes: targetDurationMinutes });
+      const res = await startFastingSession({
+        customDurationMinutes: targetDurationMinutes,
+      });
       setCurrentSession(res.data);
       setShowGoalEditor(false);
     } catch (error) {
@@ -192,19 +185,6 @@ export const FastingHome: React.FC<Props> = () => {
       await loadData();
     } catch (error) {
       console.error('Error ending fast', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCancel = async () => {
-    try {
-      setLoading(true);
-      const res = await cancelFastingSession();
-      setCurrentSession(res.data);
-      await loadData();
-    } catch (error) {
-      console.error('Error cancelling fast', error);
     } finally {
       setLoading(false);
     }
@@ -232,25 +212,6 @@ export const FastingHome: React.FC<Props> = () => {
     return handleStartWithGoal(targetDurationMinutes);
   };
 
-  const isFasting = !!currentSession && currentSession.status === 'active';
-
-  // Get current cycle phase
-  const currentPhaseData = cyclePhases.find(p => p.isActive);
-  const currentPhase = currentPhaseData?.phase || 'follicular';
-  const currentPhaseGuide = cycleSyncGuidance.find(
-    g => g.phase === currentPhase,
-  ) || cycleSyncGuidance[1]; // Default to follicular
-
-  // Get current fasting stage
-  const getCurrentStage = (): FastingStage | null => {
-    if (!isFasting) return null;
-    const reachedStages = fastingTimeline.filter(s => elapsedHours >= s.hours);
-    return reachedStages[reachedStages.length - 1] || null;
-  };
-
-  const currentStage = getCurrentStage();
-  const nextStage = fastingTimeline.find(s => s.hours > elapsedHours);
-
   // Calculate target end time
   const getTargetEndTime = (): string | null => {
     if (!currentSession || !targetMinutes) return null;
@@ -276,7 +237,10 @@ export const FastingHome: React.FC<Props> = () => {
     } else if (date.toDateString() === tomorrow.toDateString()) {
       return 'Tomorrow';
     } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      });
     }
   };
 
@@ -287,122 +251,118 @@ export const FastingHome: React.FC<Props> = () => {
     return Math.min(Math.max(progressValue, 0), 1);
   }, [elapsedSeconds, targetMinutes, isFasting]);
 
-  // Calculate flame icon position (7 o'clock = 210 degrees)
-  const flameAngle = 210; // 7 o'clock position
   const circleSize = 280;
-  const circleRadius = circleSize / 2;
-  const flameRadius = circleRadius - 20; // Position slightly inside the circle
-  const flameX = circleRadius + flameRadius * Math.cos((flameAngle * Math.PI) / 180);
-  const flameY = circleRadius + flameRadius * Math.sin((flameAngle * Math.PI) / 180);
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
-    >
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <BackButton />
 
-<BackButton />
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Metabolic Timer</Text>
-        <Text style={styles.subtitle}>Cycle-synced fasting that honors your hormones</Text>
-      </View>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Metabolic Timer</Text>
+          <Text style={styles.subtitle}>
+            Cycle-synced fasting that honors your hormones
+          </Text>
+        </View>
 
-      {/* Current Fast Status - Circular Timer */}
-      <View style={styles.circularTimerContainer}>
-        <View style={styles.circularTimerWrapper}>
-          <CircularProgress
-            progress={isFasting ? progress : 0}
-            size={circleSize}
-            strokeWidth={18}
-            // color={colors.primary || '#E4AF5D'}
-            color='#E4AF5D'
-            backgroundColor="#F3F4F6"
-          >
-            <View style={styles.timerCenterContent}>
-              <Text style={styles.timerLabel}>
-                {isFasting ? 'Elapsed Time' : 'Ready to fast'}
-              </Text>
-              <Text style={styles.timerDisplay}>
-                {isFasting ? formatTimerHHMMSS(elapsedSeconds) : '00:00:00'}
-              </Text>
-              <TouchableOpacity
-                style={styles.endFastButton}
-                onPress={isFasting ? handleEnd : handleStart}
-                disabled={loading}
-              >
-                <Text style={styles.endFastButtonText}>
-                  {isFasting ? 'End Fast' : 'Start Fast'}
+        {/* Current Fast Status - Circular Timer */}
+        <View style={styles.circularTimerContainer}>
+          <View style={styles.circularTimerWrapper}>
+            <CircularProgress
+              progress={isFasting ? progress : 0}
+              size={circleSize}
+              strokeWidth={18}
+              color={colors.heading}
+              backgroundColor={colors.disable}
+            >
+              <View style={styles.timerCenterContent}>
+                <Text style={styles.timerLabel}>
+                  {isFasting ? 'Elapsed Time' : 'Ready to fast'}
+                </Text>
+                <Text style={styles.timerDisplay}>
+                  {isFasting ? formatTimerHHMMSS(elapsedSeconds) : '00:00:00'}
+                </Text>
+                <TouchableOpacity
+                  style={styles.endFastButton}
+                  onPress={isFasting ? handleEnd : handleStart}
+                  disabled={loading}
+                >
+                  <Text style={styles.endFastButtonText}>
+                    {isFasting ? 'End Fast' : 'Start Fast'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </CircularProgress>
+
+            {/* Flame icon at 7 o'clock */}
+          </View>
+
+          {/* Time info sections */}
+          <View style={styles.timeInfoSection}>
+            <View style={styles.timeInfoItem}>
+              <Text style={styles.timeInfoLabel}>Started</Text>
+              {isFasting && currentSession ? (
+                <>
+                  <Text style={styles.timeInfoValue}>
+                    {formatDateDisplay(new Date(currentSession.startTime))},{' '}
+                    {formatTime(currentSession.startTime)}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.timeInfoValue}>—</Text>
+                  <Text style={styles.editLinkDisabled}>
+                    Start time set when you begin
+                  </Text>
+                </>
+              )}
+            </View>
+
+            <View style={styles.timeInfoItem}>
+              <Text style={styles.timeInfoLabel}>Fast Ending</Text>
+              {isFasting && currentSession && getTargetEndDate() ? (
+                <Text style={styles.timeInfoValue}>
+                  {formatDateDisplay(getTargetEndDate()!)}, {getTargetEndTime()}
+                </Text>
+              ) : (
+                <Text style={styles.timeInfoValue}>
+                  Select goal when you start
+                </Text>
+              )}
+              <TouchableOpacity onPress={handleStart}>
+                <Text style={styles.editLink}>
+                  {isFasting && targetMinutes
+                    ? `Edit ${Math.floor(targetMinutes / 60)}h goal`
+                    : 'Set fasting goal (6h+)'}
                 </Text>
               </TouchableOpacity>
             </View>
-          </CircularProgress>
-
-          {/* Flame icon at 7 o'clock */}
-
-        </View>
-
-        {/* Time info sections */}
-        <View style={styles.timeInfoSection}>
-          <View style={styles.timeInfoItem}>
-            <Text style={styles.timeInfoLabel}>Started</Text>
-            {isFasting && currentSession ? (
-              <>
-                <Text style={styles.timeInfoValue}>
-                  {formatDateDisplay(new Date(currentSession.startTime))},{' '}
-                  {formatTime(currentSession.startTime)}
-                </Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.timeInfoValue}>—</Text>
-                <Text style={styles.editLinkDisabled}>
-                  Start time set when you begin
-                </Text>
-              </>
-            )}
-          </View>
-
-          <View style={styles.timeInfoItem}>
-            <Text style={styles.timeInfoLabel}>Fast Ending</Text>
-            {isFasting && currentSession && getTargetEndDate() ? (
-              <Text style={styles.timeInfoValue}>
-                {formatDateDisplay(getTargetEndDate()!)},{' '}
-                {getTargetEndTime()}
-              </Text>
-            ) : (
-              <Text style={styles.timeInfoValue}>
-                Select goal when you start
-              </Text>
-            )}
-            <TouchableOpacity onPress={handleStart}>
-              <Text style={styles.editLink}>
-                {isFasting && targetMinutes
-                  ? `Edit ${Math.floor(targetMinutes / 60)}h goal`
-                  : 'Set fasting goal (6h+)'}
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
-      </View>
 
-      {/* Goal Editor Modal */}
-      <FastingGoalEditor
-        visible={showGoalEditor}
-        onClose={() => setShowGoalEditor(false)}
-        onSave={handleGoalSave}
-        currentGoalMinutes={isFasting ? currentSession?.targetDurationMinutes : null}
-        startTime={
-          isFasting && currentSession
-            ? currentSession.startTime
-            : new Date().toISOString()
-        }
-        loading={loading}
-      />
+        {/* Goal Editor Modal */}
+        <FastingGoalEditor
+          visible={showGoalEditor}
+          onClose={() => setShowGoalEditor(false)}
+          onSave={handleGoalSave}
+          currentGoalMinutes={
+            isFasting ? currentSession?.targetDurationMinutes : null
+          }
+          startTime={
+            isFasting && currentSession
+              ? currentSession.startTime
+              : new Date().toISOString()
+          }
+          loading={loading}
+        />
 
-      {/* Current Stage / Milestones */}
-      {/* {currentStage && (
+        {/* Current Stage / Milestones */}
+        {/* {currentStage && (
         <View style={styles.milestoneCard}>
           <View style={styles.milestoneHeader}>
             <Text style={styles.milestoneIcon}>{currentStage.icon}</Text>
@@ -433,82 +393,101 @@ export const FastingHome: React.FC<Props> = () => {
         </View>
       )} */}
 
-      {/* Stats Row */}
-      <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <Text style={styles.statIcon}>📈</Text>
-          <Text style={styles.statLabel}>Streak</Text>
-          <Text style={styles.statValue}>
-            {insights?.currentStreakDays || 0} days
-          </Text>
+        {/* Stats Row */}
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statIcon}>📈</Text>
+            <Text style={styles.statLabel}>Streak</Text>
+            <Text style={styles.statValue}>
+              {insights?.currentStreakDays || 0} days
+            </Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statIcon}>⏰</Text>
+            <Text style={styles.statLabel}>Avg Window</Text>
+            <Text style={styles.statValue}>
+              {insights?.averageDurationMinutes
+                ? formatDuration(insights.averageDurationMinutes)
+                : '0h'}
+            </Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statIcon}>🏆</Text>
+            <Text style={styles.statLabel}>Total Fasts</Text>
+            <Text style={styles.statValue}>{insights?.totalSessions || 0}</Text>
+          </View>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statIcon}>⏰</Text>
-          <Text style={styles.statLabel}>Avg Window</Text>
-          <Text style={styles.statValue}>
-            {insights?.averageDurationMinutes
-              ? formatDuration(insights.averageDurationMinutes)
-              : '0h'}
-          </Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statIcon}>🏆</Text>
-          <Text style={styles.statLabel}>Total Fasts</Text>
-          <Text style={styles.statValue}>
-            {insights?.totalSessions || 0}
-          </Text>
-        </View>
-      </View>
 
-      {/* The Deep Science Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionIcon}>📚</Text>
-          <Text style={styles.sectionTitle}>The Deep Science</Text>
-        </View>
-        <Text style={styles.sectionIntro}>
-          Fasting isn't just about not eating—it triggers a cascade of cellular and
-          metabolic changes that promote healing, longevity, and hormonal balance. Here's
-          what happens in your body:
-        </Text>
+        {/* The Deep Science Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionIcon}>📚</Text>
+            <Text style={styles.sectionTitle}>The Deep Science</Text>
+          </View>
+          <Text style={styles.sectionIntro}>
+            Fasting isn't just about not eating—it triggers a cascade of
+            cellular and metabolic changes that promote healing, longevity, and
+            hormonal balance. Here's what happens in your body:
+          </Text>
 
-        {fastingMechanisms.map(mechanism => (
-          <View key={mechanism.title} style={expandedMechanism === mechanism.title ? [styles.mechanismCard, {borderColor: '#FFF4E3'}] : styles.mechanismCard}>
-            <TouchableOpacity
-              style={styles.mechanismHeader}
-              onPress={() =>
-                setExpandedMechanism(
-                  expandedMechanism === mechanism.title ? null : mechanism.title,
-                )
+          {fastingMechanisms.map(mechanism => (
+            <View
+              key={mechanism.title}
+              style={
+                expandedMechanism === mechanism.title
+                  ? [styles.mechanismCard, { borderColor: colors.lightOranger }]
+                  : styles.mechanismCard
               }
             >
-              <View style={styles.mechanismIconContainer}>
-                <Text style={styles.mechanismIcon}>{mechanism.icon}</Text>
-              </View>
-              <View style={styles.mechanismContent}>
-                <Text style={styles.mechanismTitle}>{mechanism.title}</Text>
-                <Text style={styles.mechanismDescription}>
-                  {mechanism.description}
-                </Text>
-              </View>
-              {/* <Text style={styles.chevron}>
+              <TouchableOpacity
+                style={styles.mechanismHeader}
+                onPress={() =>
+                  setExpandedMechanism(
+                    expandedMechanism === mechanism.title
+                      ? null
+                      : mechanism.title,
+                  )
+                }
+              >
+                <View style={styles.mechanismIconContainer}>
+                  <Text style={styles.mechanismIcon}>{mechanism.icon}</Text>
+                </View>
+                <View style={styles.mechanismContent}>
+                  <Text style={styles.mechanismTitle}>{mechanism.title}</Text>
+                  <Text style={styles.mechanismDescription}>
+                    {mechanism.description}
+                  </Text>
+                </View>
+                {/* <Text style={styles.chevron}>
                 {expandedMechanism === mechanism.title ? '▼' : '▶'}
               </Text> */}
-              <Image source={expandedMechanism === mechanism.title ? images.rightArrow : images.rightArrow}
-               style={expandedMechanism === mechanism.title ? styles.chevronInverted : styles.chevron}/>
-            </TouchableOpacity>
+                <Image
+                  source={
+                    expandedMechanism === mechanism.title
+                      ? images.rightArrow
+                      : images.rightArrow
+                  }
+                  style={
+                    expandedMechanism === mechanism.title
+                      ? styles.chevronInverted
+                      : styles.chevron
+                  }
+                />
+              </TouchableOpacity>
 
-            {expandedMechanism === mechanism.title && (
-              <View style={styles.mechanismDetail}>
-                <Text style={styles.mechanismDetailText}>{mechanism.detail}</Text>
-              </View>
-            )}
-          </View>
-        ))} 
-      </View>
+              {expandedMechanism === mechanism.title && (
+                <View style={styles.mechanismDetail}>
+                  <Text style={styles.mechanismDetailText}>
+                    {mechanism.detail}
+                  </Text>
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
 
-      {/* Fasting Timeline Visual */}
-      {/* <View style={styles.section}>
+        {/* Fasting Timeline Visual */}
+        {/* <View style={styles.section}>
         <Text style={styles.sectionTitle}>Your Fasting Timeline</Text>
         <View style={styles.timelineCard}>
           <View style={styles.timelineLineContainer}>
@@ -569,228 +548,270 @@ export const FastingHome: React.FC<Props> = () => {
         </View>
       </View> */}
 
-      {/* Cycle-Synced Fasting */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionIcon}>🌙</Text>
-          <Text style={styles.sectionTitle}>Cycle-Synced Fasting</Text>
-        </View>
-        <Text style={styles.sectionIntro}>
-          Unlike men, your metabolism changes throughout your cycle. Smart fasting honors
-          these fluctuations rather than fighting them. Here's your phase-by-phase guide:
-        </Text>
-
-        {cycleSyncGuidance.map(phase => {
-          const isExpanded = expandedPhase === phase.phase;
-          const isCurrent = phase.phase === currentPhase;
-
-          return (
-            <View
-              key={phase.phase}
-              style={[
-                styles.phaseCard,
-                isCurrent && styles.phaseCardCurrent,
-              ]}
-            >
-              <TouchableOpacity
-                style={styles.phaseHeader}
-                onPress={() =>
-                  setExpandedPhase(isExpanded ? null : phase.phase)
-                }
-              >
-                <Text style={styles.phaseEmoji}>{phase.emoji}</Text>
-                <View style={styles.phaseHeaderContent}>
-                  <View style={styles.phaseTitleRow}>
-                    <Text style={styles.phaseTitle}>
-                      {phase.phase.charAt(0).toUpperCase() + phase.phase.slice(1)} Phase
-                    </Text>
-                    {isCurrent && (
-                      <View style={styles.currentPhaseBadge}>
-                        <Text style={styles.currentPhaseBadgeText}>Current</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.phaseWindow}>{phase.window} window</Text>
-                </View>
-                {/* <Text style={styles.chevron}>{isExpanded ? '▼' : '▶'}</Text> */}
-                <Image source={isExpanded ? images.rightArrow : images.rightArrow}
-                 style={isExpanded ? styles.chevronInverted : styles.chevron}/>
-              </TouchableOpacity>
-
-              {isExpanded && (
-                <View style={styles.phaseContent}>
-                  <View style={styles.phaseApproach}>
-                    <Text style={styles.phaseApproachText}>{phase.approach}</Text>
-                  </View>
-                  <Text style={styles.phaseDescription}>{phase.description}</Text>
-
-                  <View style={styles.phaseSection}>
-                    <Text style={styles.phaseSectionTitle}>✓ Recommendations</Text>
-                    {phase.recommendations.map((rec, i) => (
-                      <Text key={i} style={styles.phaseListItem}>
-                        <Text style={{ color: '#E4AF5D',}}>•</Text> {rec}
-                      </Text>
-                    ))}
-                  </View>
-
-                  <View style={styles.phaseSection}>
-                    <Text style={[styles.phaseSectionTitle, styles.phaseSectionTitleAvoid]}>
-                      ⚠ Avoid
-                    </Text>
-                    {phase.avoid.map((item, i) => (
-                      <Text key={i} style={styles.phaseListItem}>
-                        <Text style={{ color: '#EF4444',}}>•</Text> {item}
-                      </Text>
-                    ))}
-                  </View>
-
-                  <View style={styles.phaseScience}>
-                    <Text style={styles.phaseScienceTitle}>🧬 The Science</Text>
-                    <Text style={styles.phaseScienceText}>{phase.science}</Text>
-                  </View>
-                </View>
-              )}
-            </View>
-          );
-        })}
-      </View>
-
-      {/* Research Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeaderRow}>
+        {/* Cycle-Synced Fasting */}
+        <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionIcon}>✨</Text>
-            <Text style={styles.sectionTitle}>The Research</Text>
+            <Text style={styles.sectionIcon}>🌙</Text>
+            <Text style={styles.sectionTitle}>Cycle-Synced Fasting</Text>
           </View>
-          <TouchableOpacity onPress={() => setShowAllResearch(!showAllResearch)}>
-            <Text style={styles.viewAllText}>
-              {showAllResearch ? 'Show Less' : 'View All'}
-            </Text>
-          </TouchableOpacity>
+          <Text style={styles.sectionIntro}>
+            Unlike men, your metabolism changes throughout your cycle. Smart
+            fasting honors these fluctuations rather than fighting them. Here's
+            your phase-by-phase guide:
+          </Text>
+
+          {cycleSyncGuidance.map(phase => {
+            const isExpanded = expandedPhase === phase.phase;
+            const isCurrent = phase.phase === currentPhase;
+
+            return (
+              <View
+                key={phase.phase}
+                style={[styles.phaseCard, isCurrent && styles.phaseCardCurrent]}
+              >
+                <TouchableOpacity
+                  style={styles.phaseHeader}
+                  onPress={() =>
+                    setExpandedPhase(isExpanded ? null : phase.phase)
+                  }
+                >
+                  <Text style={styles.phaseEmoji}>{phase.emoji}</Text>
+                  <View style={styles.phaseHeaderContent}>
+                    <View style={styles.phaseTitleRow}>
+                      <Text style={styles.phaseTitle}>
+                        {phase.phase.charAt(0).toUpperCase() +
+                          phase.phase.slice(1)}{' '}
+                        Phase
+                      </Text>
+                      {isCurrent && (
+                        <View style={styles.currentPhaseBadge}>
+                          <Text style={styles.currentPhaseBadgeText}>
+                            Current
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.phaseWindow}>
+                      {phase.window} window
+                    </Text>
+                  </View>
+                  {/* <Text style={styles.chevron}>{isExpanded ? '▼' : '▶'}</Text> */}
+                  <Image
+                    source={isExpanded ? images.rightArrow : images.rightArrow}
+                    style={isExpanded ? styles.chevronInverted : styles.chevron}
+                  />
+                </TouchableOpacity>
+
+                {isExpanded && (
+                  <View style={styles.phaseContent}>
+                    <View style={styles.phaseApproach}>
+                      <Text style={styles.phaseApproachText}>
+                        {phase.approach}
+                      </Text>
+                    </View>
+                    <Text style={styles.phaseDescription}>
+                      {phase.description}
+                    </Text>
+
+                    <View style={styles.phaseSection}>
+                      <Text style={styles.phaseSectionTitle}>
+                        ✓ Recommendations
+                      </Text>
+                      {phase.recommendations.map((rec, i) => (
+                        <Text key={i} style={styles.phaseListItem}>
+                          <Text style={styles.phaseListBulletRecommend}>•</Text>{' '}
+                          {rec}
+                        </Text>
+                      ))}
+                    </View>
+
+                    <View style={styles.phaseSection}>
+                      <Text
+                        style={[
+                          styles.phaseSectionTitle,
+                          styles.phaseSectionTitleAvoid,
+                        ]}
+                      >
+                        ⚠ Avoid
+                      </Text>
+                      {phase.avoid.map((item, i) => (
+                        <Text key={i} style={styles.phaseListItem}>
+                          <Text style={styles.phaseListBulletAvoid}>•</Text>{' '}
+                          {item}
+                        </Text>
+                      ))}
+                    </View>
+
+                    <View style={styles.phaseScience}>
+                      <Text style={styles.phaseScienceTitle}>
+                        🧬 The Science
+                      </Text>
+                      <Text style={styles.phaseScienceText}>
+                        {phase.science}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            );
+          })}
         </View>
 
-        {(showAllResearch ? fastingResearch : fastingResearch.slice(0, 3)).map(
-          (study, index) => (
+        {/* Research Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionIcon}>✨</Text>
+              <Text style={styles.sectionTitle}>The Research</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setShowAllResearch(!showAllResearch)}
+            >
+              <Text style={styles.viewAllText}>
+                {showAllResearch ? 'Show Less' : 'View All'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {(showAllResearch
+            ? fastingResearch
+            : fastingResearch.slice(0, 3)
+          ).map((study, index) => (
             <View key={index} style={styles.researchCard}>
               <Text style={styles.researchFinding}>"{study.finding}"</Text>
               <Text style={styles.researchSource}>
                 — {study.source}, {study.year}
               </Text>
             </View>
-          ),
-        )}
-      </View>
+          ))}
+        </View>
 
-      {/* Current Phase Guide Quick Reference */}
-      {currentPhaseGuide && (
-        <View style={styles.phaseGuideCard}>
-          <View style={styles.phaseGuideHeader}>
-            <Text style={styles.phaseGuideEmoji}>{currentPhaseGuide.emoji}</Text>
-            <View>
-              <Text style={styles.phaseGuideTitle}>
-                Your {currentPhaseGuide.phase.charAt(0).toUpperCase() + currentPhaseGuide.phase.slice(1)} Fasting Guide
+        {/* Current Phase Guide Quick Reference */}
+        {currentPhaseGuide && (
+          <View style={styles.phaseGuideCard}>
+            <View style={styles.phaseGuideHeader}>
+              <Text style={styles.phaseGuideEmoji}>
+                {currentPhaseGuide.emoji}
               </Text>
-              <Text style={styles.phaseGuideApproach}>
-                {currentPhaseGuide.approach}
+              <View>
+                <Text style={styles.phaseGuideTitle}>
+                  Your{' '}
+                  {currentPhaseGuide.phase.charAt(0).toUpperCase() +
+                    currentPhaseGuide.phase.slice(1)}{' '}
+                  Fasting Guide
+                </Text>
+                <Text style={styles.phaseGuideApproach}>
+                  {currentPhaseGuide.approach}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.phaseGuideWindow}>
+              <Text style={styles.phaseGuideWindowIcon}>⏰</Text>
+              <Text style={styles.phaseGuideWindowText}>
+                Recommended window:{' '}
+                <Text style={styles.phaseGuideWindowBold}>
+                  {currentPhaseGuide.window}
+                </Text>
               </Text>
             </View>
-          </View>
 
-          <View style={styles.phaseGuideWindow}>
-            <Text style={styles.phaseGuideWindowIcon}>⏰</Text>
-            <Text style={styles.phaseGuideWindowText}>
-              Recommended window: <Text style={styles.phaseGuideWindowBold}>{currentPhaseGuide.window}</Text>
-            </Text>
-          </View>
-
-          <Text style={styles.phaseGuideDescription}>
-            {currentPhaseGuide.description}
-          </Text>
-        </View>
-      )}
-
-      {/* Why Women Fast Differently */}
-      <View style={styles.educationCard}>
-        <Text style={styles.educationTitle}>Why Women Fast Differently</Text>
-        <Text style={styles.educationText}>
-          Most fasting research was conducted on men or post-menopausal women. But cycling
-          women have a completely different hormonal landscape that changes weekly.
-        </Text>
-        <Text style={styles.educationText}>
-          Aggressive fasting during the luteal phase can increase cortisol, disrupt thyroid
-          function, and worsen PMS symptoms. But gentle, phase-aligned fasting can enhance
-          hormonal balance and metabolic health.
-        </Text>
-        <Text style={styles.educationQuote}>
-          "Your cycle is not a problem to overcome—it's intelligence to work with." — Dr.
-          Mindy Pelz
-        </Text>
-      </View>
-
-      {/* Recent History */}
-      <View style={styles.reentSection}>
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Recent History</Text>
-          {/* <TouchableOpacity>
-            <Text style={styles.viewAllText}>View All →</Text>
-          </TouchableOpacity> */}
-        </View>
-
-        {history.length > 0 ? (
-          <View style={styles.historyCard}>
-            {history.map((entry, index) => {
-              const date = new Date(entry.startTime);
-              const dateStr = date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-              });
-              const duration = entry.actualDurationMinutes || entry.targetDurationMinutes || 0;
-
-              return (
-                <View
-                  key={entry._id}
-                  style={[
-                    styles.historyItem,
-                    index < history.length - 1 && styles.historyItemBorder,
-                  ]}
-                >
-                  <View style={styles.historyItemLeft}>
-                    <Text style={styles.historyItemDate}>{dateStr}</Text>
-                    <Text style={styles.historyItemPhase}>
-                      {currentPhase.charAt(0).toUpperCase() + currentPhase.slice(1)} Phase
-                    </Text>
-                  </View>
-                  <View style={styles.historyItemRight}>
-                    <Text style={styles.historyItemDuration}>
-                      {formatDuration(duration)}
-                    </Text>
-                    {entry.status === 'completed' && (
-                      <View style={styles.completedBadge}>
-                        <Text style={styles.completedBadgeText}>✓</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        ) : (
-          <View style={styles.historyCard}>
-            <Text style={styles.emptyHistoryText}>
-              Start logging your fasts to see your history here.
+            <Text style={styles.phaseGuideDescription}>
+              {currentPhaseGuide.description}
             </Text>
           </View>
         )}
-      </View>
-    </ScrollView>
+
+        {/* Why Women Fast Differently */}
+        <View style={styles.educationCard}>
+          <Text style={styles.educationTitle}>Why Women Fast Differently</Text>
+          <Text style={styles.educationText}>
+            Most fasting research was conducted on men or post-menopausal women.
+            But cycling women have a completely different hormonal landscape
+            that changes weekly.
+          </Text>
+          <Text style={styles.educationText}>
+            Aggressive fasting during the luteal phase can increase cortisol,
+            disrupt thyroid function, and worsen PMS symptoms. But gentle,
+            phase-aligned fasting can enhance hormonal balance and metabolic
+            health.
+          </Text>
+          <Text style={styles.educationQuote}>
+            "Your cycle is not a problem to overcome—it's intelligence to work
+            with." — Dr. Mindy Pelz
+          </Text>
+        </View>
+
+        {/* Recent History */}
+        <View style={styles.reentSection}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Recent History</Text>
+            {/* <TouchableOpacity>
+            <Text style={styles.viewAllText}>View All →</Text>
+          </TouchableOpacity> */}
+          </View>
+
+          {history.length > 0 ? (
+            <View style={styles.historyCard}>
+              {history.map((entry, index) => {
+                const date = new Date(entry.startTime);
+                const dateStr = date.toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                });
+                const duration =
+                  entry.actualDurationMinutes ||
+                  entry.targetDurationMinutes ||
+                  0;
+
+                return (
+                  <View
+                    key={entry._id}
+                    style={[
+                      styles.historyItem,
+                      index < history.length - 1 && styles.historyItemBorder,
+                    ]}
+                  >
+                    <View style={styles.historyItemLeft}>
+                      <Text style={styles.historyItemDate}>{dateStr}</Text>
+                      <Text style={styles.historyItemPhase}>
+                        {currentPhase.charAt(0).toUpperCase() +
+                          currentPhase.slice(1)}{' '}
+                        Phase
+                      </Text>
+                    </View>
+                    <View style={styles.historyItemRight}>
+                      <Text style={styles.historyItemDuration}>
+                        {formatDuration(duration)}
+                      </Text>
+                      {entry.status === 'completed' && (
+                        <View style={styles.completedBadge}>
+                          <Text style={styles.completedBadgeText}>✓</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={styles.historyCard}>
+              <Text style={styles.emptyHistoryText}>
+                Start logging your fasts to see your history here.
+              </Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FDFBF7',
+    backgroundColor: colors.white,
   },
   contentContainer: {
     paddingHorizontal: 20,
@@ -803,13 +824,13 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Inter-Bold',
     fontSize: 28,
-    color: '#1F2933',
+    color: colors.text,
     marginBottom: 4,
   },
   subtitle: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
-    color: '#64748B',
+    color: colors.darkGrey,
   },
   circularTimerContainer: {
     alignItems: 'center',
@@ -829,12 +850,12 @@ const styles = StyleSheet.create({
   timerLabel: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.darkGrey,
   },
   timerDisplay: {
     fontFamily: 'Inter-Bold',
     fontSize: 36,
-    color: '#111827',
+    color: colors.black,
     letterSpacing: 1,
   },
   endFastButton: {
@@ -843,13 +864,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: colors.primary || '#E4AF5D',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.heading,
+    backgroundColor: colors.white,
   },
   endFastButtonText: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 14,
-    color: colors.primary || '#E4AF5D',
+    color: colors.heading,
   },
   flameIconPositioned: {
     position: 'absolute',
@@ -861,9 +882,9 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderWidth: 1.5,
-    borderColor: colors.primary || '#E4AF5D',
+    borderColor: colors.heading,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -881,24 +902,24 @@ const styles = StyleSheet.create({
   timeInfoLabel: {
     fontFamily: 'Inter-Medium',
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.darkGrey,
     marginBottom: 4,
   },
   timeInfoValue: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 15,
-    color: '#111827',
+    color: colors.black,
     marginBottom: 4,
   },
   editLink: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
-    color: colors.primary || '#E4AF5D',
+    color: colors.heading,
   },
   editLinkDisabled: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
-    color: '#9CA3AF',
+    color: colors.disabledText,
   },
   startFastContainer: {
     width: '100%',
@@ -912,20 +933,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primaryButton: {
-    backgroundColor: colors.primary || '#E4AF5D',
+    backgroundColor: colors.heading,
   },
   buttonText: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 16,
-    color: '#FFFFFF',
+    color: colors.white,
   },
   milestoneCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E4AF5D',
+    borderColor: colors.heading,
   },
   milestoneHeader: {
     flexDirection: 'row',
@@ -947,10 +968,10 @@ const styles = StyleSheet.create({
   milestoneTitle: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 18,
-    color: '#111827',
+    color: colors.black,
   },
   activeBadge: {
-    backgroundColor: '#10B981',
+    backgroundColor: colors.green,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
@@ -958,22 +979,22 @@ const styles = StyleSheet.create({
   activeBadgeText: {
     fontFamily: 'Inter-Medium',
     fontSize: 10,
-    color: '#FFFFFF',
+    color: colors.white,
   },
   milestoneDescription: {
     fontFamily: 'Inter-Regular',
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.darkGrey,
   },
   nextMilestone: {
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: colors.borderColor,
   },
   nextMilestoneText: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
-    color: '#9CA3AF',
+    color: colors.disabledText,
     marginBottom: 8,
   },
   nextMilestoneInfo: {
@@ -987,7 +1008,7 @@ const styles = StyleSheet.create({
   nextMilestoneLabel: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
-    color: '#111827',
+    color: colors.black,
   },
   statsRow: {
     flexDirection: 'row',
@@ -996,11 +1017,11 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.borderColor,
     borderRadius: 20,
   },
   statIcon: {
@@ -1010,13 +1031,13 @@ const styles = StyleSheet.create({
   statLabel: {
     fontFamily: 'Inter-Regular',
     fontSize: 11,
-    color: '#9CA3AF',
+    color: colors.disabledText,
     marginBottom: 4,
   },
   statValue: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 16,
-    color: '#111827',
+    color: colors.black,
   },
   section: {
     marginBottom: 24,
@@ -1025,9 +1046,9 @@ const styles = StyleSheet.create({
   reentSection: {
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.borderColor,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     padding: 16,
   },
   sectionHeader: {
@@ -1048,23 +1069,22 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 20,
-    color: '#111827',
+    color: colors.black,
   },
   sectionIntro: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
-    // color: '#6B7280',
-    color:'#7DA38D',
+    color: colors.green,
     lineHeight: 20,
     marginBottom: 16,
   },
   mechanismCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     // borderRadius: 12,
     marginBottom: 8,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor:  '#E5E7EB',
+    borderColor: colors.borderColor,
     borderRadius: 20,
   },
   mechanismHeader: {
@@ -1077,7 +1097,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.disable,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1090,29 +1110,28 @@ const styles = StyleSheet.create({
   mechanismTitle: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
-    color: '#111827',
+    color: colors.black,
     marginBottom: 2,
   },
   mechanismDescription: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
-    // color: '#6B7280',
-    color:'#7DA38D',
+    color: colors.green,
   },
 
   chevron: {
     width: 11,
-    height: 11  ,
+    height: 11,
     resizeMode: 'contain',
-    tintColor: '#7DA38D',
+    tintColor: colors.green,
   },
 
   chevronInverted: {
-    width: 11 ,
-    height: 11  ,
+    width: 11,
+    height: 11,
     resizeMode: 'contain',
     transform: [{ rotate: '90deg' }],
-    tintColor: '#7DA38D',
+    tintColor: colors.green,
   },
   mechanismDetail: {
     paddingHorizontal: 16,
@@ -1122,11 +1141,11 @@ const styles = StyleSheet.create({
   mechanismDetailText: {
     fontFamily: 'Inter-Regular',
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.darkGrey,
     lineHeight: 20,
   },
   timelineCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: 16,
     padding: 20,
     position: 'relative',
@@ -1143,13 +1162,13 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 2,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.borderColor,
   },
   timelineLineProgress: {
     position: 'absolute',
     top: 0,
     width: 2,
-    backgroundColor: colors.primary || '#E4AF5D',
+    backgroundColor: colors.heading,
   },
   timelineStages: {
     gap: 16,
@@ -1167,16 +1186,16 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.disable,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: -9,
   },
   timelineStageIconReached: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: colors.lightOranger,
   },
   timelineStageIconCurrent: {
-    backgroundColor: colors.primary || '#E4AF5D',
+    backgroundColor: colors.heading,
   },
   timelineStageIconText: {
     fontSize: 18,
@@ -1194,15 +1213,15 @@ const styles = StyleSheet.create({
   timelineStageHours: {
     fontFamily: 'Inter-Medium',
     fontSize: 12,
-    color: colors.primary || '#E4AF5D',
+    color: colors.heading,
   },
   timelineStageLabel: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
-    color: '#111827',
+    color: colors.black,
   },
   currentBadge: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.disable,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -1210,24 +1229,24 @@ const styles = StyleSheet.create({
   currentBadgeText: {
     fontFamily: 'Inter-Regular',
     fontSize: 10,
-    color: '#6B7280',
+    color: colors.darkGrey,
   },
   timelineStageDescription: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.darkGrey,
   },
   phaseCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: 12,
     marginBottom: 8,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.borderColor,
   },
   phaseCardCurrent: {
-    borderColor: colors.primary || '#E4AF5D',
-    backgroundColor: '#FFFBF0',
+    borderColor: colors.heading,
+    backgroundColor: colors.headingLight,
   },
   phaseHeader: {
     flexDirection: 'row',
@@ -1250,10 +1269,10 @@ const styles = StyleSheet.create({
   phaseTitle: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
-    color: '#111827',
+    color: colors.black,
   },
   currentPhaseBadge: {
-    backgroundColor: colors.primary || '#E4AF5D',
+    backgroundColor: colors.heading,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -1261,12 +1280,12 @@ const styles = StyleSheet.create({
   currentPhaseBadgeText: {
     fontFamily: 'Inter-Regular',
     fontSize: 10,
-    color: '#FFFFFF',
+    color: colors.white,
   },
   phaseWindow: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.darkGrey,
   },
   phaseContent: {
     paddingHorizontal: 16,
@@ -1276,7 +1295,7 @@ const styles = StyleSheet.create({
   },
   phaseApproach: {
     alignSelf: 'flex-start',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.disable,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -1285,12 +1304,12 @@ const styles = StyleSheet.create({
   phaseApproachText: {
     fontFamily: 'Inter-Medium',
     fontSize: 12,
-    color: '#111827',
+    color: colors.black,
   },
   phaseDescription: {
     fontFamily: 'Inter-Regular',
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.darkGrey,
     lineHeight: 20,
   },
   phaseSection: {
@@ -1299,22 +1318,27 @@ const styles = StyleSheet.create({
   phaseSectionTitle: {
     fontFamily: 'Inter-Medium',
     fontSize: 13,
-    // color: '#10B981',
-    color: '#E4AF5D',
+    color: colors.heading,
     marginBottom: 6,
   },
   phaseSectionTitleAvoid: {
-    color: '#EF4444',
+    color: colors.darkPink,
   },
   phaseListItem: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.darkGrey,
     lineHeight: 18,
     marginBottom: 4,
   },
+  phaseListBulletRecommend: {
+    color: colors.heading,
+  },
+  phaseListBulletAvoid: {
+    color: colors.darkPink,
+  },
   phaseScience: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.disable,
     padding: 12,
     borderRadius: 8,
     marginTop: 8,
@@ -1322,22 +1346,22 @@ const styles = StyleSheet.create({
   phaseScienceTitle: {
     fontFamily: 'Inter-Medium',
     fontSize: 12,
-    color: colors.primary || '#E4AF5D',
+    color: colors.heading,
     marginBottom: 4,
   },
   phaseScienceText: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.darkGrey,
     lineHeight: 18,
   },
   viewAllText: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
-    color: colors.primary || '#E4AF5D',
+    color: colors.heading,
   },
   researchCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.headingLight,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
@@ -1345,22 +1369,22 @@ const styles = StyleSheet.create({
   researchFinding: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
-    color: '#111827',
+    color: colors.black,
     lineHeight: 20,
     marginBottom: 8,
   },
   researchSource: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.darkGrey,
   },
   phaseGuideCard: {
-    backgroundColor: '#FFFBF0',
+    backgroundColor: colors.headingLight,
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: colors.primary || '#FFF4E3',
+    borderColor: colors.lightOranger,
   },
   phaseGuideHeader: {
     flexDirection: 'row',
@@ -1374,19 +1398,19 @@ const styles = StyleSheet.create({
   phaseGuideTitle: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 18,
-    color: '#111827',
+    color: colors.black,
     marginBottom: 4,
   },
   phaseGuideApproach: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.darkGrey,
   },
   phaseGuideWindow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,
@@ -1397,7 +1421,7 @@ const styles = StyleSheet.create({
   phaseGuideWindowText: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
-    color: '#111827',
+    color: colors.black,
   },
   phaseGuideWindowBold: {
     fontFamily: 'Inter-SemiBold',
@@ -1405,11 +1429,11 @@ const styles = StyleSheet.create({
   phaseGuideDescription: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.darkGrey,
     lineHeight: 20,
   },
   educationCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.headingLight,
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
@@ -1417,13 +1441,13 @@ const styles = StyleSheet.create({
   educationTitle: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 18,
-    color: '#111827',
+    color: colors.black,
     marginBottom: 12,
   },
   educationText: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.darkGrey,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -1431,14 +1455,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     fontSize: 12,
     fontStyle: 'italic',
-    color: '#9CA3AF',
+    color: colors.disabledText,
     marginTop: 8,
     paddingLeft: 12,
     borderLeftWidth: 2,
-    borderLeftColor: '#E5E7EB',
+    borderLeftColor: colors.borderColor,
   },
   historyCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: 16,
     padding: 16,
   },
@@ -1450,7 +1474,7 @@ const styles = StyleSheet.create({
   },
   historyItemBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.borderColor,
   },
   historyItemLeft: {
     flex: 1,
@@ -1458,13 +1482,13 @@ const styles = StyleSheet.create({
   historyItemDate: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
-    color: '#111827',
+    color: colors.black,
     marginBottom: 2,
   },
   historyItemPhase: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.darkGrey,
   },
   historyItemRight: {
     flexDirection: 'row',
@@ -1474,26 +1498,25 @@ const styles = StyleSheet.create({
   historyItemDuration: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 14,
-    // color: colors.primary || '#E4AF5D',
-    color: '#E4AF5D',
+    color: colors.heading,
   },
   completedBadge: {
     width: 25,
     height: 22,
     borderRadius: 7,
-    backgroundColor: '#F7DEE7',
+    backgroundColor: colors.borderPink,
     alignItems: 'center',
     justifyContent: 'center',
   },
   completedBadgeText: {
     fontFamily: 'Inter-Bold',
     fontSize: 12,
-    // color: '#FFFFFF',
+    color: colors.green,
   },
   emptyHistoryText: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
-    color: '#9CA3AF',
+    color: colors.disabledText,
     textAlign: 'center',
     paddingVertical: 20,
   },

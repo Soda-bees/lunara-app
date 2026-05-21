@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     margin: 0,
   },
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 12,
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 40,
     height: 4,
-    backgroundColor: '#D1D5DB',
+    backgroundColor: colors.lineGray,
     borderRadius: 2,
     alignSelf: 'center',
     marginBottom: 20,
@@ -178,12 +178,12 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 20,
-    color: '#111827',
+    color: colors.black,
     marginBottom: 20,
     textAlign: 'center',
   },
   previewSection: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.inputColor,
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
@@ -192,13 +192,13 @@ const styles = StyleSheet.create({
   previewLabel: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.darkGrey,
     marginBottom: 4,
   },
   previewTime: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 18,
-    color: '#111827',
+    color: colors.black,
   },
   presetsContainer: {
     maxHeight: 300,
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   presetsLabel: {
     fontFamily: 'Inter-Medium',
     fontSize: 16,
-    color: '#111827',
+    color: colors.black,
     marginBottom: 12,
   },
   presetButton: {
@@ -216,22 +216,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.borderColor,
+    backgroundColor: colors.white,
     marginBottom: 8,
     height: sizes.screenHeight * 0.07,
   },
   presetButtonSelected: {
     borderColor: colors.heading,
-    backgroundColor: '#FFFBF0',
+    backgroundColor: colors.headingLight,
   },
   presetButtonText: {
     fontFamily: 'Inter-Medium',
     fontSize: 16,
-    color: '#111827',
+    color: colors.black,
   },
   presetButtonTextSelected: {
-    color: colors.primary || '#E4AF5D',
+    color: colors.heading,
   },
   checkmark: {
     fontFamily: 'Inter-Bold',
@@ -251,12 +251,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelButton: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.disable,
   },
   cancelButtonText: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 16,
-    color: '#6B7280',
+    color: colors.darkGrey,
   },
   saveButton: {
     backgroundColor: colors.heading,
@@ -264,6 +264,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 16,
-    color: '#FFFFFF',
+    color: colors.white,
   },
 });

@@ -14,17 +14,61 @@ import { OnboardingHeader } from '../../components/OnboardingHeader/OnboardingHe
 import { colors, radius, spacing } from '../../constants/theme/theme';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
+import type { MeasurementSystem } from '../../utils/measurement';
+import {
+  bodyWeightKgFromInput,
+  cmToInches,
+  DEFAULT_MEASUREMENT_SYSTEM,
+  heightCmFromInchesInput,
+  heightCmFromMetricInput,
+  kgToLb,
+  round1,
+} from '../../utils/measurement';
 
 type Props = NativeStackScreenProps<
   RootStackParamList,
   'BasicInfo' | 'YoureDoingGreat'
 >;
 
+function initialMeasurementSystem(d: {
+  measurementSystem?: MeasurementSystem;
+}): MeasurementSystem {
+  return d.measurementSystem ?? DEFAULT_MEASUREMENT_SYSTEM;
+}
+
 export const BasicInfoScreen: React.FC<Props> = ({ navigation }) => {
   const { updateData, data } = useOnboarding();
+  const [measurementSystem, setMeasurementSystem] =
+    useState<MeasurementSystem>(() => initialMeasurementSystem(data));
+
   const [age, setAge] = useState(data.age || '');
-  const [height, setHeight] = useState(data.height || '');
-  const [weight, setWeight] = useState(data.weight || '');
+
+  const [heightCmText, setHeightCmText] = useState(() => {
+    if (data.heightCm != null) {
+      return String(Math.round(data.heightCm));
+    }
+    return data.height ?? '';
+  });
+  const [weightKgText, setWeightKgText] = useState(() => {
+    if (data.weightKg != null) {
+      return String(round1(data.weightKg));
+    }
+    return data.weight ?? '';
+  });
+
+  const [heightInchesText, setHeightInchesText] = useState(() => {
+    if (data.measurementSystem === 'imperial' && data.heightCm != null) {
+      return String(round1(cmToInches(data.heightCm)));
+    }
+    return '';
+  });
+  const [weightLbText, setWeightLbText] = useState(() => {
+    if (data.measurementSystem === 'imperial' && data.weightKg != null) {
+      return String(round1(kgToLb(data.weightKg)));
+    }
+    return '';
+  });
+
   const [activityLevel, setActivityLevel] = useState<string | null>(
     data.activityLevel || null,
   );
@@ -52,17 +96,65 @@ export const BasicInfoScreen: React.FC<Props> = ({ navigation }) => {
     },
   ];
 
-  const canProceed = age && height && weight && activityLevel;
+  const toggleMeasurementSystem = () => {
+    if (measurementSystem === 'metric') {
+      const cm = heightCmFromMetricInput(heightCmText);
+      const kg = bodyWeightKgFromInput(weightKgText, 'metric');
+      if (cm != null) {
+        setHeightInchesText(String(round1(cmToInches(cm))));
+      }
+      if (kg != null) {
+        setWeightLbText(String(round1(kgToLb(kg))));
+      }
+      setMeasurementSystem('imperial');
+    } else {
+      const cm = heightCmFromInchesInput(heightInchesText);
+      const kg = bodyWeightKgFromInput(weightLbText, 'imperial');
+      if (cm != null) {
+        setHeightCmText(String(Math.round(cm)));
+      }
+      if (kg != null) {
+        setWeightKgText(String(round1(kg)));
+      }
+      setMeasurementSystem('metric');
+    }
+  };
+
+  const heightWeightValid =
+    measurementSystem === 'metric'
+      ? heightCmFromMetricInput(heightCmText) != null &&
+        bodyWeightKgFromInput(weightKgText, 'metric') != null
+      : heightCmFromInchesInput(heightInchesText) != null &&
+        bodyWeightKgFromInput(weightLbText, 'imperial') != null;
+
+  const canProceed = age && heightWeightValid && activityLevel;
 
   const handleContinue = () => {
-    if (canProceed) {
-      updateData(
-        { age, height, weight, activityLevel: activityLevel || undefined },
-        'YoureDoingGreat',
-      );
-      // navigation.navigate('Goals');
-      navigation.navigate('YoureDoingGreat');
+    if (!canProceed) {
+      return;
     }
+    const heightCm =
+      measurementSystem === 'metric'
+        ? heightCmFromMetricInput(heightCmText)
+        : heightCmFromInchesInput(heightInchesText);
+    const weightKg =
+      measurementSystem === 'metric'
+        ? bodyWeightKgFromInput(weightKgText, 'metric')
+        : bodyWeightKgFromInput(weightLbText, 'imperial');
+    if (heightCm == null || weightKg == null) {
+      return;
+    }
+    updateData(
+      {
+        age,
+        heightCm,
+        weightKg,
+        measurementSystem,
+        activityLevel: activityLevel || undefined,
+      },
+      'YoureDoingGreat',
+    );
+    navigation.navigate('YoureDoingGreat');
   };
 
   return (
@@ -95,36 +187,127 @@ export const BasicInfoScreen: React.FC<Props> = ({ navigation }) => {
               Your age helps us calculate your nutritional needs accurately
             </Text>
           </View>
-          <View>
-            <Text style={styles.label}>What's your height? (cm)</Text>
-            <TextInput
-              keyboardType="number-pad"
-              style={styles.input}
-              placeholder="cm"
-              placeholderTextColor={colors.placeholder}
-              value={height}
-              onChangeText={setHeight}
-            />
+
+          <View style={styles.unitRow}>
+            <Text style={styles.label}>Units</Text>
+            <View style={styles.unitToggle}>
+              <TouchableOpacity
+                style={[
+                  styles.unitPill,
+                  measurementSystem === 'metric' && styles.unitPillActive,
+                ]}
+                onPress={() => {
+                  if (measurementSystem !== 'metric') {
+                    toggleMeasurementSystem();
+                  }
+                }}
+              >
+                <Text
+                  style={[
+                    styles.unitPillText,
+                    measurementSystem === 'metric' && styles.unitPillTextActive,
+                  ]}
+                >
+                  Metric
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.unitPill,
+                  measurementSystem === 'imperial' && styles.unitPillActive,
+                ]}
+                onPress={() => {
+                  if (measurementSystem !== 'imperial') {
+                    toggleMeasurementSystem();
+                  }
+                }}
+              >
+                <Text
+                  style={[
+                    styles.unitPillText,
+                    measurementSystem === 'imperial' &&
+                      styles.unitPillTextActive,
+                  ]}
+                >
+                  Imperial
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <View>
-            <Text style={styles.label}>What's your current weight? (kg)</Text>
-            <TextInput
-              keyboardType="number-pad"
-              style={styles.input}
-              placeholder="kg"
-              placeholderTextColor={colors.placeholder}
-              value={weight}
-              onChangeText={setWeight}
-            />
-            <Text style={styles.subtitleStyle}>
-              Don't worry, this is just for calculations. You're beautiful at
-              any size! ✨
-            </Text>
-          </View>
+
+          {measurementSystem === 'metric' ? (
+            <>
+              <View>
+                <Text style={styles.label}>What&apos;s your height? (cm)</Text>
+                <TextInput
+                  keyboardType="decimal-pad"
+                  style={styles.input}
+                  placeholder="cm"
+                  placeholderTextColor={colors.placeholder}
+                  value={heightCmText}
+                  onChangeText={setHeightCmText}
+                />
+              </View>
+              <View>
+                <Text style={styles.label}>
+                  What&apos;s your current weight? (kg)
+                </Text>
+                <TextInput
+                  keyboardType="decimal-pad"
+                  style={styles.input}
+                  placeholder="kg"
+                  placeholderTextColor={colors.placeholder}
+                  value={weightKgText}
+                  onChangeText={setWeightKgText}
+                />
+                <Text style={styles.subtitleStyle}>
+                  Don&apos;t worry, this is just for calculations. You&apos;re
+                  beautiful at any size
+                </Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <View>
+                <Text style={styles.label}>
+                  What&apos;s your height? (inches)
+                </Text>
+                <TextInput
+                  keyboardType="decimal-pad"
+                  style={styles.input}
+                  placeholder="Total inches"
+                  placeholderTextColor={colors.placeholder}
+                  value={heightInchesText}
+                  onChangeText={setHeightInchesText}
+                />
+                <Text style={styles.subtitleStyle}>
+                  Enter total inches only — for example, 65 in is about 5 ft 5 in.
+                </Text>
+              </View>
+              <View>
+                <Text style={styles.label}>
+                  What&apos;s your current weight? (lb)
+                </Text>
+                <TextInput
+                  keyboardType="decimal-pad"
+                  style={styles.input}
+                  placeholder="lb"
+                  placeholderTextColor={colors.placeholder}
+                  value={weightLbText}
+                  onChangeText={setWeightLbText}
+                />
+                <Text style={styles.subtitleStyle}>
+                  Don&apos;t worry, this is just for calculations. You&apos;re
+                  beautiful at any size
+                </Text>
+              </View>
+            </>
+          )}
+
           <View>
             <Text style={styles.label}>How active are you?</Text>
             <Text style={styles.subtitleStyle}>
-              Be honest - we're here to help, not judge!
+              Be honest - we&apos;re here to help, not judge!
             </Text>
           </View>
           <View style={styles.options}>
@@ -161,7 +344,7 @@ export const BasicInfoScreen: React.FC<Props> = ({ navigation }) => {
           onPress={handleContinue}
           disabled={!canProceed}
         />
-        <Text style={styles.bottomText}>Every step forward counts! 🌟</Text>
+        <Text style={styles.bottomText}>Every step forward counts!</Text>
       </KeyboardAwareScrollView>
     </ScreenContainer>
   );
@@ -170,12 +353,44 @@ export const BasicInfoScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing.xl,
-    // gap: spacing.md,
   },
 
   card: {
     gap: spacing.lg,
     marginBottom: spacing.xxl,
+  },
+
+  unitRow: {
+    gap: spacing.sm,
+  },
+
+  unitToggle: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+
+  unitPill: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+
+  unitPillActive: {
+    borderColor: colors.primary + '80',
+    backgroundColor: colors.lightPrimary,
+  },
+
+  unitPillText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+
+  unitPillTextActive: {
+    color: colors.primary,
   },
 
   label: {

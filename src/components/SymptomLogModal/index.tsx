@@ -17,12 +17,20 @@ import images from '../../constants/images';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 import {
+  ALL_CYCLE_SYMPTOMS,
+  CATEGORY_ORDER,
+  defaultScale,
+  getScaleOptions,
+  supportsManualScale,
+  SYMPTOM_CATEGORIES,
+  type CycleSymptomSeverity,
+  type CycleSymptomType,
+} from '../../constants/cycleSymptoms';
+import {
   logCycleSymptom,
   getCycleSymptoms,
   CycleSymptom,
   LogCycleSymptomRequest,
-  CycleSymptomType,
-  CycleSymptomSeverity,
 } from '../../services/api';
 
 export interface SymptomLogData {
@@ -41,55 +49,6 @@ interface SymptomLogModalProps {
   selectedDate?: Date; // Optional pre-selected date
 }
 
-const SYMPTOMS: CycleSymptomType[] = [
-  'Energy',
-  'Mood',
-  'Focus',
-  'Cramps',
-  'Bloating',
-  'Headache',
-  'Breast Tenderness',
-  'Acne',
-  'Food Cravings',
-  'Back Pain',
-  'Nausea',
-];
-
-// Get severity options based on symptom type
-const getSeverityOptions = (
-  symptom: CycleSymptomType,
-): Array<{ value: CycleSymptomSeverity; label: string }> => {
-  switch (symptom) {
-    case 'Energy':
-      return [
-        { value: 'low', label: 'Low' },
-        { value: 'medium', label: 'Medium' },
-        { value: 'high', label: 'High' },
-      ];
-    case 'Mood':
-      return [
-        { value: 'poor', label: 'Poor' },
-        { value: 'neutral', label: 'Neutral' },
-        { value: 'good', label: 'Good' },
-      ];
-    case 'Focus':
-      return [
-        { value: 'poor', label: 'Poor' },
-        { value: 'fair', label: 'Fair' },
-        { value: 'good', label: 'Good' },
-      ];
-    default:
-      // Physical symptoms
-      return [
-        { value: 'mild', label: 'Mild' },
-        { value: 'moderate', label: 'Moderate' },
-        { value: 'severe', label: 'Severe' },
-      ];
-  }
-};
-
-// Removed - using getSeverityOptions function instead
-
 const SymptomLogModal: React.FC<SymptomLogModalProps> = ({
   visible,
   onClose,
@@ -106,9 +65,7 @@ const SymptomLogModal: React.FC<SymptomLogModalProps> = ({
   >({});
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
-  const [existingSymptoms, setExistingSymptoms] = useState<CycleSymptom[]>(
-    [],
-  );
+  const [existingSymptoms, setExistingSymptoms] = useState<CycleSymptom[]>([]);
   const [fetchingExisting, setFetchingExisting] = useState(false);
 
   // Fetch existing symptoms for the selected date when date changes
@@ -130,7 +87,10 @@ const SymptomLogModal: React.FC<SymptomLogModalProps> = ({
         const symptomsSet = new Set<CycleSymptomType>();
         const severities: Record<string, CycleSymptomSeverity> = {};
 
-        response.data.forEach((symptom) => {
+        response.data.forEach(symptom => {
+          if (!ALL_CYCLE_SYMPTOMS.includes(symptom.symptom)) {
+            return;
+          }
           symptomsSet.add(symptom.symptom);
           severities[symptom.symptom] = symptom.severity;
         });
@@ -140,7 +100,7 @@ const SymptomLogModal: React.FC<SymptomLogModalProps> = ({
 
         // Set note if all symptoms have the same note
         const uniqueNotes = [
-          ...new Set(response.data.map((s) => s.notes).filter((n) => n)),
+          ...new Set(response.data.map(s => s.notes).filter(n => n)),
         ];
         if (uniqueNotes.length === 1) {
           setNote(uniqueNotes[0] || '');
@@ -173,12 +133,11 @@ const SymptomLogModal: React.FC<SymptomLogModalProps> = ({
       setSymptomSeverities(newSeverities);
     } else {
       newSelected.add(symptom);
-      // Default to first option based on symptom type
+      // Default to the configured first scale option for that symptom.
       if (!symptomSeverities[symptom]) {
-        const options = getSeverityOptions(symptom);
         setSymptomSeverities({
           ...symptomSeverities,
-          [symptom]: options[0].value,
+          [symptom]: defaultScale(symptom),
         });
       }
     }
@@ -197,7 +156,10 @@ const SymptomLogModal: React.FC<SymptomLogModalProps> = ({
 
   const handleSave = async () => {
     if (selectedSymptoms.size === 0) {
-      Alert.alert('No Symptoms Selected', 'Please select at least one symptom.');
+      Alert.alert(
+        'No Symptoms Selected',
+        'Please select at least one symptom.',
+      );
       return;
     }
 
@@ -223,12 +185,11 @@ const SymptomLogModal: React.FC<SymptomLogModalProps> = ({
       }
 
       // Save each symptom
-      const savePromises = Array.from(selectedSymptoms).map((symptom) => {
-        const options = getSeverityOptions(symptom);
+      const savePromises = Array.from(selectedSymptoms).map(symptom => {
         const request: LogCycleSymptomRequest = {
           date: moment(date).format('YYYY-MM-DD'),
           symptom,
-          severity: symptomSeverities[symptom] || options[0].value,
+          severity: symptomSeverities[symptom] || defaultScale(symptom),
           notes: note.trim() || undefined,
         };
         return logCycleSymptom(request);
@@ -294,6 +255,17 @@ const SymptomLogModal: React.FC<SymptomLogModalProps> = ({
         return '#E68C3A';
       case 'good':
         return '#5DBB63';
+      case 'normal':
+        return '#E68C3A';
+      case 'none':
+        return '#9AA0A6';
+      case 'dry':
+        return '#C48C58';
+      case 'sticky':
+        return '#6A96C8';
+      case 'egg-white':
+      case 'indicator':
+        return '#8A4676';
       default:
         return colors.black;
     }
@@ -319,7 +291,10 @@ const SymptomLogModal: React.FC<SymptomLogModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Date Picker */}
             <View style={styles.section}>
               <Text style={styles.label}>Date</Text>
@@ -362,82 +337,91 @@ const SymptomLogModal: React.FC<SymptomLogModalProps> = ({
             <View style={styles.section}>
               <Text style={styles.label}>Select Symptoms</Text>
               <View style={styles.symptomGrid}>
-                {SYMPTOMS.map((symptom) => {
-                  const isSelected = selectedSymptoms.has(symptom);
-                  return (
-                    <View key={symptom} style={styles.symptomItem}>
-                      <TouchableOpacity
-                        style={[
-                          styles.symptomButton,
-                          isSelected && styles.symptomButtonSelected,
-                        ]}
-                        onPress={() => toggleSymptom(symptom)}
-                      >
-                        <Text
-                          style={[
-                            styles.symptomButtonText,
-                            isSelected && styles.symptomButtonTextSelected,
-                          ]}
-                        >
-                          {symptom}
-                        </Text>
-                      </TouchableOpacity>
+                {CATEGORY_ORDER.map(categoryKey => (
+                  <View key={categoryKey} style={styles.categorySection}>
+                    <Text style={styles.categoryTitle}>
+                      {SYMPTOM_CATEGORIES[categoryKey].label}
+                    </Text>
+                    {SYMPTOM_CATEGORIES[categoryKey].symptoms.map(symptom => {
+                      const isSelected = selectedSymptoms.has(symptom);
+                      const scaleOptions = getScaleOptions(symptom);
+                      return (
+                        <View key={symptom} style={styles.symptomItem}>
+                          <TouchableOpacity
+                            style={[
+                              styles.symptomButton,
+                              isSelected && styles.symptomButtonSelected,
+                            ]}
+                            onPress={() => toggleSymptom(symptom)}
+                          >
+                            <Text
+                              style={[
+                                styles.symptomButtonText,
+                                isSelected && styles.symptomButtonTextSelected,
+                              ]}
+                            >
+                              {symptom}
+                            </Text>
+                          </TouchableOpacity>
 
-                      {/* Severity Selector (shown when symptom is selected) */}
-                      {isSelected && (
-                        <View style={styles.severityContainer}>
-                          <Text style={styles.severityLabel}>
-                            {symptom === 'Energy'
-                              ? 'Level:'
-                              : symptom === 'Mood' || symptom === 'Focus'
-                                ? 'Level:'
-                                : 'Severity:'}
-                          </Text>
-                          <View style={styles.severityButtons}>
-                            {getSeverityOptions(symptom).map((option) => {
-                              const isSelectedSeverity =
-                                symptomSeverities[symptom] === option.value;
-                              return (
-                                <TouchableOpacity
-                                  key={option.value}
-                                  style={[
-                                    styles.severityButton,
-                                    isSelectedSeverity &&
-                                      styles.severityButtonSelected,
-                                    {
-                                      backgroundColor: isSelectedSeverity
-                                        ? getSeverityColor(option.value) + '20'
-                                        : 'transparent',
-                                      borderColor: isSelectedSeverity
-                                        ? getSeverityColor(option.value)
-                                        : colors.borderColor,
-                                    },
-                                  ]}
-                                  onPress={() =>
-                                    setSeverity(symptom, option.value)
-                                  }
-                                >
-                                  <Text
-                                    style={[
-                                      styles.severityButtonText,
-                                      {
-                                        color: isSelectedSeverity
-                                          ? getSeverityColor(option.value)
-                                          : colors.black,
-                                      },
-                                    ]}
-                                  >
-                                    {option.label}
-                                  </Text>
-                                </TouchableOpacity>
-                              );
-                            })}
-                          </View>
+                          {isSelected && (
+                            <View style={styles.severityContainer}>
+                              <Text style={styles.severityLabel}>
+                                {supportsManualScale(symptom)
+                                  ? 'Intensity:'
+                                  : 'Indicator only'}
+                              </Text>
+                              {supportsManualScale(symptom) && (
+                                <View style={styles.severityButtons}>
+                                  {scaleOptions.map(option => {
+                                    const isSelectedSeverity =
+                                      symptomSeverities[symptom] ===
+                                      option.value;
+                                    return (
+                                      <TouchableOpacity
+                                        key={option.value}
+                                        style={[
+                                          styles.severityButton,
+                                          isSelectedSeverity &&
+                                            styles.severityButtonSelected,
+                                          {
+                                            backgroundColor: isSelectedSeverity
+                                              ? getSeverityColor(option.value) +
+                                                '20'
+                                              : 'transparent',
+                                            borderColor: isSelectedSeverity
+                                              ? getSeverityColor(option.value)
+                                              : colors.borderColor,
+                                          },
+                                        ]}
+                                        onPress={() =>
+                                          setSeverity(symptom, option.value)
+                                        }
+                                      >
+                                        <Text
+                                          style={[
+                                            styles.severityButtonText,
+                                            {
+                                              color: isSelectedSeverity
+                                                ? getSeverityColor(option.value)
+                                                : colors.black,
+                                            },
+                                          ]}
+                                        >
+                                          {option.label}
+                                        </Text>
+                                      </TouchableOpacity>
+                                    );
+                                  })}
+                                </View>
+                              )}
+                            </View>
+                          )}
                         </View>
-                      )}
-                    </View>
-                  );
-                })}
+                      );
+                    })}
+                  </View>
+                ))}
               </View>
             </View>
 
@@ -467,11 +451,14 @@ const SymptomLogModal: React.FC<SymptomLogModalProps> = ({
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.button, styles.saveButton, loading && styles.buttonDisabled]}
+              style={[
+                styles.button,
+                styles.saveButton,
+                loading && styles.buttonDisabled,
+              ]}
               onPress={handleSave}
               disabled={loading || selectedSymptoms.size === 0}
             >
-
               {loading ? (
                 <ActivityIndicator size="small" color={colors.white} />
               ) : (
@@ -574,7 +561,17 @@ const styles = StyleSheet.create({
     color: colors.gray,
   },
   symptomGrid: {
-    gap: 16,
+    gap: 12,
+  },
+  categorySection: {
+    gap: 8,
+    marginBottom: 6,
+  },
+  categoryTitle: {
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.heading,
+    marginBottom: 2,
   },
   symptomItem: {
     marginBottom: 12,
@@ -624,7 +621,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   severityButtonSelected: {
-    borderWidth: 2,
+    borderWidth: 1,
   },
   severityButtonText: {
     fontSize: 12,

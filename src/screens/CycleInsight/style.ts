@@ -18,7 +18,6 @@ const styles = StyleSheet.create({
 
   topContainer: {
     alignItems: 'center',
-    gap: 6,
     alignSelf: 'center',
   },
 
@@ -35,9 +34,8 @@ const styles = StyleSheet.create({
 
   subHeading: {
     color: colors.green,
-    fontFamily: 'Inter-Medium',
+    fontFamily: 'Inter-Regular',
     fontSize: 12,
-    marginBottom: 20,
   },
 
   cyclePhaseCard: {
@@ -85,7 +83,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
   },
 
-  textDarkGreyWidht:{
+  textDarkGreyWidht: {
     fontSize: 12,
     color: colors.darkGrey,
     fontFamily: 'Inter-Regular',

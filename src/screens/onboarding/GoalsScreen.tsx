@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Alert,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -15,15 +16,38 @@ import { colors, radius, spacing } from '../../constants/theme/theme';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import { sizes } from '../../constants/sizes';
+import {
+  DEFAULT_MEASUREMENT_SYSTEM,
+  kgToLb,
+  round1,
+  targetWeightKgFromInput,
+  type MeasurementSystem,
+} from '../../utils/measurement';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Goals'>;
 
+function initTargetText(d: {
+  targetWeightKg?: number;
+  targetWeight?: string;
+  measurementSystem?: MeasurementSystem;
+}): string {
+  const sys = d.measurementSystem ?? DEFAULT_MEASUREMENT_SYSTEM;
+  if (d.targetWeightKg != null) {
+    return sys === 'imperial'
+      ? String(round1(kgToLb(d.targetWeightKg)))
+      : String(round1(d.targetWeightKg));
+  }
+  return d.targetWeight ?? '';
+}
+
 export const GoalsScreen: React.FC<Props> = ({ navigation }) => {
   const { updateData, data } = useOnboarding();
+  const measurementSystem: MeasurementSystem =
+    data.measurementSystem ?? DEFAULT_MEASUREMENT_SYSTEM;
   const [primaryGoal, setPrimaryGoal] = useState<string | null>(
     data.primaryGoal || null,
   );
-  const [targetWeight, setTargetWeight] = useState(data.targetWeight || '');
+  const [targetInput, setTargetInput] = useState(() => initTargetText(data));
   const scrollViewRef = useRef<KeyboardAwareScrollView>(null);
 
   const goals = [
@@ -62,17 +86,37 @@ export const GoalsScreen: React.FC<Props> = ({ navigation }) => {
   const canProceed = primaryGoal !== null;
 
   const handleContinue = () => {
-    if (canProceed) {
-      updateData(
-        {
-          primaryGoal: primaryGoal || undefined,
-          targetWeight: targetWeight || undefined,
-        },
-        'UniqueJourney',
-      );
-      // navigation.navigate('WomenHealth');
-      navigation.navigate('UniqueJourney');
+    if (!canProceed) {
+      return;
     }
+    const needsTarget =
+      primaryGoal === 'weight_loss' || primaryGoal === 'weight_gain';
+    let targetWeightKg: number | undefined;
+    if (needsTarget && targetInput.trim() !== '') {
+      const parsed = targetWeightKgFromInput(targetInput, measurementSystem);
+      if (parsed == null) {
+        Alert.alert(
+          'Check your target weight',
+          measurementSystem === 'imperial'
+            ? 'Enter a value in pounds within a healthy range, or clear the field.'
+            : 'Enter a value in kilograms within a healthy range, or clear the field.',
+        );
+        return;
+      }
+      targetWeightKg = parsed;
+    } else if (!needsTarget) {
+      targetWeightKg = undefined;
+    }
+    updateData(
+      {
+        primaryGoal: primaryGoal || undefined,
+        ...(needsTarget
+          ? { targetWeightKg, targetWeight: undefined }
+          : { targetWeightKg: undefined, targetWeight: undefined }),
+      },
+      'UniqueJourney',
+    );
+    navigation.navigate('UniqueJourney');
   };
 
   return (
@@ -116,15 +160,15 @@ export const GoalsScreen: React.FC<Props> = ({ navigation }) => {
           {(primaryGoal === 'weight_loss' || primaryGoal === 'weight_gain') && (
             <View style={styles.section}>
               <Text style={styles.label}>
-                What's your target weight? (optional)
+                What&apos;s your target weight? (optional)
               </Text>
               <TextInput
-                keyboardType="number-pad"
+                keyboardType="decimal-pad"
                 style={styles.input}
-                placeholder="kg"
+                placeholder={measurementSystem === 'imperial' ? 'lb' : 'kg'}
                 placeholderTextColor={colors.placeholder}
-                value={targetWeight}
-                onChangeText={setTargetWeight}
+                value={targetInput}
+                onChangeText={setTargetInput}
                 onFocus={() => {
                   requestAnimationFrame(() => {
                     setTimeout(() => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,41 +7,48 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import images from '../../constants/images';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 import {
-  DailyMealPlan,
   NutritionTimeSlot,
-  getDailyNutritionPlan,
-  getWeeklyNutritionPlan,
   setMealCompletedApi,
-  swapMealOptionApi,
 } from '../../services/api';
+import {
+  useFocusEffect,
+  useNavigation,
+} from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../navigation/stackNavigation';
+import {
+  fetchWeeklyNutritionPlansForWeek,
+  getMondayOfWeek,
+  toLocalYyyyMmDd,
+  weeklyPlanRowsForNutritionUi,
+  type WeeklyPlanRow,
+  type WeeklyPlanningStatus,
+} from '../../utils/weeklyNutritionDisplay';
+import { CacheKeys, removeCachedData } from '../../services/cache';
+import WeeklyMealPlanEmptyCard from '../WeeklyMealPlanEmptyCard';
 
-type WeeklyPlan = {
-  isoDate: string;
-  label: string;
-  isToday: boolean;
-  plan: DailyMealPlan | null;
-};
-
-const formatDateLabel = (date: Date) => {
-  return date.toISOString().split('T')[0];
-};
-
-const getDayName = (date: Date) => {
-  return date.toLocaleDateString(undefined, { weekday: 'long' });
-};
+type WeeklyPlan = WeeklyPlanRow;
 
 export default function Nutrition() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [expandedDay, setExpandedDay] = useState<string>('');
   const [weeklyPlans, setWeeklyPlans] = useState<WeeklyPlan[]>([]);
+  const [planningStatus, setPlanningStatus] =
+    useState<WeeklyPlanningStatus>('none');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const hasInitialized = useRef(false);
+  const hasCompletedInitialLoad = useRef(false);
+
+  const hasWeeklyPlan = planningStatus === 'generated';
 
   const loadWeek = useCallback(async (skipLoadingState: boolean = false) => {
     try {
@@ -50,33 +57,22 @@ export default function Nutrition() {
       }
       setError(null);
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const startDate = formatDateLabel(today);
+      const monday = getMondayOfWeek();
+      const legacyWeekStartIso = toLocalYyyyMmDd(monday);
 
-      // Fetch all 5 days in a single batch call
-      const res = await getWeeklyNutritionPlan(startDate);
+      const result = await fetchWeeklyNutritionPlansForWeek(
+        legacyWeekStartIso,
+      );
 
-      if (!res.success || !res.data || !Array.isArray(res.data)) {
-        throw new Error('Invalid response from server');
-      }
+      setPlanningStatus(result.planningStatus);
 
-      const week: WeeklyPlan[] = res.data.map((plan, index) => {
-        const d = new Date(today);
-        d.setDate(today.getDate() + index);
-        const isoDate = formatDateLabel(d);
-
-        return {
-          isoDate,
-          label: getDayName(d),
-          isToday: d.getTime() === today.getTime(),
-          plan: plan,
-        };
-      });
+      const week: WeeklyPlan[] = weeklyPlanRowsForNutritionUi(
+        result.data,
+        result.weekKey,
+      );
 
       setWeeklyPlans(week);
-      
-      // Only set expandedDay on initial load
+
       if (!hasInitialized.current && week.length > 0) {
         const todayEntry =
           week.find(d => d.isToday)?.label || week[0].label;
@@ -98,9 +94,13 @@ export default function Nutrition() {
     await loadWeek(true);
   }, [loadWeek]);
 
-  useEffect(() => {
-    loadWeek();
-  }, [loadWeek]); // Only run on mount, not when expandedDay changes
+  useFocusEffect(
+    useCallback(() => {
+      const skipLoadingState = hasCompletedInitialLoad.current;
+      hasCompletedInitialLoad.current = true;
+      loadWeek(skipLoadingState).catch(() => {});
+    }, [loadWeek]),
+  );
 
   const handleToggleMealCheck = async (
     day: WeeklyPlan,
@@ -108,7 +108,6 @@ export default function Nutrition() {
     slotIndex: number,
   ) => {
     const newCompleted = !slot.completed;
-    // Optimistic update
     setWeeklyPlans(prev =>
       prev.map(d => {
         if (d.isoDate !== day.isoDate || !d.plan) {
@@ -122,12 +121,19 @@ export default function Nutrition() {
     );
 
     try {
-      await setMealCompletedApi(day.isoDate, {
+      const res = await setMealCompletedApi(day.isoDate, {
         time: slot.time,
         completed: newCompleted,
       });
+      if (res.fastingAutoEnded) {
+        Alert.alert(
+          'Fast ended',
+          'Your fast ended because you logged a meal.',
+        );
+      }
+      const cacheMonday = toLocalYyyyMmDd(getMondayOfWeek());
+      await removeCachedData(CacheKeys.weeklyNutritionPlan(cacheMonday));
     } catch {
-      // Revert on failure
       setWeeklyPlans(prev =>
         prev.map(d => {
           if (d.isoDate !== day.isoDate || !d.plan) {
@@ -142,57 +148,35 @@ export default function Nutrition() {
     }
   };
 
-  const handleSwap = async (day: WeeklyPlan, slot: NutritionTimeSlot, slotIndex: number) => {
-    // Optimistic update: cycle selected option locally
-    setWeeklyPlans(prev =>
-      prev.map(d => {
-        if (d.isoDate !== day.isoDate || !d.plan) {
-          return d;
-        }
-        const updatedSlots = d.plan.timeSlots.map((s, idx) => {
-          if (idx !== slotIndex) return s;
-          if (!s.options || s.options.length === 0) return s;
-          const nextIndex = (s.selectedOptionIndex + 1) % s.options.length;
-          return { ...s, selectedOptionIndex: nextIndex };
-        });
-        return { ...d, plan: { ...d.plan, timeSlots: updatedSlots } };
-      }),
-    );
-
-    try {
-      await swapMealOptionApi(day.isoDate, { time: slot.time });
-    } catch {
-      // On failure, reload that day's plan
-      try {
-        const res = await getDailyNutritionPlan(day.isoDate);
-        setWeeklyPlans(prev =>
-          prev.map(d =>
-            d.isoDate === day.isoDate ? { ...d, plan: res.data } : d,
-          ),
-        );
-      } catch {
-        // swallow; UI already shows something reasonable
-      }
-    }
-  };
-
   const todayPhaseLabel = useMemo(() => {
+    if (!hasWeeklyPlan) {
+      return planningStatus === 'skipped'
+        ? 'Weekly plan not set up'
+        : 'Plan your week to get started';
+    }
     const todayPlan = weeklyPlans.find(d => d.isToday && d.plan)?.plan;
     if (!todayPlan) return "Today's Nutrition";
-    
-    // Check pregnancy/breastfeeding/postpartum status first (these take priority)
+
     if (todayPlan.isPregnant) return 'Nourishing You & Baby';
     if (todayPlan.isBreastfeeding) return 'Breastfeeding Nutrition';
     if (todayPlan.isPostpartum) return 'Postpartum Recovery Nutrition';
-    
-    // Fall back to cycle phase labels
+
     const phase = todayPlan.phase;
     if (phase === 'follicular') return 'Follicular Phase Focus';
     if (phase === 'menstrual') return 'Menstrual Phase Support';
     if (phase === 'ovulatory') return 'Ovulatory Phase Glow';
     if (phase === 'luteal') return 'Luteal Phase Nourish';
     return 'Cycle-Aware Nutrition';
-  }, [weeklyPlans]);
+  }, [weeklyPlans, hasWeeklyPlan, planningStatus]);
+
+  const todaySubheading = useMemo(() => {
+    if (!hasWeeklyPlan) {
+      return planningStatus === 'skipped'
+        ? 'Generate a weekly plan to see cycle-aware meals for each day.'
+        : 'Your personalized Mon–Sun meal plan and grocery list start here.';
+    }
+    return 'Personalized meal plan based on your cycle, goals, and preferences.';
+  }, [hasWeeklyPlan, planningStatus]);
 
   return (
     <ScrollView
@@ -200,19 +184,6 @@ export default function Nutrition() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {/* <View style={styles.topContainer}>
-        <View style={styles.iconCircle}>
-          <Image source={images.mindfulIcon} style={styles.icon} />
-        </View>
-
-        <View style={{ marginLeft: 7 }}>
-          <Text style={styles.heading}>Synced to 21-Day Detox Challenge</Text>
-          <Text style={styles.subHeading}>
-            Your meals are optimized for Day 8 • Week 2
-          </Text>
-        </View>
-      </View> */}
-
       <View style={styles.todayContainer}>
         <View style={styles.todayHeader}>
           <Image source={images.nutritionApple} style={styles.appleIcon} />
@@ -221,145 +192,132 @@ export default function Nutrition() {
 
         <View style={styles.todayInnerBox}>
           <Text style={styles.heading}>{todayPhaseLabel}</Text>
-          <Text
-            style={[styles.subHeading, { color: colors.green, marginTop: 4 }]}
-          >
-            Personalized meal plan based on your cycle, goals, and preferences.
+          <Text style={[styles.subHeading, styles.subHeadingGreen]}>
+            {todaySubheading}
           </Text>
         </View>
       </View>
 
-      <Text style={[styles.sectionTitle]}>Weekly Meal Plan</Text>
+      <Text style={styles.sectionTitle}>Weekly Meal Plan</Text>
+      <View style={styles.actionRow}>
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => navigation.navigate('WeeklyMealOverview')}
+        >
+          <Text style={styles.actionBtnText}>Weekly Plan</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => navigation.navigate('GroceryList')}
+        >
+          <Text style={styles.actionBtnText}>Grocery List</Text>
+        </TouchableOpacity>
+      </View>
 
       {loading && (
         <Text style={styles.subHeading}>Loading your meal plan...</Text>
       )}
       {error && !loading && (
-        <Text style={[styles.subHeading, { color: 'red' }]}>{error}</Text>
+        <Text style={[styles.subHeading, styles.errorText]}>{error}</Text>
       )}
 
-      {weeklyPlans.map(day => (
-        <View
-          key={day.isoDate}
-          style={
-            expandedDay === day.label
-              ? [styles.dayContainer, { borderColor: colors.heading }]
-              : styles.dayContainer
-          }
-        >
-          <TouchableOpacity
-            onPress={() =>
-              setExpandedDay(day.label === expandedDay ? '' : day.label)
-            }
-            style={styles.dayHeader}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View>
-                <Text style={styles.dayTitle}>{day.label}</Text>
-                <Text style={styles.dateTitle}>{day.isoDate}</Text>
-              </View>
-              {day.isToday && (
-                <View style={styles.todayTag}>
-                  <Text style={styles.todayTagText}>Today</Text>
-                </View>
-              )}
-            </View>
+      {!loading && !error && !hasWeeklyPlan ? (
+        <WeeklyMealPlanEmptyCard
+          planningStatus={planningStatus}
+          onPlanPress={() => navigation.navigate('WeeklyMealPlanning')}
+        />
+      ) : null}
 
-            <Text style={styles.dayCount}>
-              {day.plan
-                ? day.plan.timeSlots.filter(s => s.completed).length
-                : 0}
-              / {day.plan ? day.plan.timeSlots.length : 0}
-            </Text>
-          </TouchableOpacity>
-
-          {expandedDay === day.label &&
-            day.plan &&
-            day.plan.timeSlots.length > 0 && (
-              <View>
-                {day.plan.timeSlots.map((slot, i) => {
-                  const active =
-                    slot.options[slot.selectedOptionIndex] ||
-                    slot.options[0];
-                  if (!active) return null;
-                  return (
-                    <View key={slot.time} style={styles.mealCard}>
-                  <View style={styles.rowBetween}>
-                    <View style={styles.row}>
-                      <TouchableOpacity
-                        style={styles.dotTextMainView}
-                        onPress={() =>
-                          handleToggleMealCheck(day, slot, i)
-                        }
-                      >
-                        <Image
-                          source={
-                            slot.completed
-                              ? images.orangeCheckBoxOn
-                              : images.orangeCheckBoxOff
-                          }
-                          style={styles.dot}
-                        />
-                        <Text style={styles.mealTime}>{slot.time}</Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    <TouchableOpacity
-                      style={styles.swapMainView}
-                      onPress={() => handleSwap(day, slot, i)}
-                    >
-                      <Image source={images.swapIcon} style={styles.swapIcon}/>
-                      <Text style={styles.swapText}>Swap</Text>
-                    </TouchableOpacity>
+      {!loading && hasWeeklyPlan
+        ? weeklyPlans.map(day => (
+            <View
+              key={day.isoDate}
+              style={
+                expandedDay === day.label
+                  ? [styles.dayContainer, { borderColor: colors.heading }]
+                  : styles.dayContainer
+              }
+            >
+              <TouchableOpacity
+                onPress={() =>
+                  setExpandedDay(day.label === expandedDay ? '' : day.label)
+                }
+                style={styles.dayHeader}
+              >
+                <View style={styles.dayHeaderLeftRow}>
+                  <View>
+                    <Text style={styles.dayTitle}>{day.label}</Text>
+                    <Text style={styles.dateTitle}>{day.isoDate}</Text>
                   </View>
-
-                  <Text style={styles.mealTitle}>{active.title}</Text>
-                  <Text style={styles.mealDesc}>{active.description}</Text>
-
-                  <Text style={styles.macroText}>
-                    P: {active.protein}g&nbsp;&nbsp;C:{active.carbs}g&nbsp;&nbsp;F:{' '}
-                    {active.fat}g
-                  </Text>
+                  {day.isToday && (
+                    <View style={styles.todayTag}>
+                      <Text style={styles.todayTagText}>Today</Text>
+                    </View>
+                  )}
                 </View>
-                  );
-                })}
-              </View>
-            )}
-        </View>
-      ))}
+
+                <Text style={styles.dayCount}>
+                  {day.plan
+                    ? day.plan.timeSlots.filter(s => s.completed).length
+                    : 0}
+                  / {day.plan ? day.plan.timeSlots.length : 0}
+                </Text>
+              </TouchableOpacity>
+
+              {expandedDay === day.label &&
+                day.plan &&
+                day.plan.timeSlots.length > 0 && (
+                  <View>
+                    {day.plan.timeSlots.map((slot, i) => {
+                      const active =
+                        slot.options[slot.selectedOptionIndex] ||
+                        slot.options[0];
+                      if (!active) return null;
+                      return (
+                        <View key={slot.time} style={styles.mealCard}>
+                          <View style={styles.rowBetween}>
+                            <View style={styles.row}>
+                              <TouchableOpacity
+                                style={styles.dotTextMainView}
+                                onPress={() =>
+                                  handleToggleMealCheck(day, slot, i)
+                                }
+                              >
+                                <Image
+                                  source={
+                                    slot.completed
+                                      ? images.orangeCheckBoxOn
+                                      : images.orangeCheckBoxOff
+                                  }
+                                  style={styles.dot}
+                                />
+                                <Text style={styles.mealTime}>{slot.time}</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+
+                          <Text style={styles.mealTitle}>{active.title}</Text>
+                          <Text style={styles.mealDesc}>
+                            {active.description}
+                          </Text>
+
+                          <Text style={styles.macroText}>
+                            P: {active.protein}g&nbsp;&nbsp;C:{active.carbs}g
+                            &nbsp;&nbsp;F: {active.fat}g
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+            </View>
+          ))
+        : null}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  topContainer: {
-    borderWidth: 1,
-    borderRadius: 12,
-    backgroundColor: colors.lightOranger,
-    borderColor: colors.heading,
-    flexDirection: 'row',
-    height: sizes.screenHeight * 0.09,
-    alignItems: 'center',
-    paddingLeft: 7,
-    marginTop: 20,
-  },
-
-  iconCircle: {
-    backgroundColor: '#F9EBD6',
-    width: 30,
-    height: 30,
-    borderRadius: sizes.screenWidth * 0.1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-
-  icon: {
-    width: 14,
-    height: 14,
-    tintColor: colors.heading,
-    resizeMode: 'contain',
-  },
   appleIcon: {
     width: 22,
     height: 22,
@@ -377,6 +335,13 @@ const styles = StyleSheet.create({
     color: colors.disabledText,
     fontSize: 12,
     fontFamily: 'Inter-Regular',
+  },
+  subHeadingGreen: {
+    color: colors.green,
+    marginTop: 4,
+  },
+  errorText: {
+    color: '#C62828',
   },
 
   todayContainer: {
@@ -413,6 +378,25 @@ const styles = StyleSheet.create({
     color: colors.black,
     marginBottom: 10,
   },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    gap: 8,
+  },
+  actionBtn: {
+    borderWidth: 1,
+    borderColor: colors.heading,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#FFF8EB',
+  },
+  actionBtnText: {
+    color: colors.heading,
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+  },
 
   dayContainer: {
     backgroundColor: colors.white,
@@ -428,6 +412,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 15,
     justifyContent: 'space-between',
+  },
+  dayHeaderLeftRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   dayTitle: {
@@ -505,25 +493,6 @@ const styles = StyleSheet.create({
   mealTime: {
     color: colors.heading,
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
-  },
-
-  swapMainView:{
-    flexDirection:'row',
-    alignItems:'center',
-    justifyContent:'space-between', 
-    width:sizes.screenWidth * 0.14,
-  },
-
-  swapIcon:{
-    resizeMode:'contain',
-    width:sizes.screenWidth * 0.035,
-    height:sizes.screenWidth * 0.035
-  },
-
-  swapText: {
-    fontSize: 13,
-    color: colors.black,
     fontFamily: 'Inter-Regular',
   },
 

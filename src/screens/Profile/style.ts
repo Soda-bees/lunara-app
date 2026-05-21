@@ -73,7 +73,47 @@ const styles = StyleSheet.create({
     color: colors.darkGrey,
     fontFamily: 'Inter-Regular',
     fontSize: 12,
+    marginBottom: 4,
+  },
+
+  profileBodyLine: {
+    color: colors.darkGrey,
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
     marginBottom: 10,
+    textAlign: 'center',
+  },
+
+  unitPrefRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+
+  unitPrefPill: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.borderColor,
+    backgroundColor: '#fff',
+  },
+
+  unitPrefPillActive: {
+    borderColor: colors.maroonText,
+    backgroundColor: '#F7DEE7',
+  },
+
+  unitPrefText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: colors.darkGrey,
+  },
+
+  unitPrefTextActive: {
+    color: colors.maroonText,
+    fontFamily: 'Inter-Medium',
   },
 
   editProfileButton: {

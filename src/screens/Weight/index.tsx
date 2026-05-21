@@ -13,6 +13,7 @@ import {
 import styles from './style';
 import Button from '../../components/Button';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import type { MeasurementSystem } from '../../utils/measurement';
 import LinearGradient from 'react-native-linear-gradient';
 import BackButton from '../../components/BackButton';
 import { RootStackParamList } from '../../navigation/stackNavigation';
@@ -35,8 +36,6 @@ const Weight = () => {
   const [selectedValue, setSelectedValue] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const [isToggling, setIsToggling] = useState(false);
-
-  console.log('jdfhdfjdhfjdf', selectedValue);
 
   const getWeightInKg = (value: number, unit: 'kg' | 'lb') => {
     return unit === 'lb' ? parseFloat((value * 0.453592).toFixed(1)) : value;
@@ -132,7 +131,11 @@ const Weight = () => {
   };
 
   const handleContinue = () => {
-    navigation.navigate('Height');
+    const ms: MeasurementSystem = unit === 'lb' ? 'imperial' : 'metric';
+    navigation.navigate('Height', {
+      weightKg: finalWeightKg,
+      measurementSystem: ms,
+    });
   };
 
   return (

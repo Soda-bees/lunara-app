@@ -29,7 +29,6 @@ import QuickTracking from '../../screens/QuickTracking';
 import TabNavigator from '../tabNavigator';
 import SleepTracker from '../../screens/SleepTracker';
 import CycleInsight from '../../screens/CycleInsight';
-import Workouts from '../../screens/Workouts';
 import FounderStory from '../../screens/FounderStory';
 import HormoneResetGuide from '../../screens/HormoneResetGuide';
 import Profile from '../../screens/Profile';
@@ -65,12 +64,13 @@ import PostpartumTransition from '../../screens/PostpartumTransition';
 import { ProfileScreen } from '../../screens/ProfileScreen/ProfileScreen';
 import { CycleInsightsScreen } from '../../screens/CycleInsightsScreen/CycleInsightsScreen';
 import { SleepTrackingScreen } from '../../screens/SleepTrackingScreen/SleepTrackingScreen';
-import { TrackScreen } from '../../screens/TrackScreen/TrackScreen';
+import Track from '../../screens/Track';
 import { NavigationHandler } from '../../components/NavigationHandler/NavigationHandler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { OnboardingProvider } from '../../context/OnboardingContext';
 import { StatusBar } from 'react-native';
 import { WelcomeScreen } from '../../screens/WelcomeScreen';
+import type { SessionRoute } from '../../utils/resolveSessionRoute';
 import { LetsGetStarted } from '../../screens/LetsGetStarted';
 import { YoureDoingGreat } from '../../screens/YoureDoingGreat';
 import { UniqueJourney } from '../../screens/UniqueJourney';
@@ -81,6 +81,10 @@ import { AlmostThere } from '../../screens/AlmostThere';
 import { FastingHome } from '../../screens/FastingHome/FastingHome';
 import { JournalProvider } from '../../context/JournalContext';
 import { JournalType } from '../../types';
+import WeeklyMealPlanningScreen from '../../screens/WeeklyMealPlanning';
+import GroceryListScreen from '../../screens/GroceryList';
+import WeeklyMealOverviewScreen from '../../screens/WeeklyMealOverview';
+import RitualLibraryScreen from '../../screens/RitualLibrary';
 
 export type RootStackParamList = {
   SignIn: any;
@@ -111,8 +115,7 @@ export type RootStackParamList = {
   QuickTracking: any;
   TabNavigator: any;
   SleepTracker: any;
-  CycleInsight: any;
-  Workouts: any;
+  CycleInsight: { tab?: string } | undefined;
   FounderStory: any;
   HormoneResetGuide: any;
   UserProfile: any;
@@ -143,7 +146,9 @@ export type RootStackParamList = {
   Profile: undefined;
   CycleInsights: undefined;
   SleepTracking: undefined;
-  Track: undefined;
+  Track:
+    | { initialCategory?: 'Nutrition' | 'Movement' | 'Mindful' }
+    | undefined;
   // PregnancyDashboard: undefined; // Merged into CycleInsight (Insights tab)
   PregnancyInfo: undefined;
   PregnancyHistory: undefined;
@@ -158,27 +163,33 @@ export type RootStackParamList = {
   CycleHistory: undefined;
   SymptomHistory: undefined;
   FastingHome: undefined;
+  WeeklyMealPlanning: undefined;
+  WeeklyMealOverview: undefined;
+  GroceryList: undefined;
+  RitualLibrary: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export default function MainStack() {
+type MainStackProps = {
+  initialSessionRoute: SessionRoute;
+};
+
+export default function MainStack({ initialSessionRoute }: MainStackProps) {
+  const initialRouteName =
+    initialSessionRoute === 'TabNavigator' ? 'TabNavigator' : 'Welcome';
+
   return (
     <SafeAreaProvider>
       <OnboardingProvider>
         <StatusBar barStyle="dark-content" />
-        {/* <NavigationContainer> */}
-        <NavigationHandler />
+        <NavigationHandler initialSessionRoute={initialSessionRoute} />
         <JournalProvider>
           <Stack.Navigator
+            initialRouteName={initialRouteName}
             screenOptions={{
               headerShown: false,
-              // Native-stack performance improvements for large navigation trees.
               freezeOnBlur: true,
-              detachInactiveScreens: true,
-              // Delay initial screen rendering until first focus.
-              // Helpful for cold start when the stack registers many screens.
-              lazy: true,
             }}
           >
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
@@ -224,7 +235,7 @@ export default function MainStack() {
           <Stack.Screen name="Profile" component={Profile} />
           <Stack.Screen name="CycleInsights" component={CycleInsightsScreen} />
           <Stack.Screen name="SleepTracking" component={SleepTrackingScreen} />
-          <Stack.Screen name="Track" component={TrackScreen} />
+          <Stack.Screen name="Track" component={Track} />
           <Stack.Screen name="LetsGetStarted" component={LetsGetStarted} />
           <Stack.Screen name="YoureDoingGreat" component={YoureDoingGreat} />
           <Stack.Screen name="UniqueJourney" component={UniqueJourney} />
@@ -233,6 +244,16 @@ export default function MainStack() {
           <Stack.Screen name="HealthStory" component={HealthStory} />
           <Stack.Screen name="AlmostThere" component={AlmostThere} />
           <Stack.Screen name="FastingHome" component={FastingHome} />
+          <Stack.Screen
+            name="WeeklyMealPlanning"
+            component={WeeklyMealPlanningScreen}
+          />
+          <Stack.Screen
+            name="WeeklyMealOverview"
+            component={WeeklyMealOverviewScreen}
+          />
+          <Stack.Screen name="RitualLibrary" component={RitualLibraryScreen} />
+          <Stack.Screen name="GroceryList" component={GroceryListScreen} />
 
           <Stack.Screen name="IntroSlider" component={IntroSlider} />
           <Stack.Screen name="TabNavigator" component={TabNavigator} />
@@ -276,7 +297,6 @@ export default function MainStack() {
           <Stack.Screen name="CyclePattern" component={CyclePattern} />
           <Stack.Screen name="QuickTracking" component={QuickTracking} />
           <Stack.Screen name="SleepTracker" component={SleepTracker} />
-          <Stack.Screen name="Workouts" component={Workouts} />
           <Stack.Screen name="FounderStory" component={FounderStory} />
           <Stack.Screen
             name="HormoneResetGuide"

@@ -18,15 +18,14 @@ const styles = StyleSheet.create({
     color: colors.heading,
     fontFamily: 'PlayfairDisplay-Medium',
     fontSize: 22,
-    marginTop: 15,
-    textAlign:'center'
+    textAlign: 'center',
   },
 
   paraText: {
     fontFamily: 'Inter-Regular',
     fontSize: 12,
     color: colors.green,
-    textAlign:'center'
+    textAlign: 'center',
   },
 
   categoryContainer: {
@@ -37,6 +36,55 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 4,
     marginTop: 20,
+  },
+  logMovementButton: {
+    marginTop: 14,
+    backgroundColor: colors.heading,
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  logMovementButtonText: {
+    color: colors.white,
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+  },
+  dailyLogCard: {
+    marginVertical: 12,
+    borderRadius: 14,
+    borderColor: '#E8E8E8',
+    borderWidth: 1,
+    padding: 12,
+    backgroundColor: colors.white,
+  },
+  dailyLogTitle: {
+    color: colors.black,
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  emptyText: {
+    color: colors.darkGrey,
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+  },
+  logRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  logTitle: {
+    color: colors.black,
+    fontFamily: 'Inter-Medium',
+    fontSize: 13,
+  },
+  logMeta: {
+    color: colors.darkGrey,
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
   },
 });
 

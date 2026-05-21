@@ -17,6 +17,7 @@ import images from '../../constants/images';
 import { sizes } from '../../constants/sizes';
 import LottieView from 'lottie-react-native';
 import GradientText from '../../components/GradientText';
+import { DEFAULT_MEASUREMENT_SYSTEM } from '../../utils/measurement';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'OnboardingComplete'>;
 
@@ -53,11 +54,13 @@ export const OnboardingCompleteScreen: React.FC<Props> = ({ navigation }) => {
       // Prepare onboarding data
       const onboardingData = {
         age: data.age,
-        height: data.height,
-        weight: data.weight,
+        heightCm: data.heightCm,
+        weightKg: data.weightKg,
+        targetWeightKg: data.targetWeightKg,
+        measurementSystem:
+          data.measurementSystem ?? DEFAULT_MEASUREMENT_SYSTEM,
         activityLevel: data.activityLevel,
         primaryGoal: data.primaryGoal,
-        targetWeight: data.targetWeight,
         isTrackingCycle: data.isTrackingCycle,
         cycleLength: data.cycleLength,
         periodLength: data.periodLength,
@@ -68,7 +71,9 @@ export const OnboardingCompleteScreen: React.FC<Props> = ({ navigation }) => {
         isBreastfeeding: data.isBreastfeeding,
         dueDate: data.dueDate,
         lastMenstrualPeriod: data.lastMenstrualPeriod,
-        pregnancyStartDate: data.isPregnant ? new Date().toISOString() : undefined,
+        pregnancyStartDate: data.isPregnant
+          ? new Date().toISOString()
+          : undefined,
         dietaryRestrictions: data.dietaryRestrictions,
         otherAllergies: data.otherAllergies,
         cuisinePreferences: data.cuisinePreferences,

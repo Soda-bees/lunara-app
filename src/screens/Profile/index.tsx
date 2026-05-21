@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ScrollView,
   StatusBar,
@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import BackButton from '../../components/BackButton';
 import LinearGradient from 'react-native-linear-gradient';
 import { gradients } from '../../constants/gradientColors';
@@ -19,15 +19,56 @@ import images from '../../constants/images';
 import styles from './style';
 import GradientWrapper from '../../components/GradientWrapper';
 import { colors } from '../../constants/colors';
+import { getMe, updateProfile, type User } from '../../services/api';
+import {
+  DEFAULT_MEASUREMENT_SYSTEM,
+  formatHeight,
+  formatWeight,
+  formatWeightParts,
+  type MeasurementSystem,
+} from '../../utils/measurement';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 type TabType = 'Insights' | 'Tracking' | 'Achievements';
 
 export default function Profile() {
   const navigation = useNavigation<NavigationProp>();
+  const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('Insights');
   const [dailyReminders, setDailyReminders] = useState(true);
   const [phaseNotifications, setPhaseNotifications] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      getMe()
+        .then(res => {
+          if (active && res.success && res.user) {
+            setUser(res.user);
+          }
+        })
+        .catch(() => {});
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
+
+  const sys: MeasurementSystem =
+    user?.measurementSystem ?? DEFAULT_MEASUREMENT_SYSTEM;
+  const displayName = user?.fullName ?? 'Luna Goddess';
+  const displayEmail = user?.email ?? 'luna@example.com';
+
+  const saveMeasurementSystem = async (next: MeasurementSystem) => {
+    try {
+      const res = await updateProfile({ measurementSystem: next });
+      if (res.success && res.user) {
+        setUser(res.user);
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   return (
     <SafeAreaView style={styles.mainContainer} edges={['top']}>
@@ -45,8 +86,49 @@ export default function Profile() {
           {/* Profile Info Section */}
           <View style={styles.profileInfoSection}>
             <Image source={images.profileIcon} style={styles.profilePicture} />
-            <Text style={styles.profileName}>Luna Goddess</Text>
-            <Text style={styles.profileEmail}>luna@example.com</Text>
+            <Text style={styles.profileName}>{displayName}</Text>
+            <Text style={styles.profileEmail}>{displayEmail}</Text>
+            {(user?.heightCm != null || user?.weightKg != null) && (
+              <Text style={styles.profileBodyLine}>
+                {`${user?.heightCm != null ? formatHeight(user.heightCm, sys) : '—'} · ${user?.weightKg != null ? formatWeight(user.weightKg, sys) : '—'}`}
+              </Text>
+            )}
+            {user && (
+              <View style={styles.unitPrefRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.unitPrefPill,
+                    sys === 'metric' && styles.unitPrefPillActive,
+                  ]}
+                  onPress={() => saveMeasurementSystem('metric')}
+                >
+                  <Text
+                    style={[
+                      styles.unitPrefText,
+                      sys === 'metric' && styles.unitPrefTextActive,
+                    ]}
+                  >
+                    Metric
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.unitPrefPill,
+                    sys === 'imperial' && styles.unitPrefPillActive,
+                  ]}
+                  onPress={() => saveMeasurementSystem('imperial')}
+                >
+                  <Text
+                    style={[
+                      styles.unitPrefText,
+                      sys === 'imperial' && styles.unitPrefTextActive,
+                    ]}
+                  >
+                    Imperial
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
             <TouchableOpacity style={styles.editProfileButton}>
               <Text style={styles.editProfileText}>Edit Profile</Text>
             </TouchableOpacity>
@@ -119,7 +201,7 @@ export default function Profile() {
 
           {/* Tab Content */}
           {activeTab === 'Insights' && <InsightsTab />}
-          {activeTab === 'Tracking' && <TrackingTab />}
+          {activeTab === 'Tracking' && <TrackingTab user={user} />}
           {activeTab === 'Achievements' && <AchievementsTab />}
 
           {/* Common Sections (visible in all tabs) */}
@@ -312,7 +394,11 @@ const EnergyBar = ({ value }: { value: number }) => {
 };
 
 // Tracking Tab Component
-function TrackingTab() {
+function TrackingTab({ user }: { user: User | null }) {
+  const tabSys: MeasurementSystem =
+    user?.measurementSystem ?? DEFAULT_MEASUREMENT_SYSTEM;
+  const currentParts = formatWeightParts(user?.weightKg, tabSys);
+
   return (
     <View style={styles.tabContent}>
       {/* Weight Tracking Section */}
@@ -345,8 +431,8 @@ function TrackingTab() {
           <View style={styles.weightStatsRow}>
             <View style={styles.weightStatCard}>
               <Text style={styles.weightStatLabel}>Current</Text>
-              <Text style={styles.weightStatValue}>149.8</Text>
-              <Text style={styles.weightStatUnit}>lbs</Text>
+              <Text style={styles.weightStatValue}>{currentParts.value}</Text>
+              <Text style={styles.weightStatUnit}>{currentParts.unit}</Text>
             </View>
             <View style={styles.weightStatCard}>
               <Text style={styles.weightStatLabel}>Change</Text>

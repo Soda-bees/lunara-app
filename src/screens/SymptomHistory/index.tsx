@@ -101,6 +101,17 @@ export default function SymptomHistory() {
         return '#E68C3A';
       case 'poor':
         return '#E85C5C';
+      case 'normal':
+        return '#E68C3A';
+      case 'none':
+        return '#9AA0A6';
+      case 'dry':
+        return '#C48C58';
+      case 'sticky':
+        return '#6A96C8';
+      case 'egg-white':
+      case 'indicator':
+        return '#8A4676';
       default:
         return colors.black;
     }

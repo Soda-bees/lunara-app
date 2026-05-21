@@ -23,15 +23,23 @@ import GradientText from '../../components/GradientText';
 import { gradients } from '../../constants/gradientColors';
 import {
   getPregnancyStatus,
+  getWeeklyPlanning,
   PregnancyStatusResponse,
   updatePregnancyInfo,
   createPeriod,
 } from '../../services/api';
+import { toLocalYyyyMmDd } from '../../utils/weeklyNutritionDisplay';
+import {
+  dismissWeeklyPlanPrompt,
+  wasWeeklyPlanPromptDismissed,
+} from '../../utils/weeklyPlanPromptStorage';
 import { getPhaseDataStatus } from '../../utils/cycleUtils';
 import PregnancyPromptModal, {
   PregnancyPromptData,
 } from '../../components/PregnancyPromptModal';
-import { useHomeRituals } from '../../hooks/useHomeRituals';
+import { useHomeRituals, type HomeRitual } from '../../hooks/useHomeRituals';
+import { useFastingTracker } from '../../hooks/useFastingTracker';
+import FastingTrackerCard from '../../components/FastingTrackerCard';
 import SleepLogModal from '../../components/SleepLogModal';
 import PeriodStartModal, {
   PeriodLogData,
@@ -40,6 +48,7 @@ import SymptomLogModal from '../../components/SymptomLogModal';
 import moment from 'moment';
 import { useCycleData } from '../../context/CycleDataContext';
 import { colors } from '../../constants/colors';
+import CycleIndicatorCard from '../../components/CycleIndicatorCard';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 
 export default function Home() {
@@ -57,10 +66,15 @@ export default function Home() {
     ritualsLoading,
     progress,
     todayRituals,
+    ritualsBySection,
     symptomSummary,
     sleepSummary,
     refreshAll,
+    toggleOptionalRitual,
   } = useHomeRituals();
+
+  const fastingTracker = useFastingTracker();
+  const refreshFasting = fastingTracker.refresh;
 
   const [sleepModalVisible, setSleepModalVisible] = useState(false);
   const [periodModalVisible, setPeriodModalVisible] = useState(false);
@@ -105,36 +119,78 @@ export default function Home() {
     }
   };
 
-  const handleRitualPress = async (ritualType: string) => {
-    if (ritualType === 'sleep') {
+  const handleRitualInteract = (ritual: HomeRitual) => {
+    if (
+      ritual.type === 'optional' &&
+      ritual.interaction === 'check' &&
+      ritual.ritualKey
+    ) {
+      void toggleOptionalRitual(ritual.ritualKey, !ritual.completed);
+      return;
+    }
+
+    if (ritual.type === 'sleep') {
       setSleepSelectedDate(new Date());
       setSleepModalVisible(true);
       return;
     }
 
-    if (ritualType === 'periods') {
-      setPeriodModalVisible(true);
-      return;
-    }
-
-    if (ritualType === 'symptoms') {
+    if (ritual.type === 'symptoms') {
       setSleepSelectedDate(new Date());
       setSymptomsModalVisible(true);
       return;
     }
 
-    if (ritualType === 'nutrition') {
-      navigation.navigate('Nutrition');
+    if (ritual.type === 'nutrition') {
+      if (ritual.navigationTarget === 'WeeklyMealPlanning') {
+        navigation.navigate('WeeklyMealPlanning');
+        return;
+      }
+      navigation.navigate('Track', { initialCategory: 'Nutrition' });
       return;
     }
 
-    if (ritualType === 'movement') {
-      // Movement completion is managed inside the movement screen.
-      navigation.navigate('Workouts');
+    if (ritual.type === 'movement') {
+      navigation.navigate('Track', { initialCategory: 'Movement' });
       return;
     }
 
-    return;
+    if (ritual.type === 'optional' && ritual.interaction === 'action') {
+      const target = ritual.navigationTarget;
+      const params = ritual.actionParams || {};
+      if (target === 'SleepTracker') {
+        setSleepSelectedDate(new Date());
+        setSleepModalVisible(true);
+        return;
+      }
+      if (target === 'CycleInsight') {
+        navigation.navigate('CycleInsight', {
+          tab: (params.tab as string) || 'symptoms',
+        });
+        return;
+      }
+      if (target === 'Track') {
+        const c = (params.initialCategory || params.tab) as string | undefined;
+        const initialCategory =
+          c === 'Nutrition' || c === 'Movement' || c === 'Mindful'
+            ? c
+            : 'Nutrition';
+        navigation.navigate('Track', { initialCategory });
+        return;
+      }
+      if (target === 'WeeklyMealOverview') {
+        navigation.navigate('WeeklyMealOverview');
+        return;
+      }
+      if (target === 'WeeklyMealPlanning') {
+        navigation.navigate('WeeklyMealPlanning');
+        return;
+      }
+      if (target === 'FastingHome') {
+        navigation.navigate('FastingHome');
+        return;
+      }
+    }
   };
 
   // Fetch pregnancy status on mount and when cycle data changes
@@ -158,15 +214,67 @@ export default function Home() {
   // Background refresh on focus (only if stale) - silent, no loaders
   useFocusEffect(
     React.useCallback(() => {
-      void refreshAll();
-    }, [refreshAll]),
+      refreshAll().catch(() => {});
+      refreshFasting().catch(() => {});
+    }, [refreshAll, refreshFasting]),
+  );
+
+  const weeklyPlanPromptChecked = React.useRef(false);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (weeklyPlanPromptChecked.current) {
+        return;
+      }
+      weeklyPlanPromptChecked.current = true;
+
+      const maybePromptWeeklyPlan = async () => {
+        try {
+          const res = await getWeeklyPlanning();
+          const plan = res.data?.weeklyPlan;
+          if (plan?.status === 'generated' || plan?.status === 'skipped') {
+            return;
+          }
+          const weekStart =
+            res.data?.weekStart != null
+              ? toLocalYyyyMmDd(res.data.weekStart)
+              : toLocalYyyyMmDd(new Date());
+          if (await wasWeeklyPlanPromptDismissed(weekStart)) {
+            return;
+          }
+          Alert.alert(
+            'Plan your week',
+            'Set up Monday–Sunday meals and your grocery list for this week.',
+            [
+              {
+                text: 'Not now',
+                style: 'cancel',
+                onPress: () => {
+                  void dismissWeeklyPlanPrompt(weekStart);
+                },
+              },
+              {
+                text: 'Plan now',
+                onPress: () => {
+                  navigation.navigate('WeeklyMealPlanning');
+                },
+              },
+            ],
+          );
+        } catch {
+          // ignore — user can plan from Track
+        }
+      };
+
+      void maybePromptWeeklyPlan();
+    }, [navigation]),
   );
 
   // Pull-to-refresh handler
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
-      await refreshAll();
+      await Promise.all([refreshAll(), refreshFasting()]);
       // Also refresh pregnancy status
       const pregnancyResponse = await getPregnancyStatus();
       if (pregnancyResponse.success) {
@@ -179,27 +287,12 @@ export default function Home() {
     } finally {
       setRefreshing(false);
     }
-  }, [refreshAll]);
+  }, [refreshAll, refreshFasting]);
 
   // Helper functions
   const getPhaseDisplayName = (phase?: string): string => {
     if (!phase || phase === 'unknown') return 'Unknown';
     return phase.charAt(0).toUpperCase() + phase.slice(1);
-  };
-
-  const getPhaseIcon = (phase?: string) => {
-    switch (phase) {
-      case 'menstrual':
-        return images.menstrualIcon;
-      case 'follicular':
-        return images.follicularIcon;
-      case 'ovulatory':
-        return images.ovulationIcon;
-      case 'luteal':
-        return images.lutealIcon;
-      default:
-        return images.lutealIcon; // Default fallback
-    }
   };
 
   const getEnergyLevelText = (energyLevel?: string | null): string => {
@@ -283,14 +376,6 @@ export default function Home() {
       return { label: 'Poor', textColor: '#D35400', bgColor: '#FDEBD0' };
     }
     return { label: 'Very Poor', textColor: '#C62828', bgColor: '#FFEBEE' };
-  };
-
-  const calculateProgressPercentage = (
-    cycleDay?: number,
-    cycleLength?: number,
-  ): number => {
-    if (!cycleDay || !cycleLength) return 0;
-    return Math.min(100, Math.max(0, (cycleDay / cycleLength) * 100));
   };
 
   // Determine if current phase is predicted or actual
@@ -665,64 +750,16 @@ export default function Home() {
                       <Text style={styles.spacedText}>TODAY</Text>
                       <Text style={styles.textBlackMedium}>{todayDate}</Text>
                     </View>
-                    <View style={styles.cyclePhaseCard}>
-                      <Text style={styles.spacedText}>CYCLE PROGRESS</Text>
-
-                      <View style={styles.rowFull}>
-                        <View style={styles.rowBottom}>
-                          <GradientText
-                            fontSize={46}
-                            fontFamily="Inter-Regular"
-                          >
-                            {cycleStatus.cycleDay || '—'}
-                          </GradientText>
-                          <Text style={[styles.numberTextMedium, { top: 8 }]}>
-                            {' '}
-                            / {cycleStatus.averageCycleLength || 28}
-                          </Text>
-                        </View>
-                        <View style={styles.dayTextContainer}>
-                          <Text style={styles.textBlackNormal}>
-                            Day {cycleStatus.cycleDay || '—'}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.progressIndicator}>
-                        <LinearGradient
-                          style={[
-                            styles.progress,
-                            {
-                              width: `${calculateProgressPercentage(
-                                cycleStatus.cycleDay,
-                                cycleStatus.averageCycleLength || 28,
-                              )}%`,
-                            },
-                          ]}
-                          colors={['#E4AF5D', '#E799AD']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                        ></LinearGradient>
-                      </View>
-                      <View style={styles.rowFull}>
-                        <View>
-                          <Text style={styles.spacedText}>CURRENT PHASE</Text>
-                          <GradientText
-                            fontSize={24}
-                            fontFamily="PlayfairDisplay-SemiBold"
-                          >
-                            {getPhaseDisplayName(cycleStatus.phase)}
-                          </GradientText>
-                        </View>
-                        <Image
-                          source={getPhaseIcon(cycleStatus.phase)}
-                          style={styles.lutealIcon}
-                        />
-                      </View>
-
-                      <Text style={styles.textDarkGrey}>
-                        {cycleStatus.tagline || '—'}
-                      </Text>
-                    </View>
+                    <CycleIndicatorCard
+                      loading={cycleStatusState.loading}
+                      isTracking={Boolean(cycleStatus?.isTracking)}
+                      isPregnant={Boolean(pregnancyStatus?.isPregnant)}
+                      cycleDay={cycleStatus?.cycleDay}
+                      averageCycleLength={cycleStatus?.averageCycleLength || 28}
+                      phase={cycleStatus?.phase}
+                      tagline={cycleStatus?.tagline}
+                      widthMultiplier={0.82}
+                    />
                   </View>
                   <View style={styles.softCopyContainer}>
                     <Text style={styles.textDarkGrey}>
@@ -895,9 +932,17 @@ export default function Home() {
             {/* Header */}
             <View style={styles.headerRow}>
               <Text style={styles.headerTitle}>Today’s Rituals</Text>
-              <Text style={styles.headerProgress}>
-                {progress.completed}/{progress.total} Complete
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('RitualLibrary')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.headerLink}>Library</Text>
+                </TouchableOpacity>
+                <Text style={styles.headerProgress}>
+                  {progress.completed}/{progress.total}
+                </Text>
+              </View>
             </View>
 
             {/* TODAY'S RITUALS */}
@@ -906,16 +951,30 @@ export default function Home() {
                 <ActivityIndicator size="small" color={colors.green} />
               ) : null}
               {todayRituals.length > 0 ? (
-                todayRituals.map(ritual => (
-                  <RitualItem
-                    key={ritual.id}
-                    title={ritual.title}
-                    tag={ritual.tag}
-                    description={ritual.description}
-                    completed={ritual.completed}
-                    onToggle={() => handleRitualPress(ritual.type)}
-                  />
-                ))
+                <>
+                  {(
+                    [
+                      { key: 'morning' as const, label: 'Morning' },
+                      { key: 'midday' as const, label: 'Midday' },
+                      { key: 'evening' as const, label: 'Evening' },
+                    ] as const
+                  ).map(block => {
+                    const rows = ritualsBySection[block.key];
+                    if (rows.length === 0) return null;
+                    return (
+                      <View key={block.key}>
+                        <Text style={styles.sectionHeading}>{block.label}</Text>
+                        {rows.map(ritual => (
+                          <RitualItem
+                            key={ritual.id}
+                            ritual={ritual}
+                            onPress={() => handleRitualInteract(ritual)}
+                          />
+                        ))}
+                      </View>
+                    );
+                  })}
+                </>
               ) : (
                 <Text style={{ color: colors.green, fontSize: 12 }}>
                   Nothing due today
@@ -944,75 +1003,99 @@ export default function Home() {
             </TouchableOpacity> */}
           </View>
 
+          <FastingTrackerCard navigation={navigation} {...fastingTracker} />
+
           <View style={styles.container2}>
             <View style={styles.symptomCardHeader}>
               <Text style={styles.sectionTitle}>Symptom Summary</Text>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => navigation.navigate('SymptomHistory')}
-              >
-                <Text style={styles.symptomHistoryLink}>See History</Text>
-              </TouchableOpacity>
+              {symptomSummary.hasAnyLogged && (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => navigation.navigate('SymptomHistory')}
+                >
+                  <Text style={styles.symptomHistoryLink}>See History</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
-            <Text style={styles.symptomStatusText}>{symptomSummary.statusText}</Text>
+            {symptomSummary.hasAnyLogged ? (
+              <>
+                <Text style={styles.symptomStatusText}>
+                  {symptomSummary.statusText}
+                </Text>
 
-            {symptomSummary.todaySymptoms.length > 0 ? (
-              <View style={styles.todaySymptomsWrap}>
-                {symptomSummary.todaySymptoms.map((item, index) => {
-                  const severityColor = getSymptomSeverityColor(item.severity);
-                  return (
-                    <View key={`${item.symptom}-${index}`} style={styles.symptomChip}>
-                      <Text style={styles.symptomChipName}>{item.symptom}</Text>
-                      <View
-                        style={[
-                          styles.symptomSeverityBadge,
-                          { backgroundColor: `${severityColor}20` },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.symptomSeverityText,
-                            { color: severityColor },
-                          ]}
+                {symptomSummary.todaySymptoms.length > 0 ? (
+                  <View style={styles.todaySymptomsWrap}>
+                    {symptomSummary.todaySymptoms.map((item, index) => {
+                      const severityColor = getSymptomSeverityColor(
+                        item.severity,
+                      );
+                      return (
+                        <View
+                          key={`${item.symptom}-${index}`}
+                          style={styles.symptomChip}
                         >
-                          {item.severity}
-                        </Text>
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
+                          <Text style={styles.symptomChipName}>
+                            {item.symptom}
+                          </Text>
+                          <View
+                            style={[
+                              styles.symptomSeverityBadge,
+                              { backgroundColor: `${severityColor}20` },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.symptomSeverityText,
+                                { color: severityColor },
+                              ]}
+                            >
+                              {item.severity}
+                            </Text>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                ) : (
+                  <Text style={styles.symptomEmptyText}>
+                    Log symptoms to start seeing daily highlights.
+                  </Text>
+                )}
+
+                <View style={styles.symptomSummaryRow}>
+                  <Text style={styles.symptomSummaryLabel}>Last log date</Text>
+                  <Text style={styles.symptomSummaryValue}>
+                    {symptomSummary.lastLoggedDate
+                      ? moment(symptomSummary.lastLoggedDate).format(
+                          'MMM D, YYYY',
+                        )
+                      : '—'}
+                  </Text>
+                </View>
+
+                <View style={styles.symptomSummaryRow}>
+                  <Text style={styles.symptomSummaryLabel}>Top symptoms</Text>
+                  <Text style={styles.symptomSummaryValue}>
+                    {symptomSummary.topSymptoms.length > 0
+                      ? symptomSummary.topSymptoms.join(', ')
+                      : '—'}
+                  </Text>
+                </View>
+
+                <View style={styles.symptomSummaryRow}>
+                  <Text style={styles.symptomSummaryLabel}>Trend</Text>
+                  <Text style={styles.symptomSummaryValue}>
+                    {getTrendLabel(symptomSummary.trend)}
+                  </Text>
+                </View>
+              </>
             ) : (
               <Text style={styles.symptomEmptyText}>
-                Log symptoms to start seeing daily highlights.
+                No symptom data yet. Log your first symptoms to start seeing
+                insights.
               </Text>
             )}
-
-            <View style={styles.symptomSummaryRow}>
-              <Text style={styles.symptomSummaryLabel}>Last log date</Text>
-              <Text style={styles.symptomSummaryValue}>
-                {symptomSummary.lastLoggedDate
-                  ? moment(symptomSummary.lastLoggedDate).format('MMM D, YYYY')
-                  : '—'}
-              </Text>
-            </View>
-
-            <View style={styles.symptomSummaryRow}>
-              <Text style={styles.symptomSummaryLabel}>Top symptoms</Text>
-              <Text style={styles.symptomSummaryValue}>
-                {symptomSummary.topSymptoms.length > 0
-                  ? symptomSummary.topSymptoms.join(', ')
-                  : '—'}
-              </Text>
-            </View>
-
-            <View style={styles.symptomSummaryRow}>
-              <Text style={styles.symptomSummaryLabel}>Trend</Text>
-              <Text style={styles.symptomSummaryValue}>
-                {getTrendLabel(symptomSummary.trend)}
-              </Text>
-            </View>
 
             <TouchableOpacity
               style={styles.symptomLogButton}
@@ -1040,74 +1123,90 @@ export default function Home() {
           <View style={styles.container2}>
             <View style={styles.sleepCardHeader}>
               <Text style={styles.sectionTitle}>Sleep Summary</Text>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => navigation.navigate('SleepTracker')}
-              >
-                <Text style={styles.sleepDetailsLink}>View Details</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.sleepStatusText}>{sleepSummary.statusText}</Text>
-
-            <View style={styles.sleepSummaryRow}>
-              <Text style={styles.sleepSummaryLabel}>Last night duration</Text>
-              <Text style={styles.sleepSummaryValue}>
-                {formatDuration(sleepSummary.lastNightDurationMinutes)}
-              </Text>
-            </View>
-
-            <View style={styles.sleepSummaryRow}>
-              <Text style={styles.sleepSummaryLabel}>Sleep quality</Text>
-              <View
-                style={[
-                  styles.sleepQualityBadge,
-                  {
-                    backgroundColor: getSleepQualityMeta(
-                      sleepSummary.lastNightQuality,
-                    ).bgColor,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.sleepQualityBadgeText,
-                    {
-                      color: getSleepQualityMeta(sleepSummary.lastNightQuality)
-                        .textColor,
-                    },
-                  ]}
+              {sleepSummary.hasAnyLogged && (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => navigation.navigate('SleepTracker')}
                 >
-                  {getSleepQualityMeta(sleepSummary.lastNightQuality).label}
-                </Text>
-              </View>
+                  <Text style={styles.sleepDetailsLink}>View Details</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
-            <View style={styles.sleepSummaryRow}>
-              <Text style={styles.sleepSummaryLabel}>Bed / Wake</Text>
-              <Text style={styles.sleepSummaryValue}>
-                {`${formatTime(sleepSummary.bedTime)} / ${formatTime(
-                  sleepSummary.wakeTime,
-                )}`}
-              </Text>
-            </View>
+            <Text style={styles.sleepStatusText}>
+              {sleepSummary.statusText}
+            </Text>
 
-            <View style={styles.sleepSummaryRow}>
-              <Text style={styles.sleepSummaryLabel}>Last logged</Text>
-              <Text style={styles.sleepSummaryValue}>
-                {sleepSummary.lastLogDate
-                  ? moment(sleepSummary.lastLogDate).format('MMM D, YYYY')
-                  : '—'}
-              </Text>
-            </View>
+            {sleepSummary.hasAnyLogged ? (
+              <>
+                <View style={styles.sleepSummaryRow}>
+                  <Text style={styles.sleepSummaryLabel}>
+                    Last night duration
+                  </Text>
+                  <Text style={styles.sleepSummaryValue}>
+                    {formatDuration(sleepSummary.lastNightDurationMinutes)}
+                  </Text>
+                </View>
 
-            <View style={styles.sleepStreakPill}>
-              <Text style={styles.sleepStreakText}>
-                {sleepSummary.streakDays > 0
-                  ? `${sleepSummary.streakDays}-day streak`
-                  : 'No active streak'}
+                <View style={styles.sleepSummaryRow}>
+                  <Text style={styles.sleepSummaryLabel}>Sleep quality</Text>
+                  <View
+                    style={[
+                      styles.sleepQualityBadge,
+                      {
+                        backgroundColor: getSleepQualityMeta(
+                          sleepSummary.lastNightQuality,
+                        ).bgColor,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.sleepQualityBadgeText,
+                        {
+                          color: getSleepQualityMeta(
+                            sleepSummary.lastNightQuality,
+                          ).textColor,
+                        },
+                      ]}
+                    >
+                      {getSleepQualityMeta(sleepSummary.lastNightQuality).label}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.sleepSummaryRow}>
+                  <Text style={styles.sleepSummaryLabel}>Bed / Wake</Text>
+                  <Text style={styles.sleepSummaryValue}>
+                    {`${formatTime(sleepSummary.bedTime)} / ${formatTime(
+                      sleepSummary.wakeTime,
+                    )}`}
+                  </Text>
+                </View>
+
+                <View style={styles.sleepSummaryRow}>
+                  <Text style={styles.sleepSummaryLabel}>Last logged</Text>
+                  <Text style={styles.sleepSummaryValue}>
+                    {sleepSummary.lastLogDate
+                      ? moment(sleepSummary.lastLogDate).format('MMM D, YYYY')
+                      : '—'}
+                  </Text>
+                </View>
+
+                <View style={styles.sleepStreakPill}>
+                  <Text style={styles.sleepStreakText}>
+                    {sleepSummary.streakDays > 0
+                      ? `${sleepSummary.streakDays}-day streak`
+                      : 'No active streak'}
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <Text style={styles.symptomEmptyText}>
+                No sleep data yet. Log your first sleep to start seeing
+                insights.
               </Text>
-            </View>
+            )}
 
             <TouchableOpacity
               style={styles.sleepLogButton}
@@ -1273,41 +1372,36 @@ export default function Home() {
 }
 
 const RitualItem = ({
-  title,
-  tag,
-  description,
-  completed,
-  onToggle,
+  ritual,
+  onPress,
 }: {
-  title: string;
-  tag: string;
-  description: string;
-  completed: boolean;
-  onToggle: () => void | Promise<void>;
+  ritual: HomeRitual;
+  onPress: () => void | Promise<void>;
 }) => {
   return (
     <View style={styles.itemContainer}>
       <View style={styles.itemHeaderRow}>
-        <TouchableOpacity onPress={onToggle} activeOpacity={0.7}>
+        <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
           <Image
-            source={completed ? images.circleChecked : images.circleUnchecked}
-            // source={images.circleChecked}
+            source={
+              ritual.completed ? images.circleChecked : images.circleUnchecked
+            }
             style={styles.checkIcon}
           />
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={onToggle}
+          onPress={onPress}
           activeOpacity={0.7}
           style={{ flex: 1 }}
         >
-          <Text style={styles.itemTitle}>{title}</Text>
+          <Text style={styles.itemTitle}>{ritual.title}</Text>
           <View style={styles.tagRow}>
-            <Text style={styles.tagText}>● {tag}</Text>
+            <Text style={styles.tagText}>● {ritual.tag}</Text>
           </View>
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.itemDescription}>{description}</Text>
+      <Text style={styles.itemDescription}>{ritual.description}</Text>
     </View>
   );
 };

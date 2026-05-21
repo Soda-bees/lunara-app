@@ -1,14 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL as RUNTIME_API_BASE_URL } from '../config/runtimeConfig';
 import { DeviceEventEmitter } from 'react-native';
+import type {
+  CycleSymptomSeverity,
+  CycleSymptomType,
+} from '../constants/cycleSymptoms';
 
 // `react-native-encrypted-storage` is a native module. If it isn't correctly
 // linked/available on the device, importing it can break the entire module.
 // We use a guarded require and fall back to AsyncStorage to keep the app booting.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 let EncryptedStorage: any = null;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const mod = require('react-native-encrypted-storage');
   EncryptedStorage = mod?.default ?? mod;
 } catch {
@@ -28,6 +30,11 @@ export interface SignupRequest {
   email: string;
   password: string;
   age?: string;
+  heightCm?: number;
+  weightKg?: number;
+  targetWeightKg?: number;
+  measurementSystem?: 'metric' | 'imperial';
+  /** @deprecated server maps legacy strings as cm/kg */
   height?: string;
   weight?: string;
   activityLevel?: string;
@@ -96,6 +103,19 @@ export interface ApiError extends Error {
   retryable?: boolean;
 }
 
+/** 401 on these routes means wrong credentials / pre-auth failure, not an expired session. */
+function isUnauthenticatedAuthEndpoint(endpoint: string): boolean {
+  const path = endpoint.split('?')[0];
+  const publicAuthPaths = [
+    '/auth/login',
+    '/auth/signup',
+    '/auth/google',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+  ];
+  return publicAuthPaths.some(p => path === p);
+}
+
 async function apiCall<T>(
   endpoint: string,
   options: RequestInit = {},
@@ -103,15 +123,12 @@ async function apiCall<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
+  const skipAuthHeader = isUnauthenticatedAuthEndpoint(endpoint);
+  const token = skipAuthHeader ? null : await getStoredToken();
   const defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
-
-  // Add auth token if available (for future authenticated requests)
-  const token = await getStoredToken();
-  if (token) {
-    defaultHeaders['Authorization'] = `Bearer ${token}`;
-  }
 
   let lastError: ApiError | null = null;
 
@@ -149,13 +166,23 @@ async function apiCall<T>(
         errorObj.status = response.status;
         errorObj.details = errorData;
 
+        const isPreAuth401 =
+          response.status === 401 && isUnauthenticatedAuthEndpoint(endpoint);
+
         // Provide user-friendly messages based on status code
         if (response.status === 400) {
           errorObj.message =
             errorData.message || 'Invalid request. Please check your input.';
         } else if (response.status === 401) {
-          errorObj.message = 'Session expired. Please log in again.';
-          errorObj.code = 'UNAUTHORIZED';
+          if (isPreAuth401) {
+            errorObj.message =
+              errorData.message ||
+              errorData.error ||
+              'Invalid email or password. Please try again.';
+          } else {
+            errorObj.message = 'Session expired. Please log in again.';
+            errorObj.code = 'UNAUTHORIZED';
+          }
         } else if (response.status === 403) {
           errorObj.message =
             'You do not have permission to perform this action.';
@@ -176,9 +203,8 @@ async function apiCall<T>(
           errorObj.retryable = true;
         }
 
-        // Centralized session-expired handling.
-        // Emit an app-wide signal so navigation can reset to `Welcome` (logout behavior).
-        if (response.status === 401) {
+        // Centralized session-expired handling (not for login/signup/etc. 401s).
+        if (response.status === 401 && !isPreAuth401) {
           try {
             await clearToken();
           } catch {
@@ -341,6 +367,11 @@ export interface GoogleAuthRequest {
   name?: string;
   // Onboarding data (optional - for completing signup)
   age?: string;
+  heightCm?: number;
+  weightKg?: number;
+  targetWeightKg?: number;
+  measurementSystem?: 'metric' | 'imperial';
+  /** @deprecated server maps legacy strings as cm/kg */
   height?: string;
   weight?: string;
   activityLevel?: string;
@@ -771,32 +802,6 @@ export async function transitionToPostpartum(
   });
 }
 
-// Cycle Symptom API Types
-export type CycleSymptomType =
-  | 'Energy'
-  | 'Mood'
-  | 'Focus'
-  | 'Cramps'
-  | 'Bloating'
-  | 'Headache'
-  | 'Breast Tenderness'
-  | 'Acne'
-  | 'Food Cravings'
-  | 'Back Pain'
-  | 'Nausea';
-
-export type CycleSymptomSeverity =
-  | 'mild'
-  | 'moderate'
-  | 'severe'
-  | 'low'
-  | 'medium'
-  | 'high'
-  | 'poor'
-  | 'neutral'
-  | 'good'
-  | 'fair';
-
 export interface CycleSymptom {
   _id?: string;
   date: string;
@@ -825,7 +830,7 @@ export interface CycleSymptomsResponse {
 
 export interface CycleSymptomPattern {
   symptom: string;
-  severity: 'mild' | 'moderate' | 'severe';
+  severity: CycleSymptomSeverity;
   count: number;
   trend: 'increasing' | 'decreasing' | 'stable';
 }
@@ -1193,6 +1198,14 @@ export interface User {
   _id: string;
   fullName: string;
   email: string;
+  heightCm?: number;
+  weightKg?: number;
+  targetWeightKg?: number;
+  measurementSystem?: 'metric' | 'imperial';
+  /** @deprecated legacy string storage (cm/kg) */
+  height?: string;
+  weight?: string;
+  targetWeight?: string;
   isTrackingCycle?: boolean;
   cycleLength?: string;
   periodLength?: string;
@@ -1212,6 +1225,36 @@ export interface GetMeResponse {
 export async function getMe(): Promise<GetMeResponse> {
   return apiCall<GetMeResponse>('/auth/me', {
     method: 'GET',
+  });
+}
+
+/** Single attempt — used during splash so offline boot is not delayed by retries. */
+export async function getMeForBootstrap(): Promise<GetMeResponse> {
+  return apiCall<GetMeResponse>(
+    '/auth/me',
+    {
+      method: 'GET',
+    },
+    0,
+  );
+}
+
+export interface ProfileUpdateRequest {
+  measurementSystem?: 'metric' | 'imperial';
+  heightCm?: number;
+  weightKg?: number;
+  targetWeightKg?: number;
+  height?: string;
+  weight?: string;
+  targetWeight?: string;
+}
+
+export async function updateProfile(
+  body: ProfileUpdateRequest,
+): Promise<GetMeResponse> {
+  return apiCall<GetMeResponse>('/auth/profile', {
+    method: 'PATCH',
+    body: JSON.stringify(body),
   });
 }
 
@@ -1286,6 +1329,8 @@ export interface SetMealCompletedResponse {
     time: string;
     completed: boolean;
   };
+  fastingAutoEnded?: boolean;
+  fastingSession?: FastingSession;
 }
 
 export interface Meal {
@@ -1314,6 +1359,11 @@ export interface Meal {
   cuisines: string[];
   tags: string[];
   goals: string[];
+  ingredients?: Array<{
+    name: string;
+    quantity?: number | null;
+    unit?: string | null;
+  }>;
   budgetLevel?: string;
   isActive: boolean;
   createdAt: string;
@@ -1379,6 +1429,162 @@ export async function getMealDetail(id: string): Promise<MealDetailResponse> {
   });
 }
 
+export type WeeklyMealStructure =
+  | '3_meals'
+  | '3_meals_1_snack'
+  | '3_meals_2_snacks';
+
+export interface WeeklyMealPlanDay {
+  date: string;
+  timeSlots: NutritionTimeSlot[];
+}
+
+export interface WeeklyMealPlanning {
+  _id: string;
+  user: string;
+  weekStart: string;
+  weekEnd: string;
+  status: 'generated' | 'skipped';
+  mealStructure: WeeklyMealStructure;
+  days: WeeklyMealPlanDay[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WeeklyPlanningResponse {
+  success: boolean;
+  data: {
+    weekStart: string;
+    weekEnd: string;
+    weeklyPlan: WeeklyMealPlanning | null;
+  };
+}
+
+export interface WeeklyPlanningGenerateResponse {
+  success: boolean;
+  data: WeeklyMealPlanning;
+}
+
+export interface GroceryListItem {
+  _id: string;
+  name: string;
+  normalizedName: string;
+  quantity?: number | null;
+  unit?: string | null;
+  checked: boolean;
+  source: 'generated' | 'manual';
+}
+
+export interface WeeklyGroceryList {
+  _id: string;
+  user: string;
+  weekStart: string;
+  weekEnd: string;
+  weeklyMealPlan: string;
+  items: GroceryListItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WeeklyGroceryListResponse {
+  success: boolean;
+  data: WeeklyGroceryList | null;
+}
+
+export async function getWeeklyPlanning(
+  date?: string,
+): Promise<WeeklyPlanningResponse> {
+  const params = new URLSearchParams();
+  if (date) params.append('date', date);
+  const query = params.toString();
+  return apiCall<WeeklyPlanningResponse>(
+    `/nutrition/weekly-planning${query ? `?${query}` : ''}`,
+    { method: 'GET' },
+  );
+}
+
+export async function generateWeeklyPlanning(body: {
+  date?: string;
+  mealStructure: WeeklyMealStructure;
+}): Promise<WeeklyPlanningGenerateResponse> {
+  return apiCall<WeeklyPlanningGenerateResponse>(
+    '/nutrition/weekly-planning/generate',
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function skipWeeklyPlanning(body?: {
+  date?: string;
+}): Promise<WeeklyPlanningGenerateResponse> {
+  return apiCall<WeeklyPlanningGenerateResponse>('/nutrition/weekly-planning/skip', {
+    method: 'POST',
+    body: JSON.stringify(body || {}),
+  });
+}
+
+export async function getWeeklyGroceryList(
+  date?: string,
+): Promise<WeeklyGroceryListResponse> {
+  const params = new URLSearchParams();
+  if (date) params.append('date', date);
+  const query = params.toString();
+  return apiCall<WeeklyGroceryListResponse>(
+    `/nutrition/grocery-list${query ? `?${query}` : ''}`,
+    { method: 'GET' },
+  );
+}
+
+export async function regenerateWeeklyGroceryList(body?: {
+  date?: string;
+}): Promise<WeeklyGroceryListResponse> {
+  return apiCall<WeeklyGroceryListResponse>('/nutrition/grocery-list/regenerate', {
+    method: 'POST',
+    body: JSON.stringify(body || {}),
+  });
+}
+
+export async function addWeeklyGroceryItem(body: {
+  date?: string;
+  name: string;
+  quantity?: number;
+  unit?: string;
+}): Promise<WeeklyGroceryListResponse> {
+  return apiCall<WeeklyGroceryListResponse>('/nutrition/grocery-list/items', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteWeeklyGroceryItem(body: {
+  date?: string;
+  itemId: string;
+}): Promise<WeeklyGroceryListResponse> {
+  return apiCall<WeeklyGroceryListResponse>(
+    `/nutrition/grocery-list/items/${body.itemId}`,
+    {
+      method: 'DELETE',
+      body: JSON.stringify({ date: body.date }),
+    },
+  );
+}
+
+export async function updateWeeklyGroceryItem(body: {
+  date?: string;
+  itemId: string;
+  checked: boolean;
+}): Promise<WeeklyGroceryListResponse> {
+  return apiCall<WeeklyGroceryListResponse>(
+    `/nutrition/grocery-list/items/${body.itemId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ date: body.date, checked: body.checked }),
+    },
+  );
+}
+
 // Workout API Types
 export interface WorkoutOption {
   workout: string | { _id: string; [key: string]: any };
@@ -1390,10 +1596,15 @@ export interface WorkoutOption {
   equipment: string[];
   benefits: string[];
   tags: string[];
+  phaseFitScore?: number;
 }
 
 export interface LoggedWorkout {
-  workoutId: string | { _id: string; [key: string]: any };
+  _id?: string;
+  workoutId?: string | { _id: string; [key: string]: any } | null;
+  workoutTitleSnapshot: string;
+  durationMinutes: number;
+  isCustom: boolean;
   loggedAt: string;
 }
 
@@ -1424,7 +1635,9 @@ export interface DailyWorkoutPlanResponse {
 
 export interface LogWorkoutRequest {
   date: string;
-  workoutId: string;
+  workoutId?: string;
+  loggedEntryId?: string;
+  durationMinutes?: number;
   action?: 'add' | 'remove';
 }
 
@@ -1452,12 +1665,95 @@ export async function getDailyWorkoutPlan(
 
 export async function logWorkoutApi(
   date: string,
-  workoutId: string,
+  workoutId?: string,
   action?: 'add' | 'remove',
+  durationMinutes?: number,
+  loggedEntryId?: string,
 ): Promise<LogWorkoutResponse> {
   return apiCall<LogWorkoutResponse>('/workouts/log', {
     method: 'POST',
-    body: JSON.stringify({ date, workoutId, action }),
+    body: JSON.stringify({
+      date,
+      workoutId,
+      action,
+      durationMinutes,
+      loggedEntryId,
+    }),
+  });
+}
+
+export interface WorkoutLibraryResponse {
+  success: boolean;
+  data: Workout[];
+}
+
+export interface CreateCustomWorkoutRequest {
+  title: string;
+  durationMinutes: number;
+  description?: string;
+  ritualSection?: 'morning' | 'midday' | 'evening';
+}
+
+export interface CreateCustomWorkoutResponse {
+  success: boolean;
+  data: Workout;
+  reusedExisting?: boolean;
+}
+
+export interface UpdateCustomWorkoutRequest {
+  title?: string;
+  durationMinutes?: number;
+  description?: string;
+  ritualSection?: 'morning' | 'midday' | 'evening';
+}
+
+export interface UpdateCustomWorkoutResponse {
+  success: boolean;
+  data: Workout;
+}
+
+export interface DeleteCustomWorkoutResponse {
+  success: boolean;
+  data: { _id: string };
+}
+
+export async function getWorkoutLibrary(
+  query?: string,
+): Promise<WorkoutLibraryResponse> {
+  const params = new URLSearchParams();
+  if (query && query.trim()) {
+    params.append('q', query.trim());
+  }
+  const qs = params.toString();
+  return apiCall<WorkoutLibraryResponse>(`/workouts/library${qs ? `?${qs}` : ''}`, {
+    method: 'GET',
+  });
+}
+
+export async function createCustomWorkoutApi(
+  body: CreateCustomWorkoutRequest,
+): Promise<CreateCustomWorkoutResponse> {
+  return apiCall<CreateCustomWorkoutResponse>('/workouts/custom', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateCustomWorkoutApi(
+  id: string,
+  body: UpdateCustomWorkoutRequest,
+): Promise<UpdateCustomWorkoutResponse> {
+  return apiCall<UpdateCustomWorkoutResponse>(`/workouts/custom/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteCustomWorkoutApi(
+  id: string,
+): Promise<DeleteCustomWorkoutResponse> {
+  return apiCall<DeleteCustomWorkoutResponse>(`/workouts/custom/${id}`, {
+    method: 'DELETE',
   });
 }
 
@@ -1577,6 +1873,9 @@ export interface Workout {
   breastfeedingSafe: boolean;
   tags: string[];
   goals: string[];
+  ritualSection?: 'morning' | 'midday' | 'evening';
+  isCustom?: boolean;
+  createdBy?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -2172,12 +2471,9 @@ export async function getJournals(
   if (params?.search) search.append('search', params.search);
 
   const qs = search.toString();
-  return apiCall<JournalsResponse>(
-    `/journals${qs ? `?${qs}` : ''}`,
-    {
-      method: 'GET',
-    },
-  );
+  return apiCall<JournalsResponse>(`/journals${qs ? `?${qs}` : ''}`, {
+    method: 'GET',
+  });
 }
 
 export async function getJournal(id: string): Promise<JournalResponse> {
@@ -2210,5 +2506,126 @@ export async function deleteJournal(
 ): Promise<{ success: boolean; message?: string }> {
   return apiCall<{ success: boolean; message?: string }>(`/journals/${id}`, {
     method: 'DELETE',
+  });
+}
+
+// --- Rituals (catalog + preferences + optional daily checkmarks) ---
+
+export type RitualSection = 'morning' | 'midday' | 'evening';
+export type RitualInteraction = 'check' | 'action';
+
+export interface RitualDefinitionDto {
+  _id: string;
+  keyId: string;
+  title: string;
+  description: string;
+  /** True when user-authored (not seeded catalog) */
+  isCustom?: boolean;
+  /** Catalog hint: which cycle phases this often fits */
+  phaseFitLabel?: string;
+  /** Expandable copy: phase fit rationale (wellness framing) */
+  phaseFitWhy?: string;
+  tag: string;
+  defaultSection: RitualSection;
+  anchor: string;
+  interaction: RitualInteraction;
+  navigationTarget?: string | null;
+  actionParams?: Record<string, unknown>;
+  isCore: boolean;
+  defaultSortOrder?: number;
+  isActive: boolean;
+}
+
+export interface UserRitualPreferenceDto {
+  ritualKey: string;
+  section: RitualSection;
+  userNote: string;
+  sortIndex: number;
+  enabled: boolean;
+}
+
+export interface RitualDefinitionsResponse {
+  success: boolean;
+  data: RitualDefinitionDto[];
+}
+
+export interface CreateCustomRitualRequest {
+  title: string;
+  description?: string;
+  defaultSection: RitualSection;
+}
+
+export interface CreateCustomRitualResponse {
+  success: boolean;
+  data?: RitualDefinitionDto;
+  message?: string;
+}
+
+export interface RitualPreferencesResponse {
+  success: boolean;
+  data: UserRitualPreferenceDto[];
+}
+
+export interface RitualCompletionsResponse {
+  success: boolean;
+  data: Record<string, boolean>;
+}
+
+export async function getRitualDefinitions(): Promise<RitualDefinitionsResponse> {
+  return apiCall<RitualDefinitionsResponse>('/rituals/definitions', {
+    method: 'GET',
+  });
+}
+
+export async function postCustomRitual(
+  body: CreateCustomRitualRequest,
+): Promise<CreateCustomRitualResponse> {
+  return apiCall<CreateCustomRitualResponse>('/rituals/custom', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteCustomRitual(
+  keyId: string,
+): Promise<{ success: boolean; message?: string }> {
+  return apiCall(`/rituals/custom/${encodeURIComponent(keyId)}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function getRitualPreferences(): Promise<RitualPreferencesResponse> {
+  return apiCall<RitualPreferencesResponse>('/rituals/preferences', {
+    method: 'GET',
+  });
+}
+
+export async function putRitualPreferences(
+  preferences: UserRitualPreferenceDto[],
+): Promise<RitualPreferencesResponse> {
+  return apiCall<RitualPreferencesResponse>('/rituals/preferences', {
+    method: 'PUT',
+    body: JSON.stringify({ preferences }),
+  });
+}
+
+export async function getRitualCompletions(
+  date: string,
+): Promise<RitualCompletionsResponse> {
+  const qs = new URLSearchParams({ date });
+  return apiCall<RitualCompletionsResponse>(
+    `/rituals/completions?${qs.toString()}`,
+    { method: 'GET' },
+  );
+}
+
+export async function postRitualDayToggle(body: {
+  date: string;
+  ritualKey: string;
+  completed: boolean;
+}): Promise<{ success: boolean; data?: { date: string; ritualKey: string; completed: boolean } }> {
+  return apiCall('/rituals/day-toggle', {
+    method: 'POST',
+    body: JSON.stringify(body),
   });
 }

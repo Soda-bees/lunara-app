@@ -6,6 +6,7 @@ import React, {
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { MeasurementSystem } from '../utils/measurement';
 
 const ONBOARDING_STORAGE_KEY = '@lunara_onboarding_data';
 const ONBOARDING_STEP_KEY = '@lunara_onboarding_step';
@@ -19,12 +20,19 @@ export interface OnboardingData {
 
   // Basic info
   age?: string;
+  /** Canonical values for API (cm / kg) */
+  heightCm?: number;
+  weightKg?: number;
+  measurementSystem?: MeasurementSystem;
+  activityLevel?: string;
+  /** @deprecated legacy persisted strings; prefer heightCm/weightKg */
   height?: string;
   weight?: string;
-  activityLevel?: string;
 
   // Goals
   primaryGoal?: string;
+  targetWeightKg?: number;
+  /** @deprecated use targetWeightKg */
   targetWeight?: string;
 
   // Women's health

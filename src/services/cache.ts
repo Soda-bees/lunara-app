@@ -93,7 +93,9 @@ export async function clearAllCache(): Promise<void> {
 export const CacheKeys = {
   nutritionPlan: (date: string) => `nutrition_plan_${date}`,
   workoutPlan: (date: string) => `workout_plan_${date}`,
-  weeklyNutritionPlan: (startDate: string) => `weekly_nutrition_${startDate}`,
+  weeklyNutritionPlan: (startDate: string) => `weekly_nutrition_v3_${startDate}`,
+  weeklyPlanning: (weekStart: string) => `weekly_planning_${weekStart}`,
+  weeklyGrocery: (weekStart: string) => `weekly_grocery_${weekStart}`,
   movementContent: (date: string) => `movement_content_${date}`,
   movementScience: () => 'movement_science',
   phaseInfo: (date: string) => `phase_info_${date}`,
@@ -111,6 +113,7 @@ export const CacheKeys = {
 export const CacheTTL = {
   plans: 3600000, // 1 hour
   weeklyPlans: 3600000, // 1 hour
+  grocery: 900000, // 15 minutes
   dynamicContent: 300000, // 5 minutes
   scienceData: 1800000, // 30 minutes
 };

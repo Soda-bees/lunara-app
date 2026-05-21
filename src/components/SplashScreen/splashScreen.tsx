@@ -1,68 +1,19 @@
-// import React, { useEffect } from 'react';
-// import { View, StyleSheet, StatusBar } from 'react-native';
-// import LottieView from 'lottie-react-native';
-// import SplashScreen from 'react-native-splash-screen';
-// import { sizes } from '../../constants/sizes';
-
-// interface AnimatedSplashProps {
-//   onFinish: () => void;
-// }
-
-// const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onFinish }) => {
-//   useEffect(() => {
-//     SplashScreen.hide();
-
-//     const timer = setTimeout(() => {
-//       onFinish();
-//     }, 4000);
-
-//     return () => clearTimeout(timer);
-//   }, [onFinish]);
-
-//   return (
-//     <View style={styles.container}>
-//       <StatusBar
-//         translucent
-//         backgroundColor="transparent"
-//         barStyle="dark-content"
-//         hidden
-//       />
-//       <LottieView
-//         source={require('../../assets/animations/animatedSplashScreenNew.json')}
-//         autoPlay
-//         loop={false}
-//         style={styles.lottie}
-//       />
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     // backgroundColor: '#FDCDDB',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-
-//   lottie: {
-//     height: sizes.screenHeight,
-//     width: sizes.screenWidth,
-//   },
-// });
-
-// export default AnimatedSplash;
-
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { View, StyleSheet, StatusBar } from 'react-native';
 import Video from 'react-native-video';
 import SplashScreen from 'react-native-splash-screen';
 import { sizes } from '../../constants/sizes';
 import { useCycleData } from '../../context/CycleDataContext';
 import { useSleepData } from '../../context/SleepDataContext';
+import {
+  resolveSessionRoute,
+  resolveSessionRouteFallback,
+  type SessionRoute,
+} from '../../utils/resolveSessionRoute';
 
 interface AnimatedSplashProps {
-  onFinish: () => void;
+  /** Called when splash video + preloads are done; route is where navigation should start. */
+  onFinish: (initialRoute: SessionRoute) => void;
 }
 
 const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onFinish }) => {
@@ -70,15 +21,28 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onFinish }) => {
   const { refreshSleepData } = useSleepData();
   const [videoEnded, setVideoEnded] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [sessionResolved, setSessionResolved] = useState(false);
+  const sessionRouteRef = useRef<SessionRoute>(null);
   const hasCalledOnFinish = useRef(false);
 
   useEffect(() => {
     SplashScreen.hide();
   }, []);
 
-  // Preload data when component mounts (non-blocking)
   useEffect(() => {
-    // Start both data loads in parallel, but don't wait for them
+    resolveSessionRoute()
+      .then(route => {
+        sessionRouteRef.current = route;
+      })
+      .catch(async () => {
+        sessionRouteRef.current = await resolveSessionRouteFallback();
+      })
+      .finally(() => {
+        setSessionResolved(true);
+      });
+  }, []);
+
+  useEffect(() => {
     Promise.all([
       refreshCycleData({ force: true }).catch(err => {
         console.error('Error preloading cycle data:', err);
@@ -91,61 +55,44 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onFinish }) => {
     });
   }, [refreshCycleData, refreshSleepData]);
 
-  // Absolute maximum timeout - always proceed after 6 seconds no matter what
+  const tryFinish = useCallback(() => {
+    if (
+      hasCalledOnFinish.current ||
+      !videoEnded ||
+      !dataLoaded ||
+      !sessionResolved
+    ) {
+      return;
+    }
+    hasCalledOnFinish.current = true;
+    onFinish(sessionRouteRef.current);
+  }, [videoEnded, dataLoaded, sessionResolved, onFinish]);
+
   useEffect(() => {
-    const maxTimeout = setTimeout(() => {
-      console.log('Splash screen maximum timeout reached - proceeding to app');
-      if (!hasCalledOnFinish.current) {
-        hasCalledOnFinish.current = true;
-        onFinish();
-      }
-    }, 6000); // 6 second absolute maximum
+    const maxTimeout = setTimeout(async () => {
+      if (hasCalledOnFinish.current) return;
+      hasCalledOnFinish.current = true;
+      const route = sessionRouteRef.current ?? (await resolveSessionRouteFallback());
+      onFinish(route);
+    }, 6000);
 
     return () => clearTimeout(maxTimeout);
   }, [onFinish]);
 
-  // Proceed when video ends (wait max 1 second for data if not loaded)
   useEffect(() => {
-    if (hasCalledOnFinish.current || !videoEnded) return;
-
-    if (dataLoaded) {
-      // Data already loaded, proceed immediately
-      hasCalledOnFinish.current = true;
-      onFinish();
-    } else {
-      // Video ended but data not loaded, wait max 1 second
-      const waitForData = setTimeout(() => {
-        if (!hasCalledOnFinish.current) {
-          hasCalledOnFinish.current = true;
-          onFinish();
-        }
-      }, 1000);
-
-      return () => clearTimeout(waitForData);
-    }
-  }, [videoEnded, dataLoaded, onFinish]);
-
-  // Proceed when data loads (if video has ended)
-  useEffect(() => {
-    if (hasCalledOnFinish.current || !dataLoaded || !videoEnded) return;
-
-    hasCalledOnFinish.current = true;
-    onFinish();
-  }, [videoEnded, dataLoaded, onFinish]);
+    tryFinish();
+  }, [tryFinish]);
 
   const handleVideoEnd = () => {
-    console.log('Video ended');
     setVideoEnded(true);
   };
 
-  // Fallback: If video doesn't end after 8 seconds, assume it's done
   useEffect(() => {
     const videoTimeout = setTimeout(() => {
       if (!videoEnded) {
-        console.log('Video timeout - assuming video ended');
         setVideoEnded(true);
       }
-    }, 8000); // 8 second max for video
+    }, 8000);
 
     return () => clearTimeout(videoTimeout);
   }, [videoEnded]);
@@ -174,7 +121,7 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onFinish }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FDCDDB', // fallback color
+    backgroundColor: '#FDCDDB',
   },
   video: {
     width: sizes.screenWidth,

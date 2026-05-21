@@ -18,7 +18,12 @@ interface UseWorkoutPlanReturn {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
-  logWorkout: (workoutId: string, action?: 'add' | 'remove') => Promise<void>;
+  logWorkout: (
+    workoutId?: string,
+    action?: 'add' | 'remove',
+    durationMinutes?: number,
+    loggedEntryId?: string,
+  ) => Promise<void>;
 }
 
 export function useWorkoutPlan(date?: string): UseWorkoutPlanReturn {
@@ -46,9 +51,6 @@ export function useWorkoutPlan(date?: string): UseWorkoutPlanReturn {
       if (cachedData) {
         setPlan(cachedData);
         setLoading(false);
-
-        // Fetch fresh data in background
-        fetchFreshData(today);
         return;
       }
 
@@ -87,12 +89,20 @@ export function useWorkoutPlan(date?: string): UseWorkoutPlanReturn {
   };
 
   const logWorkout = useCallback(async (
-    workoutId: string,
+    workoutId?: string,
     action: 'add' | 'remove' = 'add',
+    durationMinutes?: number,
+    loggedEntryId?: string,
   ) => {
     try {
       const today = date || new Date().toISOString().split('T')[0];
-      const res = await logWorkoutApi(today, workoutId, action);
+      const res = await logWorkoutApi(
+        today,
+        workoutId,
+        action,
+        durationMinutes,
+        loggedEntryId,
+      );
 
       if (res.success && res.data) {
         // Invalidate cache and refetch

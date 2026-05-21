@@ -61,8 +61,10 @@ export default function SignIn() {
         // Store auth token
         await storeToken(response.token);
 
-        // Navigate to tab navigator
-        navigation.navigate('TabNavigator');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'TabNavigator' }],
+        });
       } else {
         Alert.alert(
           'Login Failed',
@@ -70,8 +72,9 @@ export default function SignIn() {
         );
       }
     } catch (error: any) {
+      const title = error?.status === 401 ? 'Login Failed' : 'Error';
       Alert.alert(
-        'Error',
+        title,
         error.message || 'Something went wrong. Please try again.',
       );
     } finally {
@@ -97,8 +100,10 @@ export default function SignIn() {
             googleUser: result.user,
           } as any);
         } else {
-          // Existing user - navigate to main app
-          navigation.navigate('TabNavigator');
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'TabNavigator' }],
+          });
         }
       }
     } catch (error: any) {
