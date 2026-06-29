@@ -27,11 +27,15 @@ import PeriodDuration from '../../screens/PeriodDuration';
 import CyclePattern from '../../screens/CyclePattern';
 import QuickTracking from '../../screens/QuickTracking';
 import TabNavigator from '../tabNavigator';
+import PartnerStackNavigator from '../partnerTabNavigator';
 import SleepTracker from '../../screens/SleepTracker';
 import CycleInsight from '../../screens/CycleInsight';
 import FounderStory from '../../screens/FounderStory';
 import HormoneResetGuide from '../../screens/HormoneResetGuide';
 import Profile from '../../screens/Profile';
+import EditBodyMetricsScreen from '../../screens/Profile/edit/EditBodyMetricsScreen';
+import EditGoalsCycleScreen from '../../screens/Profile/edit/EditGoalsCycleScreen';
+import EditDietaryScreen from '../../screens/Profile/edit/EditDietaryScreen';
 import ChallengeHub from '../../screens/ChallengeHub';
 import DetoxChallenge from '../../screens/DetoxChallenge';
 import { AccountSetupScreen } from '../../screens/onboarding/AccountSetupScreen';
@@ -85,6 +89,9 @@ import WeeklyMealPlanningScreen from '../../screens/WeeklyMealPlanning';
 import GroceryListScreen from '../../screens/GroceryList';
 import WeeklyMealOverviewScreen from '../../screens/WeeklyMealOverview';
 import RitualLibraryScreen from '../../screens/RitualLibrary';
+import PartnerConnect from '../../screens/PartnerConnect';
+import PartnerCodeEntry from '../../screens/PartnerCodeEntry';
+import { PartnerModeProvider } from '../../context/PartnerModeContext';
 
 export type RootStackParamList = {
   SignIn: any;
@@ -114,6 +121,7 @@ export type RootStackParamList = {
   CyclePattern: any;
   QuickTracking: any;
   TabNavigator: any;
+  PartnerStackNavigator: any;
   SleepTracker: any;
   CycleInsight: { tab?: string } | undefined;
   FounderStory: any;
@@ -144,6 +152,9 @@ export type RootStackParamList = {
   Journals: undefined;
   WriteJournal: { journal?: JournalType } | undefined;
   Profile: undefined;
+  EditProfileBody: undefined;
+  EditProfileGoals: undefined;
+  EditProfileDietary: undefined;
   CycleInsights: undefined;
   SleepTracking: undefined;
   Track:
@@ -167,6 +178,8 @@ export type RootStackParamList = {
   WeeklyMealOverview: undefined;
   GroceryList: undefined;
   RitualLibrary: undefined;
+  PartnerConnect: undefined;
+  PartnerCodeEntry: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -177,11 +190,16 @@ type MainStackProps = {
 
 export default function MainStack({ initialSessionRoute }: MainStackProps) {
   const initialRouteName =
-    initialSessionRoute === 'TabNavigator' ? 'TabNavigator' : 'Welcome';
+    initialSessionRoute === 'TabNavigator'
+      ? 'TabNavigator'
+      : initialSessionRoute === 'PartnerStackNavigator'
+        ? 'PartnerStackNavigator'
+        : 'Welcome';
 
   return (
     <SafeAreaProvider>
       <OnboardingProvider>
+        <PartnerModeProvider>
         <StatusBar barStyle="dark-content" />
         <NavigationHandler initialSessionRoute={initialSessionRoute} />
         <JournalProvider>
@@ -233,6 +251,18 @@ export default function MainStack({ initialSessionRoute }: MainStackProps) {
           <Stack.Screen name="Journals" component={Journals} />
           <Stack.Screen name="WriteJournal" component={WriteJournal} />
           <Stack.Screen name="Profile" component={Profile} />
+          <Stack.Screen
+            name="EditProfileBody"
+            component={EditBodyMetricsScreen}
+          />
+          <Stack.Screen
+            name="EditProfileGoals"
+            component={EditGoalsCycleScreen}
+          />
+          <Stack.Screen
+            name="EditProfileDietary"
+            component={EditDietaryScreen}
+          />
           <Stack.Screen name="CycleInsights" component={CycleInsightsScreen} />
           <Stack.Screen name="SleepTracking" component={SleepTrackingScreen} />
           <Stack.Screen name="Track" component={Track} />
@@ -257,6 +287,10 @@ export default function MainStack({ initialSessionRoute }: MainStackProps) {
 
           <Stack.Screen name="IntroSlider" component={IntroSlider} />
           <Stack.Screen name="TabNavigator" component={TabNavigator} />
+          <Stack.Screen
+            name="PartnerStackNavigator"
+            component={PartnerStackNavigator}
+          />
           <Stack.Screen name="CycleInsight" component={CycleInsight} />
           <Stack.Screen name="SignIn" component={SignIn} />
           <Stack.Screen name="SignUp" component={SignUp} />
@@ -305,8 +339,11 @@ export default function MainStack({ initialSessionRoute }: MainStackProps) {
           <Stack.Screen name="UserProfile" component={Profile} />
           <Stack.Screen name="ChallengeHub" component={ChallengeHub} />
           <Stack.Screen name="DetoxChallenge" component={DetoxChallenge} />
+          <Stack.Screen name="PartnerConnect" component={PartnerConnect} />
+          <Stack.Screen name="PartnerCodeEntry" component={PartnerCodeEntry} />
           </Stack.Navigator>
         </JournalProvider>
+        </PartnerModeProvider>
         {/* </NavigationContainer> */}
       </OnboardingProvider>
     </SafeAreaProvider>

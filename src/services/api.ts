@@ -112,8 +112,56 @@ function isUnauthenticatedAuthEndpoint(endpoint: string): boolean {
     '/auth/google',
     '/auth/forgot-password',
     '/auth/reset-password',
+    '/partner/connect',
   ];
   return publicAuthPaths.some(p => path === p);
+}
+
+export type SessionType = 'owner' | 'partner';
+
+const SESSION_TYPE_KEY = 'sessionType';
+
+function isMutatingMethod(method?: string): boolean {
+  const m = (method || 'GET').toUpperCase();
+  return m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE';
+}
+
+function isPartnerAllowedMutation(endpoint: string, method?: string): boolean {
+  const path = endpoint.split('?')[0];
+  return path === '/partner/logout' && (method || 'GET').toUpperCase() === 'POST';
+}
+
+export async function getStoredSessionType(): Promise<SessionType> {
+  try {
+    const value = await AsyncStorage.getItem(SESSION_TYPE_KEY);
+    return value === 'partner' ? 'partner' : 'owner';
+  } catch {
+    return 'owner';
+  }
+}
+
+export async function storeSessionType(sessionType: SessionType): Promise<void> {
+  try {
+    await AsyncStorage.setItem(SESSION_TYPE_KEY, sessionType);
+  } catch (error) {
+    console.error('Error storing session type:', error);
+  }
+}
+
+export async function clearSessionType(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(SESSION_TYPE_KEY);
+  } catch (error) {
+    console.error('Error clearing session type:', error);
+  }
+}
+
+export async function storeAuthSession(
+  token: string,
+  sessionType: SessionType = 'owner',
+): Promise<void> {
+  await storeToken(token);
+  await storeSessionType(sessionType);
 }
 
 async function apiCall<T>(
@@ -122,8 +170,23 @@ async function apiCall<T>(
   retries: number = 2,
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
+  const method = options.method || 'GET';
 
   const skipAuthHeader = isUnauthenticatedAuthEndpoint(endpoint);
+  const sessionType = skipAuthHeader ? 'owner' : await getStoredSessionType();
+  if (
+    sessionType === 'partner' &&
+    isMutatingMethod(method) &&
+    !isPartnerAllowedMutation(endpoint, method)
+  ) {
+    const errorObj: ApiError = new Error(
+      'Partner view is read-only. Exit partner view to make changes.',
+    ) as ApiError;
+    errorObj.status = 403;
+    errorObj.code = 'PARTNER_READ_ONLY';
+    throw errorObj;
+  }
+
   const token = skipAuthHeader ? null : await getStoredToken();
   const defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -185,7 +248,14 @@ async function apiCall<T>(
           }
         } else if (response.status === 403) {
           errorObj.message =
+            errorData.message ||
             'You do not have permission to perform this action.';
+          if (
+            errorData.message?.includes('read-only') ||
+            errorData.message?.includes('Partner mode')
+          ) {
+            errorObj.code = 'PARTNER_READ_ONLY';
+          }
         } else if (response.status === 404) {
           errorObj.message = 'The requested resource was not found.';
         } else if (response.status === 422) {
@@ -207,6 +277,7 @@ async function apiCall<T>(
         if (response.status === 401 && !isPreAuth401) {
           try {
             await clearToken();
+            await clearSessionType();
           } catch {
             // Token clearing is best-effort; navigation still follows.
           }
@@ -304,6 +375,7 @@ export async function clearToken(): Promise<void> {
     }
     // Always clear the fallback store as well.
     await AsyncStorage.removeItem('authToken');
+    await clearSessionType();
   } catch (error) {
     console.error('Error clearing token:', error);
   }
@@ -1194,6 +1266,22 @@ export async function getPersonalizedInsight(): Promise<PersonalizedInsightRespo
 }
 
 // User API
+export interface DietaryRestrictions {
+  vegetarian?: boolean;
+  vegan?: boolean;
+  pescatarian?: boolean;
+  glutenFree?: boolean;
+  dairyFree?: boolean;
+  nutAllergy?: boolean;
+}
+
+export type PrimaryGoal =
+  | 'weight_loss'
+  | 'weight_gain'
+  | 'maintenance'
+  | 'muscle_gain'
+  | 'health';
+
 export interface User {
   _id: string;
   fullName: string;
@@ -1206,20 +1294,90 @@ export interface User {
   height?: string;
   weight?: string;
   targetWeight?: string;
+  primaryGoal?: PrimaryGoal | string;
   isTrackingCycle?: boolean;
   cycleLength?: string;
   periodLength?: string;
   lastPeriodStartDate?: string;
   lastPeriodEndDate?: string;
   isPregnant?: boolean;
-  trimester?: number;
+  trimester?: 1 | 2 | 3 | null;
   isBreastfeeding?: boolean;
-  // Add other user fields as needed
+  dietaryRestrictions?: DietaryRestrictions;
+  otherAllergies?: string;
+  cuisinePreferences?: string[];
+  dislikedFoods?: string;
+  favoriteFoods?: string;
 }
 
 export interface GetMeResponse {
   success: boolean;
   user: User;
+  sessionType?: SessionType;
+  partnerStatus?: {
+    partnerSessionActive: boolean;
+    codeExpiresAt: string | null;
+  };
+}
+
+export interface PartnerStatusResponse {
+  success: boolean;
+  partnerSessionActive: boolean;
+  partnerConnectedAt: string | null;
+  codeExpiresAt: string | null;
+  hasActiveCode: boolean;
+}
+
+export interface GeneratePartnerCodeResponse {
+  success: boolean;
+  code: string;
+  expiresAt: string;
+}
+
+export interface ConnectPartnerCodeResponse {
+  success: boolean;
+  token: string;
+  primaryUserName?: string;
+  message?: string;
+}
+
+export async function generatePartnerCode(): Promise<GeneratePartnerCodeResponse> {
+  return apiCall<GeneratePartnerCodeResponse>('/partner/code/generate', {
+    method: 'POST',
+  });
+}
+
+export async function getPartnerStatus(): Promise<PartnerStatusResponse> {
+  return apiCall<PartnerStatusResponse>('/partner/status', {
+    method: 'GET',
+  });
+}
+
+export async function disconnectPartner(): Promise<{
+  success: boolean;
+  message?: string;
+}> {
+  return apiCall<{ success: boolean; message?: string }>('/partner/disconnect', {
+    method: 'POST',
+  });
+}
+
+export async function connectWithPartnerCode(
+  code: string,
+): Promise<ConnectPartnerCodeResponse> {
+  return apiCall<ConnectPartnerCodeResponse>('/partner/connect', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  });
+}
+
+export async function partnerLogout(): Promise<{
+  success: boolean;
+  message?: string;
+}> {
+  return apiCall<{ success: boolean; message?: string }>('/partner/logout', {
+    method: 'POST',
+  });
 }
 
 export async function getMe(): Promise<GetMeResponse> {
@@ -1247,6 +1405,20 @@ export interface ProfileUpdateRequest {
   height?: string;
   weight?: string;
   targetWeight?: string;
+  primaryGoal?: PrimaryGoal | string | null;
+  isTrackingCycle?: boolean;
+  cycleLength?: string;
+  periodLength?: string;
+  lastPeriodStartDate?: string;
+  lastPeriodEndDate?: string;
+  isPregnant?: boolean;
+  trimester?: 1 | 2 | 3 | null;
+  isBreastfeeding?: boolean;
+  dietaryRestrictions?: DietaryRestrictions;
+  otherAllergies?: string;
+  cuisinePreferences?: string[];
+  dislikedFoods?: string;
+  favoriteFoods?: string;
 }
 
 export async function updateProfile(

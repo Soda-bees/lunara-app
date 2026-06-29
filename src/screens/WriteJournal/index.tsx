@@ -15,6 +15,8 @@ import BackButton from '../../components/BackButton';
 import { colors } from '../../constants/colors';
 import { ErrorShow } from '../../components/Toast';
 import { useJournal } from '../../context/JournalContext';
+import { usePartnerMode } from '../../context/PartnerModeContext';
+import { showPartnerReadOnlyAlert } from '../../utils/partnerReadOnly';
 
 type NavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -26,6 +28,7 @@ const WriteJournal = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<WriteJournalRouteProp>();
   const { addJournal, updateJournal } = useJournal();
+  const { isPartnerMode } = usePartnerMode();
   const journal = route.params?.journal;
 
   const [title, setTitle] = useState(journal?.title || '');
@@ -35,6 +38,10 @@ const WriteJournal = () => {
   const isEdit = !!journal;
 
   const handleSaveJournal = async () => {
+    if (isPartnerMode) {
+      showPartnerReadOnlyAlert();
+      return;
+    }
     try {
       setLoader(true);
 
@@ -101,7 +108,7 @@ const WriteJournal = () => {
             <View style={styles.btnContainer}>
               <Button
                 title={isEdit ? 'Update Journal' : '+ Add Journal'}
-                disabled={!title || !notes}
+                disabled={!title || !notes || isPartnerMode}
                 onPress={handleSaveJournal}
                 loader={loader}
               />

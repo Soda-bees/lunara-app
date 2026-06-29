@@ -26,11 +26,17 @@ export const NavigationHandler: React.FC<NavigationHandlerProps> = ({
   const [authCheckStatus, setAuthCheckStatus] = useState<
     'authed' | 'unauth'
   >(() =>
-    initialSessionRoute === 'TabNavigator' ? 'authed' : 'unauth',
+    initialSessionRoute === 'TabNavigator' ||
+    initialSessionRoute === 'PartnerStackNavigator'
+      ? 'authed'
+      : 'unauth',
   );
 
   useEffect(() => {
-    if (initialSessionRoute === 'TabNavigator') {
+    if (
+      initialSessionRoute === 'TabNavigator' ||
+      initialSessionRoute === 'PartnerStackNavigator'
+    ) {
       hasNavigated.current = true;
     }
   }, [initialSessionRoute]);

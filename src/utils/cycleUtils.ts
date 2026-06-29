@@ -1,5 +1,25 @@
 import { CycleStatusResponse, Period } from '../services/api';
 
+export function formatDaysUntilPeriodStat(days: number): {
+  label: string;
+  detail: string;
+} {
+  if (days < 0) {
+    const overdueDays = Math.abs(days);
+    return {
+      label: 'Late',
+      detail: `${overdueDays} day${overdueDays === 1 ? '' : 's'} overdue`,
+    };
+  }
+  if (days === 0) {
+    return { label: 'Today', detail: 'Period expected' };
+  }
+  if (days === 1) {
+    return { label: '1', detail: 'Day until period' };
+  }
+  return { label: String(days), detail: 'Days until period' };
+}
+
 /**
  * Check if today falls within any logged period (actual data)
  */

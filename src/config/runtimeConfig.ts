@@ -11,9 +11,9 @@ const PROD_API_BASE_URL =
   'https://lunaranew-e6853745dbd7.herokuapp.com/api';
 
 const DEV_ANDROID_API_BASE_URL =
-  'http://192.168.100.207:3000/api';
+  'http://192.168.100.206:8080/api';
 
-const DEV_IOS_API_BASE_URL = 'http://localhost:3000/api';
+const DEV_IOS_API_BASE_URL = 'http://localhost:8080/api';
 
 export function getApiBaseUrl(): string {
   const override = globalThis.__LUNARA_API_BASE_URL__;

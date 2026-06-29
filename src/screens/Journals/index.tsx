@@ -21,6 +21,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import { JournalType } from '../../types';
 import TouchAnimation from '../../components/TouchAnimation';
 import { useJournal } from '../../context/JournalContext';
+import { usePartnerMode } from '../../context/PartnerModeContext';
+import { showPartnerReadOnlyAlert } from '../../utils/partnerReadOnly';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Journals'>;
 
@@ -29,6 +31,7 @@ const Journals = () => {
   const [search, setSearch] = useState('');
   const { journals, loading, refreshing, error, refreshJournals } =
     useJournal();
+  const { isPartnerMode } = usePartnerMode();
 
   useFocusEffect(
     useCallback(() => {
@@ -55,6 +58,10 @@ const Journals = () => {
   }
 
   const handleWriteANote = () => {
+    if (isPartnerMode) {
+      showPartnerReadOnlyAlert();
+      return;
+    }
     navigation.navigate('WriteJournal', {});
   };
 
@@ -168,12 +175,14 @@ const Journals = () => {
           />
         )}
       </View>
-      <TouchableOpacity
-        style={styles.addJournalIconContainer}
-        onPress={handleWriteANote}
-      >
-        <Image source={images.addJournalIcon} style={styles.addJournalIcon} />
-      </TouchableOpacity>
+      {!isPartnerMode && (
+        <TouchableOpacity
+          style={styles.addJournalIconContainer}
+          onPress={handleWriteANote}
+        >
+          <Image source={images.addJournalIcon} style={styles.addJournalIcon} />
+        </TouchableOpacity>
+      )}
     </SoftGradientBackground>
   );
 };

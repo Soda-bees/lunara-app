@@ -1,74 +1,249 @@
 import React, { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Image,
   ScrollView,
   StatusBar,
   Text,
   TouchableOpacity,
   View,
-  Image,
-  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import BackButton from '../../components/BackButton';
-import LinearGradient from 'react-native-linear-gradient';
-import { gradients } from '../../constants/gradientColors';
 import images from '../../constants/images';
 import styles from './style';
-import GradientWrapper from '../../components/GradientWrapper';
 import { colors } from '../../constants/colors';
-import { getMe, updateProfile, type User } from '../../services/api';
+import {
+  clearToken,
+  getAllChallenges,
+  getCurrentCycleStatus,
+  getFastingInsights,
+  getMe,
+  getSleepStatistics,
+  updateProfile,
+  type User,
+} from '../../services/api';
+import { useOnboarding } from '../../context/OnboardingContext';
 import {
   DEFAULT_MEASUREMENT_SYSTEM,
-  formatHeight,
-  formatWeight,
-  formatWeightParts,
   type MeasurementSystem,
 } from '../../utils/measurement';
+import { formatBodySummary } from './edit/EditBodyMetricsScreen';
+import { formatGoalLabel } from './edit/EditGoalsCycleScreen';
+import { formatDietarySummary } from './edit/EditDietaryScreen';
+import { formatDaysUntilPeriodStat } from '../../utils/cycleUtils';
+import { usePartnerMode } from '../../context/PartnerModeContext';
+import { showPartnerReadOnlyAlert } from '../../utils/partnerReadOnly';
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
-type TabType = 'Insights' | 'Tracking' | 'Achievements';
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profile'>;
+
+type ProfileStats = {
+  cycleLabel: string;
+  cycleDetail: string;
+  fastingLabel: string;
+  fastingDetail: string;
+  challengeLabel: string;
+  challengeDetail: string;
+  sleepLabel: string;
+  sleepDetail: string;
+  nextPeriodLabel: string;
+  nextPeriodDetail: string;
+  avgFastLabel: string;
+  avgFastDetail: string;
+};
+
+const EMPTY_STATS: ProfileStats = {
+  cycleLabel: '—',
+  cycleDetail: 'Not available',
+  fastingLabel: '—',
+  fastingDetail: 'Not available',
+  challengeLabel: '—',
+  challengeDetail: 'Not available',
+  sleepLabel: 'No logs',
+  sleepDetail: 'Sleep tracker',
+  nextPeriodLabel: '—',
+  nextPeriodDetail: 'Not tracking',
+  avgFastLabel: 'No fasts',
+  avgFastDetail: 'Last 7 days',
+};
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function formatMinutesAsHours(minutes: number | null | undefined): string | null {
+  if (minutes == null || Number.isNaN(minutes)) {
+    return null;
+  }
+  const hours = Math.round((minutes / 60) * 10) / 10;
+  return `${hours}h`;
+}
 
 export default function Profile() {
   const navigation = useNavigation<NavigationProp>();
+  const { resetData } = useOnboarding();
+  const { isPartnerMode } = usePartnerMode();
   const [user, setUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('Insights');
-  const [dailyReminders, setDailyReminders] = useState(true);
-  const [phaseNotifications, setPhaseNotifications] = useState(true);
+  const [stats, setStats] = useState<ProfileStats>(EMPTY_STATS);
+  const [statEmptyFlags, setStatEmptyFlags] = useState({
+    sleep: true,
+    avgFast: true,
+  });
+  const [loading, setLoading] = useState(true);
+
+  const loadProfile = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [meRes, cycleRes, fastingRes, challengesRes, sleepRes] =
+        await Promise.allSettled([
+          getMe(),
+          getCurrentCycleStatus(),
+          getFastingInsights(7),
+          getAllChallenges(),
+          getSleepStatistics(),
+        ]);
+
+      if (meRes.status === 'fulfilled' && meRes.value.success && meRes.value.user) {
+        setUser(meRes.value.user);
+      }
+
+      const nextStats: ProfileStats = { ...EMPTY_STATS };
+
+      if (
+        cycleRes.status === 'fulfilled' &&
+        cycleRes.value.success &&
+        cycleRes.value.data
+      ) {
+        const cycle = cycleRes.value.data;
+        if (cycle.isTracking && cycle.phase) {
+          nextStats.cycleLabel = capitalize(cycle.phase);
+          nextStats.cycleDetail =
+            cycle.cycleDay != null ? `Day ${cycle.cycleDay}` : 'Tracking active';
+        } else {
+          nextStats.cycleLabel = 'Off';
+          nextStats.cycleDetail = cycle.message || 'Not tracking';
+        }
+
+        if (cycle.isTracking && cycle.daysUntilNextPeriod != null) {
+          const periodStat = formatDaysUntilPeriodStat(cycle.daysUntilNextPeriod);
+          nextStats.nextPeriodLabel = periodStat.label;
+          nextStats.nextPeriodDetail = periodStat.detail;
+        }
+      }
+
+      let hasSleepData = false;
+      if (
+        sleepRes.status === 'fulfilled' &&
+        sleepRes.value.success &&
+        sleepRes.value.data
+      ) {
+        const sleep = sleepRes.value.data;
+        if (sleep.averages.duration != null && sleep.totalLogs > 0) {
+          hasSleepData = true;
+          nextStats.sleepLabel = `${Math.round(sleep.averages.duration * 10) / 10}h`;
+          nextStats.sleepDetail = '7-day avg';
+        }
+      }
+
+      let hasAvgFastData = false;
+      if (
+        fastingRes.status === 'fulfilled' &&
+        fastingRes.value.success &&
+        fastingRes.value.data
+      ) {
+        const fasting = fastingRes.value.data;
+        nextStats.fastingLabel = String(fasting.currentStreakDays ?? 0);
+        nextStats.fastingDetail = 'Day streak';
+
+        const avgFast = formatMinutesAsHours(fasting.averageDurationMinutes);
+        if (avgFast) {
+          hasAvgFastData = true;
+          nextStats.avgFastLabel = avgFast;
+          nextStats.avgFastDetail = 'Avg fast (7d)';
+        }
+      }
+
+      if (
+        challengesRes.status === 'fulfilled' &&
+        challengesRes.value.success &&
+        challengesRes.value.data
+      ) {
+        const active = challengesRes.value.data.find(
+          item => item.userInstance?.status === 'active',
+        );
+        if (active?.userInstance) {
+          nextStats.challengeLabel = active.title;
+          nextStats.challengeDetail = `Day ${active.userInstance.currentDay}/${active.duration}`;
+        } else {
+          nextStats.challengeLabel = 'None';
+          nextStats.challengeDetail = 'No active challenge';
+        }
+      }
+
+      setStats(nextStats);
+      setStatEmptyFlags({
+        sleep: !hasSleepData,
+        avgFast: !hasAvgFastData,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      let active = true;
-      getMe()
-        .then(res => {
-          if (active && res.success && res.user) {
-            setUser(res.user);
-          }
-        })
-        .catch(() => {});
-      return () => {
-        active = false;
-      };
-    }, []),
+      loadProfile();
+    }, [loadProfile]),
   );
 
   const sys: MeasurementSystem =
     user?.measurementSystem ?? DEFAULT_MEASUREMENT_SYSTEM;
-  const displayName = user?.fullName ?? 'Luna Goddess';
-  const displayEmail = user?.email ?? 'luna@example.com';
 
   const saveMeasurementSystem = async (next: MeasurementSystem) => {
+    if (isPartnerMode) {
+      showPartnerReadOnlyAlert();
+      return;
+    }
     try {
       const res = await updateProfile({ measurementSystem: next });
       if (res.success && res.user) {
         setUser(res.user);
       }
     } catch {
-      // ignore
+      Alert.alert('Error', 'Could not update unit preference.');
     }
   };
+
+  const handleSignOut = () => {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await clearToken();
+            resetData();
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Welcome' }],
+            });
+          } catch {
+            Alert.alert('Error', 'Failed to logout. Please try again.');
+          }
+        },
+      },
+    ]);
+  };
+
+  const bodySummary =
+    user?.heightCm != null || user?.weightKg != null
+      ? formatBodySummary(user.heightCm, user.weightKg, sys)
+      : 'Add height and weight';
 
   return (
     <SafeAreaView style={styles.mainContainer} edges={['top']}>
@@ -77,23 +252,27 @@ export default function Profile() {
         backgroundColor="transparent"
         barStyle="dark-content"
       />
-
-      {/* Header */}
       <BackButton />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.contentContainer}>
-          {/* Profile Info Section */}
           <View style={styles.profileInfoSection}>
             <Image source={images.profileIcon} style={styles.profilePicture} />
-            <Text style={styles.profileName}>{displayName}</Text>
-            <Text style={styles.profileEmail}>{displayEmail}</Text>
-            {(user?.heightCm != null || user?.weightKg != null) && (
-              <Text style={styles.profileBodyLine}>
-                {`${user?.heightCm != null ? formatHeight(user.heightCm, sys) : '—'} · ${user?.weightKg != null ? formatWeight(user.weightKg, sys) : '—'}`}
-              </Text>
+            {loading && !user ? (
+              <ActivityIndicator color={colors.maroonText} style={{ marginVertical: 12 }} />
+            ) : (
+              <>
+                <Text style={styles.profileName}>
+                  {user?.fullName || 'Your profile'}
+                </Text>
+                <Text style={styles.profileEmail}>
+                  {user?.email || '—'}
+                </Text>
+                <Text style={styles.profileBodyLine}>{bodySummary}</Text>
+              </>
             )}
-            {user && (
+
+            {user && !isPartnerMode && (
               <View style={styles.unitPrefRow}>
                 <TouchableOpacity
                   style={[
@@ -129,727 +308,138 @@ export default function Profile() {
                 </TouchableOpacity>
               </View>
             )}
-            <TouchableOpacity style={styles.editProfileButton}>
-              <Text style={styles.editProfileText}>Edit Profile</Text>
-            </TouchableOpacity>
           </View>
 
-          {/* Stats Cards */}
+          <Text style={styles.sectionHeading}>Your Stats</Text>
           <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
-              <Image source={images.challengesIcon} style={styles.statIcon} />
-              <Text style={styles.statNumber}>8</Text>
-              <Text style={styles.statLabel}>Day Streak</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Image source={images.feelingsIcon} style={styles.statIcon} />
-              <Text style={styles.statNumber}>127</Text>
-              <Text style={styles.statLabel}>Total Day</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Image source={images.badgesIcon} style={styles.statIcon} />
-              <Text style={styles.statNumber}>12</Text>
-              <Text style={styles.statLabel}>Badges</Text>
-            </View>
-          </View>
-
-          {/* Tab Navigation */}
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'Insights' && styles.tabActive]}
-              onPress={() => setActiveTab('Insights')}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === 'Insights' && styles.tabTextActive,
-                ]}
-              >
-                Insights
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'Tracking' && styles.tabActive]}
-              onPress={() => setActiveTab('Tracking')}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === 'Tracking' && styles.tabTextActive,
-                ]}
-              >
-                Tracking
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.tab,
-                activeTab === 'Achievements' && styles.tabActive,
-              ]}
-              onPress={() => setActiveTab('Achievements')}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === 'Achievements' && styles.tabTextActive,
-                ]}
-              >
-                Achievements
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Tab Content */}
-          {activeTab === 'Insights' && <InsightsTab />}
-          {activeTab === 'Tracking' && <TrackingTab user={user} />}
-          {activeTab === 'Achievements' && <AchievementsTab />}
-
-          {/* Common Sections (visible in all tabs) */}
-
-          <View style={{ gap: 16 }}>
-            <PreferencesSection
-              dailyReminders={dailyReminders}
-              phaseNotifications={phaseNotifications}
-              setDailyReminders={setDailyReminders}
-              setPhaseNotifications={setPhaseNotifications}
+            <StatCard
+              icon={images.btCycleActive}
+              label={stats.cycleLabel}
+              detail={stats.cycleDetail}
             />
-            <UnitsDisplaySection />
-            <AccountActionsSection navigation={navigation} />
+            <StatCard
+              icon={images.clockIcon}
+              label={stats.fastingLabel}
+              detail={stats.fastingDetail}
+            />
+            <StatCard
+              icon={images.challengesIcon}
+              label={stats.challengeLabel}
+              detail={stats.challengeDetail}
+            />
+            <StatCard
+              icon={images.sleepQualityIcon}
+              label={stats.sleepLabel}
+              detail={stats.sleepDetail}
+              isEmpty={statEmptyFlags.sleep}
+            />
+            <StatCard
+              icon={images.periodCalender}
+              label={stats.nextPeriodLabel}
+              detail={stats.nextPeriodDetail}
+            />
+            <StatCard
+              icon={images.eggOut}
+              label={stats.avgFastLabel}
+              detail={stats.avgFastDetail}
+              isEmpty={statEmptyFlags.avgFast}
+            />
           </View>
+
+          <Text style={styles.sectionHeading}>Account</Text>
+          <View style={styles.settingsList}>
+            <SettingsRow
+              title="Body Metrics"
+              subtitle={bodySummary}
+              onPress={() => {
+                if (isPartnerMode) {
+                  showPartnerReadOnlyAlert();
+                  return;
+                }
+                navigation.navigate('EditProfileBody');
+              }}
+            />
+            <SettingsRow
+              title="Goals & Cycle"
+              subtitle={`${formatGoalLabel(user?.primaryGoal)} · ${
+                user?.isTrackingCycle ? 'Tracking on' : 'Tracking off'
+              }`}
+              onPress={() => {
+                if (isPartnerMode) {
+                  showPartnerReadOnlyAlert();
+                  return;
+                }
+                navigation.navigate('EditProfileGoals');
+              }}
+            />
+            <SettingsRow
+              title="Dietary Preferences"
+              subtitle={formatDietarySummary(user?.dietaryRestrictions)}
+              onPress={() => {
+                if (isPartnerMode) {
+                  showPartnerReadOnlyAlert();
+                  return;
+                }
+                navigation.navigate('EditProfileDietary');
+              }}
+            />
+          </View>
+
+          {/* <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+            <Image source={images.logoutIcon} style={styles.signOutIcon} />
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity> */}
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// Insights Tab Component
-function InsightsTab() {
-  return (
-    <View style={styles.tabContent}>
-      {/* Deep Insights Section */}
-      <GradientWrapper variant="basic">
-        <View style={styles.sectionSmall}>
-          <View style={styles.sectionHeader}>
-            <Image source={images.mindsetIcon} style={styles.insightCardIcon} />
-
-            <Text style={styles.sectionTitle}>Deep Insights</Text>
-          </View>
-
-          <View style={styles.insightCard}>
-            <Image source={images.sparkle} style={styles.insightCardIcon} />
-            <View>
-              <Text style={styles.insightCardTitle}>Your Cycle Superpower</Text>
-              <Text style={styles.insightCardText}>
-                You're most energetic during days 9-14. Consider scheduling
-                important activities then.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.insightCard}>
-            <Image source={images.energyHigh} style={styles.insightCardIcon} />
-
-            <View>
-              <Text style={styles.insightCardTitle}>Energy Trend</Text>
-              <Text style={styles.insightCardText}>
-                Your overall energy is up 23% this cycle compared to last month.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.insightCard}>
-            <Image
-              source={images.btCycleActive}
-              style={styles.insightCardIcon}
-            />
-
-            <View>
-              <Text style={styles.insightCardTitle}>Sleep Quality</Text>
-              <Text style={styles.insightCardText}>
-                You sleep 1.5 hours longer during your menstrual phase. Honor
-                this rest.
-              </Text>
-            </View>
-          </View>
-        </View>
-      </GradientWrapper>
-
-      {/* Patterns Detected Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Image source={images.btTrackActive} style={styles.insightCardIcon} />
-
-          <Text style={styles.sectionTitle}>Patterns Detected</Text>
-        </View>
-
-        <View style={styles.patternCard}>
-          <View style={styles.patternHeader}>
-            <Text style={styles.patternTitle}>Cycle Regularity</Text>
-            <View style={styles.patternBadge}>
-              <Text style={styles.patternBadgeText}>Excellent</Text>
-            </View>
-          </View>
-          <View style={styles.progressBar}>
-            <LinearGradient
-              colors={gradients.primary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[styles.progressBarFill, { width: '80%' }]}
-            />
-          </View>
-          <Text style={styles.patternDescription}>
-            28-day average, ±1 day variation
-          </Text>
-        </View>
-
-        <View style={styles.patternCard}>
-          <View style={styles.patternHeader}>
-            <Text style={styles.patternTitle}>Movement Consistency</Text>
-            <View style={styles.patternBadge}>
-              <Text style={styles.patternBadgeText}>Excellent</Text>
-            </View>
-          </View>
-          <View style={styles.progressBar}>
-            <LinearGradient
-              colors={gradients.primary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[styles.progressBarFill, { width: '70%' }]}
-            />
-          </View>
-          <Text style={styles.patternDescription}>
-            5-6 days active per week
-          </Text>
-        </View>
-
-        <View style={styles.patternCard}>
-          <View style={styles.patternHeader}>
-            <Text style={styles.patternTitle}>Fasting Adherence</Text>
-            <View style={styles.patternBadge}>
-              <Text style={styles.patternBadgeText}>Strong</Text>
-            </View>
-          </View>
-          <View style={styles.progressBar}>
-            <LinearGradient
-              colors={gradients.primary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[styles.progressBarFill, { width: '60%' }]}
-            />
-          </View>
-          <Text style={styles.patternDescription}>
-            14-16 hour fasts, 4-5x weekly
-          </Text>
-        </View>
-      </View>
-
-      {/* Energy Map Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Image source={images.energyIconn} style={styles.insightCardIcon} />
-
-          <Text style={styles.sectionTitle}>Your Energy Map</Text>
-        </View>
-
-        <View style={styles.energyMapCard}>
-          <View style={styles.energyPhaseRow}>
-            <Text style={styles.energyPhaseName}>Menstrual Phase</Text>
-            <EnergyBar value={3} />
-          </View>
-
-          <View style={styles.energyPhaseRow}>
-            <Text style={styles.energyPhaseName}>Follicular Phase</Text>
-            <EnergyBar value={4} />
-          </View>
-
-          <View style={styles.energyPhaseRow}>
-            <Text style={styles.energyPhaseName}>Ovulatory Phase</Text>
-            <EnergyBar value={5} />
-          </View>
-
-          <View style={styles.energyPhaseRow}>
-            <Text style={styles.energyPhaseName}>Luteal Phase</Text>
-            <EnergyBar value={4} />
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-const EnergyBar = ({ value }: { value: number }) => {
-  return (
-    <View style={styles.energyBarContainer}>
-      {[1, 2, 3, 4, 5].map(num => (
-        <View
-          key={num}
-          style={[
-            styles.energyBarItem,
-            num <= value && styles.energyBarItemActive,
-          ]}
-        />
-      ))}
-    </View>
-  );
-};
-
-// Tracking Tab Component
-function TrackingTab({ user }: { user: User | null }) {
-  const tabSys: MeasurementSystem =
-    user?.measurementSystem ?? DEFAULT_MEASUREMENT_SYSTEM;
-  const currentParts = formatWeightParts(user?.weightKg, tabSys);
-
-  return (
-    <View style={styles.tabContent}>
-      {/* Weight Tracking Section */}
-      <View style={styles.sectionHeaderWithAction}>
-        <View style={styles.sectionHeader}>
-          <Image
-            source={images.weightTrackingIcon}
-            style={styles.sectionIcon}
-          />
-
-          <View>
-            <Text style={styles.sectionTitle}>Weight Tracking</Text>
-            <Text style={styles.sectionSubtitle}>
-              Monitor your progress over time
-            </Text>
-          </View>
-        </View>
-        <TouchableOpacity style={styles.logButton}>
-          <Text style={styles.logButtonText}>+ Log</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.section}>
-        {/* Weight Trend */}
-        <View style={styles.weightTrendCard}>
-          <Text style={styles.weightTrendTitle}>Weight Trend</Text>
-          <Text style={styles.weightTrendSubtitle}>
-            Your progress over time
-          </Text>
-
-          <View style={styles.weightStatsRow}>
-            <View style={styles.weightStatCard}>
-              <Text style={styles.weightStatLabel}>Current</Text>
-              <Text style={styles.weightStatValue}>{currentParts.value}</Text>
-              <Text style={styles.weightStatUnit}>{currentParts.unit}</Text>
-            </View>
-            <View style={styles.weightStatCard}>
-              <Text style={styles.weightStatLabel}>Change</Text>
-              <View style={styles.weightChangeRow}>
-                <Text style={styles.weightChangeIcon}>📉</Text>
-                <Text style={styles.weightChangeValue}>2.6</Text>
-              </View>
-              <Text style={styles.weightChangePercent}>-1.7% loss</Text>
-            </View>
-          </View>
-          {/* Simple Graph Representation */}
-          <CustomWeightGraph />
-        </View>
-
-        {/* Recent Entries */}
-        <View style={styles.recentEntriesSection}>
-          <Text style={styles.recentEntriesTitle}>RECENT ENTRIES</Text>
-          {[
-            { weight: '149.8 lbs', date: 'Oct 23, 2025', tag: 'Latest' },
-            {
-              weight: '150.3 lbs',
-              date: 'Oct 20, 2025',
-              note: 'Great progress!',
-            },
-            { weight: '150.6 lbs', date: 'Oct 15, 2025' },
-            { weight: '151.2 lbs', date: 'Oct 10, 2025' },
-            { weight: '151.8 lbs', date: 'Oct 5, 2025', note: 'Feeling good' },
-          ].map((entry, index) => (
-            <View key={index} style={styles.recentEntryCard}>
-              <View>
-                <Text style={styles.recentEntryWeight}>{entry.weight}</Text>
-                <Text style={styles.recentEntryDate}>{entry.date}</Text>
-                {entry.note && (
-                  <Text style={styles.recentEntryNote}>{entry.note}</Text>
-                )}
-              </View>
-              {entry.tag && (
-                <View style={styles.recentEntryTag}>
-                  <Text style={styles.recentEntryTagText}>{entry.tag}</Text>
-                </View>
-              )}
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {/* Active Tracking Section */}
-      <View style={styles.section}>
-        <View style={{ gap: 12 }}>
-          <Text style={styles.sectionTitle}>Active Tracking</Text>
-          {[
-            {
-              icon: images.btCycleActive,
-              name: 'Cycle Phase',
-              frequency: 'Daily',
-            },
-            {
-              icon: images.feelingsIcon,
-              name: 'Mood & Energy',
-              frequency: 'Daily',
-            },
-            {
-              icon: images.btTrackActive,
-              name: 'Movement',
-              frequency: '5-6x/week',
-            },
-            {
-              icon: images.challengesIcon,
-              name: 'Fasting',
-              frequency: '4-5x/week',
-            },
-            { icon: images.sparkle, name: 'Nutrition', frequency: 'Daily' },
-            {
-              icon: images.mindsetIcon,
-              name: 'Mindfulness',
-              frequency: '3-4x/week',
-            },
-          ].map((item, index) => (
-            <View key={index} style={styles.activeTrackingItem}>
-              <Image source={item.icon} style={styles.activeTrackingIcon} />
-              <View style={styles.activeTrackingInfo}>
-                <Text style={styles.activeTrackingName}>{item.name}</Text>
-                <Text style={styles.activeTrackingFrequency}>
-                  {item.frequency}
-                </Text>
-              </View>
-              <View style={styles.activeTag}>
-                <Text style={styles.activeTagText}>active</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {/* Summary Cards */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Active Tracking</Text>
-        <View style={styles.summaryCardsContainer}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>23</Text>
-            <Text style={styles.summaryCardLabel}>Days Logged</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>18h</Text>
-            <Text style={styles.summaryCardLabel}>Avg Fast</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>142</Text>
-            <Text style={styles.summaryCardLabel}>Workouts</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryCardValue}>4.2</Text>
-            <Text style={styles.summaryCardLabel}>Avg Energy</Text>
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-// Achievements Tab Component
-function AchievementsTab() {
-  const badges = [
-    { icon: '🔥', title: 'Week 1' },
-    { icon: '⏰', title: 'Fast 16h' },
-    { icon: '🌙', title: 'Cycle Sync' },
-    { icon: '🧘', title: 'Mindful' },
-    { icon: '✨', title: 'Week 2' },
-    { icon: '💪', title: 'Move Daily' },
-    { icon: '🎯', title: 'Week 3' },
-    { icon: '⭐', title: 'Fast 18h' },
-    { icon: '👑', title: '30 Days' },
-  ];
-
-  const completedChallenges = [
-    { icon: '✨', title: '14-Day Sleep Reset', date: 'Days 6 - 13' },
-    { icon: '💎', title: '21-Day Abundance', date: 'Nov 2024' },
-    { icon: '🦋', title: '14-Day Nervous System', date: 'Oct 2024' },
-  ];
-
-  return (
-    <View style={styles.tabContent}>
-      {/* Your Badges Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Image source={images.badgesIcon} style={styles.insightCardIcon} />
-
-          <Text style={styles.sectionTitle}>Your Badges</Text>
-        </View>
-        <View style={styles.badgesGrid}>
-          {badges.map((badge, index) => (
-            <LinearGradient
-              key={index}
-              colors={gradients.primary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.badgeCard}
-            >
-              <Text style={styles.badgeIcon}>{badge.icon}</Text>
-              <Text style={styles.badgeTitle}>{badge.title}</Text>
-            </LinearGradient>
-          ))}
-        </View>
-      </View>
-
-      {/* Completed Challenges Section */}
-      <View style={styles.section}>
-        <View style={{ gap: 12 }}>
-          <View style={styles.sectionHeader}>
-            <Image source={images.checkBox} style={styles.insightCardIcon} />
-
-            <Text style={styles.sectionTitle}>Completed Challenges</Text>
-          </View>
-          {completedChallenges.map((challenge, index) => (
-            <View key={index} style={styles.completedChallengeCard}>
-              <Text style={styles.challengeIcon}>{challenge.icon}</Text>
-              <View style={styles.challengeInfo}>
-                <Text style={styles.challengeTitle}>{challenge.title}</Text>
-                <Text style={styles.challengeDate}>{challenge.date}</Text>
-              </View>
-              <Image
-                source={images.checkBoxGreen}
-                style={styles.insightCardIcon}
-              />
-
-              {/* <Text style={styles.checkmarkIcon}>✓</Text> */}
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {/* Current Challenge Section */}
-      <GradientWrapper variant="basic">
-        <View style={styles.sectionSmall}>
-          <Text style={styles.currentChallengeTitle}>Current Challenge</Text>
-          <View style={styles.currentChallengeHeader}>
-            <View>
-              <Text style={styles.currentChallengeName}>
-                21-Day Detox Reset
-              </Text>
-              <Text style={styles.currentChallengeProgress}>Day 8 of 21</Text>
-            </View>
-            <Image
-              source={images.periodCalender}
-              style={styles.insightCardIcon}
-            />
-          </View>
-          <View style={styles.progressBar}>
-            <LinearGradient
-              colors={gradients.primary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[styles.progressBarFill, { width: '38%' }]}
-            />
-          </View>
-          <TouchableOpacity style={styles.continueChallengeButton}>
-            <LinearGradient
-              colors={gradients.primary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.continueChallengeGradient}
-            >
-              <Text style={styles.continueChallengeText}>
-                Continue Challenge
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      </GradientWrapper>
-    </View>
-  );
-}
-
-// Preferences Section (Common)
-function PreferencesSection({
-  dailyReminders,
-  phaseNotifications,
-  setDailyReminders,
-  setPhaseNotifications,
+function StatCard({
+  icon,
+  label,
+  detail,
+  isEmpty = false,
 }: {
-  dailyReminders: boolean;
-  phaseNotifications: boolean;
-  setDailyReminders: (value: boolean) => void;
-  setPhaseNotifications: (value: boolean) => void;
+  icon: number;
+  label: string;
+  detail: string;
+  isEmpty?: boolean;
 }) {
   return (
-    <View style={styles.section}>
-      <View style={{ gap: 8 }}>
-        <Text style={styles.sectionTitle}>Preferences</Text>
-        <View style={styles.preferenceItem}>
-          <Image
-            source={images.notificationIcon}
-            style={styles.preferenceIcon}
-          />
-          <View style={styles.preferenceInfo}>
-            <Text style={styles.preferenceTitle}>Daily Reminders</Text>
-            <Text style={styles.preferenceSubtitle}>Daily Reminders</Text>
-          </View>
-          <Switch
-            value={dailyReminders}
-            onValueChange={setDailyReminders}
-            trackColor={{ false: '#E8E8E8', true: colors.heading }}
-            thumbColor={dailyReminders ? '#ffffff' : '#f4f3f4'}
-          />
-        </View>
-        <View style={styles.preferenceItem}>
-          <Image source={images.btCycleActive} style={styles.preferenceIcon} />
-
-          <View style={styles.preferenceInfo}>
-            <Text style={styles.preferenceTitle}>Phase Notifications</Text>
-            <Text style={styles.preferenceSubtitle}>Cycle phase changes</Text>
-          </View>
-          <Switch
-            value={phaseNotifications}
-            onValueChange={setPhaseNotifications}
-            trackColor={{ false: '#E8E8E8', true: '#E4AF5D' }}
-            thumbColor={phaseNotifications ? '#ffffff' : '#f4f3f4'}
-          />
-        </View>
-      </View>
+    <View style={styles.statCard}>
+      <Image source={icon} style={styles.statIcon} />
+      <Text
+        style={[styles.statNumber, isEmpty && styles.statNumberMuted]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+      <Text style={styles.statLabel} numberOfLines={2}>
+        {detail}
+      </Text>
     </View>
   );
 }
 
-// Units & Display Section (Common)
-function UnitsDisplaySection() {
+function SettingsRow({
+  title,
+  subtitle,
+  onPress,
+}: {
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+}) {
   return (
-    <View style={styles.section}>
-      <View style={{ gap: 8 }}>
-        <Text style={styles.sectionTitle}>Units & Display</Text>
-        <View style={styles.unitItem}>
-          <Text style={styles.unitLabel}>Weight</Text>
-          <Text style={styles.unitValue}>lbs</Text>
-        </View>
-        <View style={styles.unitItem}>
-          <Text style={styles.unitLabel}>Temperature</Text>
-          <Text style={styles.unitValue}>F</Text>
-        </View>
-        <View style={styles.unitItem}>
-          <Text style={styles.unitLabel}>Volume</Text>
-          <Text style={styles.unitValue}>fl oz</Text>
-        </View>
+    <TouchableOpacity style={styles.settingsRow} onPress={onPress}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.settingsTitle}>{title}</Text>
+        <Text style={styles.settingsSubtitle} numberOfLines={2}>
+          {subtitle}
+        </Text>
       </View>
-    </View>
+      <Text style={styles.settingsChevron}>›</Text>
+    </TouchableOpacity>
   );
 }
-
-// Account Actions Section (Common)
-function AccountActionsSection({ navigation }: { navigation: NavigationProp }) {
-  return (
-    <View style={styles.section}>
-      <View style={{ gap: 12 }}>
-        <View style={styles.accountActionItem}>
-          <Image source={images.settings} style={styles.accountActionIcon} />
-          <Text style={styles.accountActionText}>Account Settings</Text>
-        </View>
-        <View style={styles.accountActionItem}>
-          <Image
-            source={images.partnerConnectIcon}
-            style={styles.accountActionIcon}
-          />
-          <Text style={styles.accountActionText}>Partner Connect</Text>
-        </View>
-
-        <TouchableOpacity style={styles.accountActionItem}>
-          <Image source={images.logoutIcon} style={styles.accountActionIcon} />
-
-          <Text style={[styles.accountActionText, styles.signOutText]}>
-            Sign Out
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-const CustomWeightGraph = () => {
-  const data = [152.0, 151.6, 150.9, 150.2, 149.8];
-  const labels = ['Oct 1', 'Oct 5', 'Oct 10', 'Oct 15', 'Oct 23'];
-
-  const max = 154.4;
-  const min = 147.8;
-
-  const normalizeY = (value: number) => {
-    return ((max - value) / (max - min)) * 100;
-  };
-
-  return (
-    <View style={styles.graphWrapper}>
-      {/* Y-Axis */}
-      <View style={styles.yAxis}>
-        <Text style={styles.yLabel}>154.4</Text>
-        <Text style={styles.yLabel}>151.8</Text>
-        <Text style={styles.yLabel}>149.8</Text>
-        <Text style={styles.yLabel}>147.8</Text>
-      </View>
-
-      {/* Chart area */}
-      <View style={styles.graphArea}>
-        {/* Grid lines */}
-        {[0, 25, 50, 75, 100].map(p => (
-          <View key={p} style={[styles.gridLine, { top: `${p}%` }]} />
-        ))}
-
-        {/* Line segments */}
-        {data.map((v, idx) => {
-          if (idx === data.length - 1) return null;
-
-          const x1 = (idx / (data.length - 1)) * 100;
-          const x2 = ((idx + 1) / (data.length - 1)) * 100;
-
-          const y1 = normalizeY(data[idx]);
-          const y2 = normalizeY(data[idx + 1]);
-
-          const dx = x2 - x1;
-          const dy = y2 - y1;
-          const angle = Math.atan2(dy, dx) + 'rad';
-
-          return (
-            <View
-              key={idx}
-              style={[
-                styles.lineSegment,
-                {
-                  left: `${x1}%`,
-                  top: `${y1}%`,
-                  width: `${Math.sqrt(dx * dx + dy * dy)}%`,
-                  transform: [{ rotate: angle }],
-                },
-              ]}
-            />
-          );
-        })}
-
-        {/* Dots */}
-        {data.map((v, idx) => (
-          <View
-            key={idx}
-            style={[
-              styles.dot,
-              {
-                left: `${(idx / (data.length - 1)) * 100}%`,
-                top: `${normalizeY(v)}%`,
-              },
-            ]}
-          />
-        ))}
-
-        {/* X-axis labels */}
-        <View style={styles.xAxis}>
-          {labels.map(lbl => (
-            <Text key={lbl} style={styles.xLabel}>
-              {lbl}
-            </Text>
-          ))}
-        </View>
-      </View>
-    </View>
-  );
-};

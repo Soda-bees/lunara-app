@@ -420,7 +420,6 @@ export default function Home() {
   };
 
   const handleLogPeriodFromHome = () => {
-    // Navigate to Cycle tab (CycleInsight screen) where period logging is available
     navigateToCycleTab();
   };
 

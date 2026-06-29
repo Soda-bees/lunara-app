@@ -28,9 +28,10 @@ export default function WhoIsTheUser() {
     'self' | 'partner' | null
   >(null);
   const handlePress = () => {
-    // Only allow navigation for personal use
     if (selectedOption === 'self') {
       navigation.navigate('Login');
+    } else if (selectedOption === 'partner') {
+      navigation.navigate('PartnerCodeEntry');
     }
   };
 
@@ -100,7 +101,7 @@ export default function WhoIsTheUser() {
             <Button
               title="Continue"
               onPress={handlePress}
-              disabled={selectedOption !== 'self'}
+              disabled={selectedOption === null}
             />
           </View>
         </View>

@@ -265,7 +265,7 @@ export default function HormoneResetGuide() {
           </View>
 
           {/* Ready to Get Started Section */}
-
+{/* 
           <GradientWrapper variant="basic">
             <View style={styles.sectionSmall2}>
               <Text style={styles.sectionHeading}>Ready to Get Started?</Text>
@@ -287,7 +287,7 @@ export default function HormoneResetGuide() {
                 </LinearGradient>
               </TouchableOpacity>
             </View>
-          </GradientWrapper>
+          </GradientWrapper> */}
         </View>
       </ScrollView>
     </SafeAreaView>

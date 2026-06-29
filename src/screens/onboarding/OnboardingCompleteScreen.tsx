@@ -6,7 +6,7 @@ import { RootStackParamList } from '../../navigation/stackNavigation';
 import { colors, radius, spacing } from '../../constants/theme/theme';
 import {
   signup,
-  storeToken,
+  storeAuthSession,
   googleAuth,
   createPeriod,
   type SignupRequest,
@@ -113,7 +113,7 @@ export const OnboardingCompleteScreen: React.FC<Props> = ({ navigation }) => {
 
       if (response.success && response.token) {
         // Store auth token
-        await storeToken(response.token);
+        await storeAuthSession(response.token, 'owner');
 
         // Create first period if cycle tracking is enabled and we have start/end dates
         if (

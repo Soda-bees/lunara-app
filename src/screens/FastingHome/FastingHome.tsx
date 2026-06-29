@@ -31,6 +31,8 @@ import {
 import images from '../../constants/images';
 import BackButton from '../../components/BackButton';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { usePartnerMode } from '../../context/PartnerModeContext';
+import { showPartnerReadOnlyAlert } from '../../utils/partnerReadOnly';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'FastingHome'>;
 
@@ -74,6 +76,7 @@ const getElapsedSeconds = (session: FastingSession | null): number => {
 
 export const FastingHome: React.FC<Props> = () => {
   const { cycleStatus } = useCycleData();
+  const { isPartnerMode } = usePartnerMode();
   const [currentSession, setCurrentSession] = useState<FastingSession | null>(
     null,
   );
@@ -158,11 +161,19 @@ export const FastingHome: React.FC<Props> = () => {
 
   // When user taps Start, first open goal picker
   const handleStart = () => {
+    if (isPartnerMode) {
+      showPartnerReadOnlyAlert();
+      return;
+    }
     setGoalEditorMode('start');
     setShowGoalEditor(true);
   };
 
   const handleStartWithGoal = async (targetDurationMinutes: number) => {
+    if (isPartnerMode) {
+      showPartnerReadOnlyAlert();
+      return;
+    }
     try {
       setLoading(true);
       const res = await startFastingSession({
@@ -178,6 +189,10 @@ export const FastingHome: React.FC<Props> = () => {
   };
 
   const handleEnd = async () => {
+    if (isPartnerMode) {
+      showPartnerReadOnlyAlert();
+      return;
+    }
     try {
       setLoading(true);
       const res = await endFastingSession({});
@@ -191,6 +206,10 @@ export const FastingHome: React.FC<Props> = () => {
   };
 
   const handleUpdateGoal = async (targetDurationMinutes: number) => {
+    if (isPartnerMode) {
+      showPartnerReadOnlyAlert();
+      return;
+    }
     try {
       setLoading(true);
       const res = await updateFastingSession({ targetDurationMinutes });

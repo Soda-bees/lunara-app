@@ -37,6 +37,8 @@ import {
   type PhaseInfo,
   type MovementScienceItem,
 } from '../../services/api';
+import { usePartnerMode } from '../../context/PartnerModeContext';
+import { showPartnerReadOnlyAlert } from '../../utils/partnerReadOnly';
 
 type Category = 'Nutrition' | 'Movement' | 'Mindful';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
@@ -48,6 +50,7 @@ type TrackRouteParams = {
 export default function Track() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute();
+  const { isPartnerMode } = usePartnerMode();
   const { cycleStatus } = useCycleData();
   const cycle = cycleStatus.data;
   const isPregnant =
@@ -212,7 +215,13 @@ export default function Track() {
 
               <TouchableOpacity
                 style={styles.logMovementButton}
-                onPress={() => setMovementModalVisible(true)}
+                onPress={() => {
+                  if (isPartnerMode) {
+                    showPartnerReadOnlyAlert();
+                    return;
+                  }
+                  setMovementModalVisible(true);
+                }}
               >
                 <Text style={styles.logMovementButtonText}>Log Movement</Text>
               </TouchableOpacity>

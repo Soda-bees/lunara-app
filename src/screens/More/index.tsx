@@ -1,7 +1,6 @@
-import React, { JSX, useState } from 'react';
+import React from 'react';
 import {
   Image,
-  Keyboard,
   ScrollView,
   StatusBar,
   Text,
@@ -10,16 +9,12 @@ import {
   Alert,
 } from 'react-native';
 import styles from './style';
-import BackButton from '../../components/BackButton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import images from '../../constants/images';
 import Header from '../../components/Header';
-import GradientWrapper from '../../components/GradientWrapper';
-import LinearGradient from 'react-native-linear-gradient';
-import { gradients } from '../../constants/gradientColors';
 import Button from '../../components/Button';
 import { clearToken } from '../../services/api';
 import { useOnboarding } from '../../context/OnboardingContext';
@@ -36,28 +31,28 @@ export default function More() {
       title: 'Founder Story',
       subtitle: 'Why I built Lunara & my journey',
       icon: images.movementIcon,
-      navigateTo: 'FounderStory',
+      navigateTo: 'FounderStory' as const,
     },
     {
       id: 2,
       title: 'Profile & Stats',
-      subtitle: 'View your progress and insights',
+      subtitle: 'Manage your account and preferences',
       icon: images.userIcon,
-      navigateTo: 'Profile',
+      navigateTo: 'Profile' as const,
     },
     {
       id: 3,
       title: 'Challenges',
       subtitle: 'Join wellness challenges',
       icon: images.challengesIcon,
-      navigateTo: 'ChallengeHub',
+      navigateTo: 'ChallengeHub' as const,
     },
     {
       id: 4,
-      title: 'Partner Dashboard',
+      title: 'Connect Partner',
       subtitle: 'Share your cycle insights',
       icon: images.multipleUsers,
-      // navigateTo: 'CyclePattern',
+      navigateTo: 'PartnerConnect' as const,
     },
   ];
 
@@ -67,28 +62,27 @@ export default function More() {
       title: 'Hormone Reset Guide',
       subtitle: 'Download your promotional PDF guide',
       icon: images.journal,
-      navigateTo: 'HormoneResetGuide',
+      navigateTo: 'HormoneResetGuide' as const,
     },
     {
       id: 6,
       title: '60-Day Social Media Plan',
       subtitle: 'Complete content calendar for promotion',
       icon: images.socialMediaPlan,
-      // navigateTo: 'YourStrengthTransition',
     },
     {
       id: 7,
       title: 'Fasting Tracker',
       subtitle: 'Intermittent fasting logs',
       icon: images.currentPhaseIconMain,
-      navigateTo: 'FastingHome',
+      navigateTo: 'FastingHome' as const,
     },
     {
       id: 8,
       title: 'Sleep Tracker',
       subtitle: 'Monitor your sleep quality',
       icon: images.periodCalender,
-      navigateTo: 'SleepTracker',
+      navigateTo: 'SleepTracker' as const,
     },
   ];
 
@@ -97,22 +91,14 @@ export default function More() {
       'Logout',
       'Are you sure you want to logout?',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
+        { text: 'Cancel', style: 'cancel' },
         {
           text: 'Logout',
           style: 'destructive',
           onPress: async () => {
             try {
-              // Clear auth token
               await clearToken();
-
-              // Clear onboarding data
               resetData();
-
-              // Navigate to Welcome screen
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'Welcome' }],
@@ -152,86 +138,52 @@ export default function More() {
           </Text>
         </View>
         <ScrollView
-          contentContainerStyle={{
-            paddingBottom: 10,
-          }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 10 }}
         >
           <Text style={styles.mainHeading}>Main Features</Text>
-          {mainFeatures.map((item, index) => {
-            return (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.featuresView}
-                activeOpacity={0.5}
-                // onPress={() => navigation.navigate(item.navigateTo as any)}
-                onPress={() => handleSingleNavigation(item as any)}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={styles.imageMainView}>
-                    <Image source={item.icon} style={styles.imageView} />
-                  </View>
-
-                  <View style={{ marginLeft: 10 }}>
-                    <Text style={styles.heading}>{item.title}</Text>
-                    <Text style={styles.subHeading}>{item.subtitle}</Text>
-                  </View>
+          {mainFeatures.map(item => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.featuresView}
+              activeOpacity={0.5}
+              onPress={() => handleSingleNavigation(item)}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={styles.imageMainView}>
+                  <Image source={item.icon} style={styles.imageView} />
                 </View>
-
-                <Image source={images.rightArrow} style={styles.arrowImage} />
-              </TouchableOpacity>
-            );
-          })}
-          <Text style={styles.mainHeading}>Additional Tools</Text>
-          {additionalTools.map((item, index) => {
-            return (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.featuresView}
-                activeOpacity={0.5}
-                onPress={() => handleSingleNavigation(item as any)}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={styles.imageMainView}>
-                    <Image source={item.icon} style={styles.imageView} />
-                  </View>
-
-                  <View style={{ marginLeft: 10 }}>
-                    <Text style={styles.heading}>{item.title}</Text>
-                    <Text style={styles.subHeading}>{item.subtitle}</Text>
-                  </View>
-                </View>
-
-                <Image source={images.rightArrow} style={styles.arrowImage} />
-              </TouchableOpacity>
-            );
-          })}
-          <View style={{ marginVertical: 16 }}>
-            <GradientWrapper variant="basic">
-              <View style={styles.phaseBody}>
-                <Image
-                  source={images.settings}
-                  style={styles.settingImageView}
-                />
-                <View style={{ marginLeft: 7 }}>
-                  <Text style={styles.settingMainHeading}>Settings</Text>
-                  <Text style={styles.settingSubHeading}>
-                    Preferences and account
-                  </Text>
+                <View style={{ marginLeft: 10 }}>
+                  <Text style={styles.heading}>{item.title}</Text>
+                  <Text style={styles.subHeading}>{item.subtitle}</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.updateButton}>
-                <LinearGradient
-                  colors={gradients.secondary}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.updateButtonGradient}
-                >
-                  <Text style={styles.updateButtonText}>Manage Account</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </GradientWrapper>
+              <Image source={images.rightArrow} style={styles.arrowImage} />
+            </TouchableOpacity>
+          ))}
+          <Text style={styles.mainHeading}>Additional Tools</Text>
+          {additionalTools.map(item => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.featuresView}
+              activeOpacity={0.5}
+              onPress={() => handleSingleNavigation(item)}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={styles.imageMainView}>
+                  <Image source={item.icon} style={styles.imageView} />
+                </View>
+                <View style={{ marginLeft: 10 }}>
+                  <Text style={styles.heading}>{item.title}</Text>
+                  <Text style={styles.subHeading}>{item.subtitle}</Text>
+                </View>
+              </View>
+              <Image source={images.rightArrow} style={styles.arrowImage} />
+            </TouchableOpacity>
+          ))}
+          <View style={{ marginTop: 16 }}>
+            <Button title="Logout" onPress={handleLogout} disabled={false} />
           </View>
-          <Button title="Logout" onPress={handleLogout} disabled={false} />
         </ScrollView>
       </View>
     </SafeAreaView>

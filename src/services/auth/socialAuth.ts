@@ -9,7 +9,7 @@ import appleAuth, {
   AppleRequestOperation,
   AppleRequestScope,
 } from '@invertase/react-native-apple-authentication';
-import { googleAuth, storeToken } from '../api';
+import { googleAuth, storeAuthSession } from '../api';
 
 export const configureGoogleSignIn = () => {
   GoogleSignin.configure({
@@ -97,7 +97,7 @@ export const signInWithGoogle = async (): Promise<{
       } else {
         // Existing user - store token and login
         if (response.token) {
-          await storeToken(response.token);
+          await storeAuthSession(response.token, 'owner');
         }
         return {
           success: true,

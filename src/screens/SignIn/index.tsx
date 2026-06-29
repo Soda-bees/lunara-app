@@ -23,7 +23,7 @@ import {
   onAppleButtonPress,
   signInWithGoogle,
 } from '../../services/auth/socialAuth';
-import { login, storeToken } from '../../services/api';
+import { login, storeAuthSession } from '../../services/api';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { Alert } from 'react-native';
 
@@ -59,7 +59,7 @@ export default function SignIn() {
 
       if (response.success && response.token) {
         // Store auth token
-        await storeToken(response.token);
+        await storeAuthSession(response.token, 'owner');
 
         navigation.reset({
           index: 0,

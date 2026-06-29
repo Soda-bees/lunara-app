@@ -36,11 +36,14 @@ import {
 import { useSleepData } from '../../context/SleepDataContext';
 import moment from 'moment';
 import BackButton from '../../components/BackButton';
+import { usePartnerMode } from '../../context/PartnerModeContext';
+import { showPartnerReadOnlyAlert } from '../../utils/partnerReadOnly';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 
 export default function SleepTracker() {
   const navigation = useNavigation<NavigationProp>();
+  const { isPartnerMode } = usePartnerMode();
   const [quality, setQuality] = useState(3);
   const [notes, setNotes] = useState('');
   const [isVisible, setIsVisible] = useState(false);
@@ -213,6 +216,10 @@ export default function SleepTracker() {
   }, [refreshSleepData]);
 
   const handleOpenModal = () => {
+    if (isPartnerMode) {
+      showPartnerReadOnlyAlert();
+      return;
+    }
     // Reset form
     setBedTime('');
     setWakeTime('');
@@ -231,6 +238,10 @@ export default function SleepTracker() {
   };
 
   const handleSave = async () => {
+    if (isPartnerMode) {
+      showPartnerReadOnlyAlert();
+      return;
+    }
     // Validation
     if (!bedTime || !wakeTime) {
       Alert.alert('Error', 'Please enter both bed time and wake time');

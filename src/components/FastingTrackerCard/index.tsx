@@ -15,6 +15,8 @@ import type { RootStackParamList } from '../../navigation/stackNavigation';
 import type { useFastingTracker } from '../../hooks/useFastingTracker';
 import GradientWrapper from '../GradientWrapper';
 import { sizes } from '../../constants/sizes';
+import { usePartnerMode } from '../../context/PartnerModeContext';
+import { showPartnerReadOnlyAlert } from '../../utils/partnerReadOnly';
 
 type FastingTrackerState = ReturnType<typeof useFastingTracker>;
 
@@ -43,6 +45,15 @@ export default function FastingTrackerCard({
   endFast,
 }: Props) {
   const progressPct = Math.round(progress * 100);
+  const { isPartnerMode } = usePartnerMode();
+
+  const guardWrite = (action: () => void) => {
+    if (isPartnerMode) {
+      showPartnerReadOnlyAlert();
+      return;
+    }
+    action();
+  };
 
   return (
     <GradientWrapper variant="basic">
@@ -83,7 +94,9 @@ export default function FastingTrackerCard({
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={() => {
-                  endFast().catch(() => {});
+                  guardWrite(() => {
+                    endFast().catch(() => {});
+                  });
                 }}
                 disabled={loading}
               >
@@ -110,7 +123,7 @@ export default function FastingTrackerCard({
             <TouchableOpacity
               style={styles.startButton}
               activeOpacity={0.8}
-              onPress={openStartFlow}
+              onPress={() => guardWrite(openStartFlow)}
               disabled={loading}
             >
               <LinearGradient
