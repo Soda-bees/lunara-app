@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../../../components/BackButton';
 import Button from '../../../components/Button';
 import { RootStackParamList } from '../../../navigation/stackNavigation';
-import { getMe, updateProfile } from '../../../services/api';
+import { getMe, updateProfile, isOwnerMeUser } from '../../../services/api';
 import {
   bodyWeightKgFromInput,
   cmToInches,
@@ -47,7 +47,7 @@ export default function EditBodyMetricsScreen({ navigation }: Props) {
   useEffect(() => {
     getMe()
       .then(res => {
-        if (!res.success || !res.user) {
+        if (!res.success || !res.user || !isOwnerMeUser(res.user)) {
           return;
         }
         const user = res.user;

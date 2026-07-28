@@ -16,6 +16,7 @@ import { RootStackParamList } from '../../../navigation/stackNavigation';
 import {
   DietaryRestrictions,
   getMe,
+  isOwnerMeUser,
   updateProfile,
 } from '../../../services/api';
 import { colors } from '../../../constants/colors';
@@ -56,7 +57,7 @@ export default function EditDietaryScreen({ navigation }: Props) {
   useEffect(() => {
     getMe()
       .then(res => {
-        if (!res.success || !res.user) {
+        if (!res.success || !res.user || !isOwnerMeUser(res.user)) {
           return;
         }
         const user = res.user;

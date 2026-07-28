@@ -25,7 +25,8 @@ import {
   getMe,
   getSleepStatistics,
   updateProfile,
-  type User,
+  type MeUser,
+  isOwnerMeUser,
 } from '../../services/api';
 import { useOnboarding } from '../../context/OnboardingContext';
 import {
@@ -86,8 +87,8 @@ function formatMinutesAsHours(minutes: number | null | undefined): string | null
 export default function Profile() {
   const navigation = useNavigation<NavigationProp>();
   const { resetData } = useOnboarding();
-  const { isPartnerMode } = usePartnerMode();
-  const [user, setUser] = useState<User | null>(null);
+  const { isPartnerMode, primaryUserName } = usePartnerMode();
+  const [user, setUser] = useState<MeUser | null>(null);
   const [stats, setStats] = useState<ProfileStats>(EMPTY_STATS);
   const [statEmptyFlags, setStatEmptyFlags] = useState({
     sleep: true,
@@ -201,7 +202,11 @@ export default function Profile() {
   );
 
   const sys: MeasurementSystem =
-    user?.measurementSystem ?? DEFAULT_MEASUREMENT_SYSTEM;
+    user && isOwnerMeUser(user)
+      ? user.measurementSystem ?? DEFAULT_MEASUREMENT_SYSTEM
+      : DEFAULT_MEASUREMENT_SYSTEM;
+
+  const ownerUser = user && isOwnerMeUser(user) ? user : null;
 
   const saveMeasurementSystem = async (next: MeasurementSystem) => {
     if (isPartnerMode) {
@@ -210,7 +215,7 @@ export default function Profile() {
     }
     try {
       const res = await updateProfile({ measurementSystem: next });
-      if (res.success && res.user) {
+      if (res.success && res.user && isOwnerMeUser(res.user)) {
         setUser(res.user);
       }
     } catch {
@@ -241,9 +246,21 @@ export default function Profile() {
   };
 
   const bodySummary =
-    user?.heightCm != null || user?.weightKg != null
-      ? formatBodySummary(user.heightCm, user.weightKg, sys)
+    ownerUser?.heightCm != null || ownerUser?.weightKg != null
+      ? formatBodySummary(ownerUser.heightCm, ownerUser.weightKg, sys)
       : 'Add height and weight';
+
+  const displayName = isPartnerMode
+    ? primaryUserName || user?.fullName || 'Partner view'
+    : user?.fullName || 'Your profile';
+
+  const displayEmailLine = isPartnerMode
+    ? 'Partner access (read-only)'
+    : ownerUser?.email || '—';
+
+  const profileBodyLine = isPartnerMode
+    ? 'Health summary via shared APIs'
+    : bodySummary;
 
   return (
     <SafeAreaView style={styles.mainContainer} edges={['top']}>
@@ -262,13 +279,9 @@ export default function Profile() {
               <ActivityIndicator color={colors.maroonText} style={{ marginVertical: 12 }} />
             ) : (
               <>
-                <Text style={styles.profileName}>
-                  {user?.fullName || 'Your profile'}
-                </Text>
-                <Text style={styles.profileEmail}>
-                  {user?.email || '—'}
-                </Text>
-                <Text style={styles.profileBodyLine}>{bodySummary}</Text>
+                <Text style={styles.profileName}>{displayName}</Text>
+                <Text style={styles.profileEmail}>{displayEmailLine}</Text>
+                <Text style={styles.profileBodyLine}>{profileBodyLine}</Text>
               </>
             )}
 
@@ -350,7 +363,7 @@ export default function Profile() {
           <View style={styles.settingsList}>
             <SettingsRow
               title="Body Metrics"
-              subtitle={bodySummary}
+              subtitle={isPartnerMode ? 'Owner account settings' : bodySummary}
               onPress={() => {
                 if (isPartnerMode) {
                   showPartnerReadOnlyAlert();
@@ -361,9 +374,13 @@ export default function Profile() {
             />
             <SettingsRow
               title="Goals & Cycle"
-              subtitle={`${formatGoalLabel(user?.primaryGoal)} · ${
-                user?.isTrackingCycle ? 'Tracking on' : 'Tracking off'
-              }`}
+              subtitle={
+                isPartnerMode
+                  ? 'Owner account settings'
+                  : `${formatGoalLabel(ownerUser?.primaryGoal)} · ${
+                      ownerUser?.isTrackingCycle ? 'Tracking on' : 'Tracking off'
+                    }`
+              }
               onPress={() => {
                 if (isPartnerMode) {
                   showPartnerReadOnlyAlert();
@@ -374,7 +391,11 @@ export default function Profile() {
             />
             <SettingsRow
               title="Dietary Preferences"
-              subtitle={formatDietarySummary(user?.dietaryRestrictions)}
+              subtitle={
+                isPartnerMode
+                  ? 'Owner account settings'
+                  : formatDietarySummary(ownerUser?.dietaryRestrictions)
+              }
               onPress={() => {
                 if (isPartnerMode) {
                   showPartnerReadOnlyAlert();

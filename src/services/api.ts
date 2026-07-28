@@ -1282,17 +1282,26 @@ export type PrimaryGoal =
   | 'muscle_gain'
   | 'health';
 
-export interface User {
+export interface CycleHistorySummary {
+  totalPeriods?: number;
+  averageCycleLength?: number;
+  averagePeriodLength?: number;
+  lastCalculatedAt?: string;
+}
+
+/** GET /auth/me owner payload (SEC-010). Symptoms/rituals use dedicated APIs. */
+export interface OwnerMeUser {
   _id: string;
   fullName: string;
   email: string;
+  age?: string;
+  height?: string;
+  weight?: string;
+  activityLevel?: string;
   heightCm?: number;
   weightKg?: number;
   targetWeightKg?: number;
   measurementSystem?: 'metric' | 'imperial';
-  /** @deprecated legacy string storage (cm/kg) */
-  height?: string;
-  weight?: string;
   targetWeight?: string;
   primaryGoal?: PrimaryGoal | string;
   isTrackingCycle?: boolean;
@@ -1300,19 +1309,69 @@ export interface User {
   periodLength?: string;
   lastPeriodStartDate?: string;
   lastPeriodEndDate?: string;
+  cycleHistory?: CycleHistorySummary;
   isPregnant?: boolean;
   trimester?: 1 | 2 | 3 | null;
   isBreastfeeding?: boolean;
+  dueDate?: string;
+  lastMenstrualPeriod?: string;
+  pregnancyStartDate?: string;
+  pregnancyNotes?: string;
+  birthDate?: string;
+  postpartumWeek?: number;
   dietaryRestrictions?: DietaryRestrictions;
   otherAllergies?: string;
   cuisinePreferences?: string[];
   dislikedFoods?: string;
   favoriteFoods?: string;
+  mealFrequency?: string;
+  cookingSkill?: string;
+  mealPrepPreference?: string;
+  budgetRange?: string;
+  medicalConditions?: string[];
+  medications?: string;
+  partnerSessionActive?: boolean;
+  partnerConnectedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** GET /auth/me partner payload (SEC-011) — read-only health summary. */
+export interface PartnerMeUser {
+  _id: string;
+  fullName: string;
+  isTrackingCycle?: boolean;
+  cycleLength?: string;
+  periodLength?: string;
+  lastPeriodStartDate?: string;
+  lastPeriodEndDate?: string;
+  cycleHistory?: CycleHistorySummary;
+  isPregnant?: boolean;
+  trimester?: 1 | 2 | 3 | null;
+  isBreastfeeding?: boolean;
+  dueDate?: string;
+  lastMenstrualPeriod?: string;
+  pregnancyStartDate?: string;
+  birthDate?: string;
+  postpartumWeek?: number;
+}
+
+export type MeUser = OwnerMeUser | PartnerMeUser;
+
+/** Owner profile fields; PATCH /auth/profile may return the full user document. */
+export type User = OwnerMeUser;
+
+export function isOwnerMeUser(user: MeUser): user is OwnerMeUser {
+  return 'email' in user;
+}
+
+export function isPartnerMeUser(user: MeUser): user is PartnerMeUser {
+  return !isOwnerMeUser(user);
 }
 
 export interface GetMeResponse {
   success: boolean;
-  user: User;
+  user: MeUser;
   sessionType?: SessionType;
   partnerStatus?: {
     partnerSessionActive: boolean;

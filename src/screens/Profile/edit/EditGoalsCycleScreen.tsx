@@ -17,7 +17,7 @@ import PeriodStartModal, {
   PeriodLogData,
 } from '../../../components/PeriodStartModal';
 import { RootStackParamList } from '../../../navigation/stackNavigation';
-import { getMe, updateProfile } from '../../../services/api';
+import { getMe, updateProfile, isOwnerMeUser } from '../../../services/api';
 import {
   DEFAULT_MEASUREMENT_SYSTEM,
   kgToLb,
@@ -63,7 +63,7 @@ export default function EditGoalsCycleScreen({ navigation }: Props) {
   useEffect(() => {
     getMe()
       .then(res => {
-        if (!res.success || !res.user) {
+        if (!res.success || !res.user || !isOwnerMeUser(res.user)) {
           return;
         }
         const user = res.user;

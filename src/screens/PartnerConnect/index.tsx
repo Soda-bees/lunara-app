@@ -67,7 +67,7 @@ export default function PartnerConnect() {
           regenerate ? 'New code generated' : 'Code generated',
           regenerate
             ? 'Your previous partner session was ended. Share the new code.'
-            : 'Share this code with your partner. It expires in 7 days.',
+            : 'Share this code with your partner. It expires in 2 days.',
         );
       } catch (error: any) {
         Alert.alert('Error', error?.message || 'Could not generate code.');
