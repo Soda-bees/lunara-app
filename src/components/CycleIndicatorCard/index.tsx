@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Image, StyleSheet, ActivityIndicator, type StyleProp, type ViewStyle } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import GradientText from '../GradientText';
 import images from '../../constants/images';
@@ -16,6 +16,7 @@ type Props = {
   tagline?: string | null;
   widthMultiplier?: number;
   backgroundGradientColors?: string[];
+  wrapperStyle?: StyleProp<ViewStyle>;
 };
 
 const getPhaseDisplayName = (phase?: string): string => {
@@ -56,22 +57,24 @@ export default function CycleIndicatorCard({
   tagline,
   widthMultiplier = 0.82,
   backgroundGradientColors,
+  wrapperStyle,
 }: Props) {
   const gradientColors =
     backgroundGradientColors && backgroundGradientColors.length > 0
       ? backgroundGradientColors
       : [colors.white, colors.white];
-  const containerStyle = [
+  const cardStyle = [
     styles.card,
     {
       width: sizes.screenWidth * widthMultiplier,
     },
+    wrapperStyle,
   ];
 
   if (loading) {
     return (
       <LinearGradient
-        style={containerStyle}
+        style={cardStyle}
         colors={gradientColors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -85,7 +88,7 @@ export default function CycleIndicatorCard({
   if (isPregnant) {
     return (
       <LinearGradient
-        style={containerStyle}
+        style={cardStyle}
         colors={gradientColors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -100,7 +103,7 @@ export default function CycleIndicatorCard({
   if (!isTracking) {
     return (
       <LinearGradient
-        style={containerStyle}
+        style={cardStyle}
         colors={gradientColors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -114,7 +117,7 @@ export default function CycleIndicatorCard({
 
   return (
     <LinearGradient
-      style={containerStyle}
+      style={cardStyle}
       colors={gradientColors}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}

@@ -18,7 +18,9 @@ import TouchAnimation from '../../components/TouchAnimation';
 import Modal from 'react-native-modal';
 import { ErrorShow } from '../../components/Toast';
 import { useJournal } from '../../context/JournalContext';
+import { usePartnerMode } from '../../context/PartnerModeContext';
 import { getJournal } from '../../services/api';
+import { showPartnerReadOnlyAlert } from '../../utils/partnerReadOnly';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Journal'>;
 type RouteProps = RouteProp<RootStackParamList, 'Journal'>;
@@ -28,6 +30,7 @@ const Journal = () => {
   const route = useRoute<RouteProps>();
   const { id } = route.params;
   const { journals, loading, deleteJournal, togglePin } = useJournal();
+  const { isPartnerMode } = usePartnerMode();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteLoader, setDeleteLoader] = useState(false);
   const [journal, setJournal] = useState<JournalType | undefined>(undefined);
@@ -76,6 +79,10 @@ const Journal = () => {
   const [dropDown, setDropDown] = useState<boolean>(false);
 
   const handleToggelJournalPin = async () => {
+    if (isPartnerMode) {
+      showPartnerReadOnlyAlert();
+      return;
+    }
     if (!journal?._id) return;
     try {
       await togglePin(journal._id);
@@ -89,6 +96,10 @@ const Journal = () => {
   };
 
   const handleDeleteJournal = async () => {
+    if (isPartnerMode) {
+      showPartnerReadOnlyAlert();
+      return;
+    }
     if (!journal?._id) return;
     try {
       setDeleteLoader(true);
@@ -129,6 +140,10 @@ const Journal = () => {
   }
 
   const handleEditJournal = () => {
+    if (isPartnerMode) {
+      showPartnerReadOnlyAlert();
+      return;
+    }
     if (!journal) return;
     navigation.navigate('WriteJournal', { journal });
   };
@@ -152,16 +167,17 @@ const Journal = () => {
               >
                 <Image source={images.backIcon} style={styles.backIcon} />
               </TouchableOpacity>
-              <TouchAnimation
-                // slow
-                onPress={() => {
-                  setDropDown(!dropDown);
-                }}
-              >
-                <Image source={images.editDots} style={styles.dots} />
-              </TouchAnimation>
+              {!isPartnerMode && (
+                <TouchAnimation
+                  onPress={() => {
+                    setDropDown(!dropDown);
+                  }}
+                >
+                  <Image source={images.editDots} style={styles.dots} />
+                </TouchAnimation>
+              )}
             </View>
-            {dropDown && (
+            {!isPartnerMode && dropDown && (
               <View style={styles.dropDownContainer}>
                 <View style={styles.dropDown}>
                   <TouchableOpacity
@@ -220,6 +236,7 @@ const Journal = () => {
           </View>
         </View>
       </TouchableWithoutFeedback>
+      {!isPartnerMode && (
       <Modal
         isVisible={deleteModalVisible}
         style={{ justifyContent: 'center', margin: 10 }}
@@ -294,6 +311,7 @@ const Journal = () => {
           </View>
         </View>
       </Modal>
+      )}
     </SoftGradientBackground>
   );
 };

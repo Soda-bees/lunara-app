@@ -1,14 +1,11 @@
-import React, { JSX, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Image,
-  Keyboard,
   Platform,
   ScrollView,
   StatusBar,
   Text,
-  TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
   Alert,
   ActivityIndicator,
@@ -26,10 +23,12 @@ import LinearGradient from 'react-native-linear-gradient';
 import GradientText from '../../../components/GradientText';
 import { fontSize } from '../../../constants/fonts';
 import CycleCalendar from '../../../components/CycleCalender';
-import SymptomTrends from '../../../components/SymptomTrends';
 import { colors } from '../../../constants/colors';
 import PhaseGuide from '../../../components/PhaseGuide';
 import CycleIndicatorCard from '../../../components/CycleIndicatorCard';
+import PartnerCycleInsightHeader from './components/PartnerCycleInsightHeader';
+import PartnerSymptomTrendsCard from './components/PartnerSymptomTrendsCard';
+import { usePartnerMode } from '../../../context/PartnerModeContext';
 import {
   Period,
   getPregnancyStatus,
@@ -46,6 +45,7 @@ import moment from 'moment';
 import { getPhaseDataStatus } from '../../../utils/cycleUtils';
 import { getIconForType } from '../../../utils/phaseGuideUtils';
 import { useCycleData } from '../../../context/CycleDataContext';
+import { sizes } from '../../../constants/sizes';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 
@@ -114,6 +114,9 @@ const FALLBACK_DID_YOU_KNOW: DidYouKnow = {
 
 export default function PartnerCycleInsight() {
   const navigation = useNavigation<NavigationProp>();
+  const { primaryUserName } = usePartnerMode();
+  const partnerName = primaryUserName || 'They';
+  const partnerNamePossessive = primaryUserName || 'their';
   const [lastPeriodStart, setLastPeriodStart] = useState<Date | null>(null);
   const [isPregnant, setIsPregnant] = useState(false);
   const [pregnancyStatus, setPregnancyStatus] = useState<
@@ -353,7 +356,7 @@ export default function PartnerCycleInsight() {
       case 'luteal':
         return 'Ovulation has likely passed. Hormones shift toward progesterone, and fertility usually decreases.';
       default:
-        return 'Track your cycle regularly to understand your unique fertile window and patterns.';
+        return 'Fertile window patterns vary across the cycle.';
     }
   };
 
@@ -493,13 +496,8 @@ export default function PartnerCycleInsight() {
         />
         <Header showBackButton />
         <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={{ marginBottom: 16 }}>
-            <View style={styles.topContainer}>
-              <Text style={styles.heading}>Insights</Text>
-              <Text style={styles.subHeading}>
-                Your complete health intelligence dashboard
-              </Text>
-            </View>
+          <View style={styles.scrollContent}>
+            <PartnerCycleInsightHeader title="Insights" />
 
             {/* Pregnancy Dashboard Content */}
             <GradientWrapper variant="basic">
@@ -704,23 +702,21 @@ export default function PartnerCycleInsight() {
                 </>
               ) : (
                 <Text style={styles.noSymptomsText}>
-                  No symptoms logged yet. Log your first symptom to start
-                  tracking.
+                  No symptoms logged yet.
                 </Text>
               )}
             </View>
 
             {/* Cycle History Section - Always Visible */}
             {periodList.length > 0 && (
-              <>
-                <View style={{ marginTop: 16, marginBottom: 8 }}>
+                <View>
                   <Text
                     style={[
                       styles.subHeading,
                       { textAlign: 'left', marginBottom: 8 },
                     ]}
                   >
-                    Before pregnancy: Your cycle history
+                    Before pregnancy: {partnerNamePossessive}&apos;s cycle history
                   </Text>
                   <Text
                     style={[
@@ -728,13 +724,12 @@ export default function PartnerCycleInsight() {
                       { fontSize: 11, marginBottom: 12 },
                     ]}
                   >
-                    You're in pregnancy mode. These insights are based on your
-                    cycles before pregnancy.
+                    {partnerName} is in pregnancy mode. These insights are based
+                    on {partnerNamePossessive} cycles before pregnancy.
                   </Text>
                 </View>
-
-                {/* Cycle History - Read Only */}
-                {periodList.length > 0 && (
+            )}
+            {periodList.length > 0 && (
                   <View style={styles.historyCard}>
                     <View style={styles.headerRow}>
                       <Image
@@ -897,8 +892,6 @@ export default function PartnerCycleInsight() {
                         )}
                     </View>
                   )}
-              </>
-            )}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -916,24 +909,8 @@ export default function PartnerCycleInsight() {
         />
         <Header showBackButton />
         <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={{ marginBottom: 16 }}>
-            <View style={styles.topContainer}>
-              <Text style={styles.heading}>Cycle Insights</Text>
-              <Text style={styles.subHeading}>
-                Your complete hormonal intelligence dashboard
-              </Text>
-            </View>
-            {/* "I'm Pregnant" CTA for existing cycle trackers */}
-            {!isPregnant && cycle && cycle.isTracking && (
-              <TouchableOpacity
-                style={styles.pregnantCtaButton}
-                onPress={() => navigation.navigate('PregnancyInfo')}
-              >
-                <Text style={styles.pregnantCtaText}>
-                  Pregnant? Switch to pregnancy support
-                </Text>
-              </TouchableOpacity>
-            )}
+          <View style={styles.scrollContent}>
+            <PartnerCycleInsightHeader />
             <GradientWrapper variant="basic">
               <View style={styles.phaseBody}>
                 <CycleIndicatorCard
@@ -945,8 +922,7 @@ export default function PartnerCycleInsight() {
                 />
                 <View style={{ height: 10 }} />
                 <Text style={styles.textDarkGrey}>
-                  Cycle tracking is not enabled. Please enable it in your
-                  profile settings.
+                  {partnerName} has not enabled cycle tracking yet.
                 </Text>
               </View>
             </GradientWrapper>
@@ -960,7 +936,6 @@ export default function PartnerCycleInsight() {
   const phaseDataStatus = cycle
     ? getPhaseDataStatus(cycle, periodList)
     : { isPredicted: true, reason: 'not_tracking' };
-  console.log(phaseDataStatus.isPredicted);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -976,13 +951,8 @@ export default function PartnerCycleInsight() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <View style={{ marginBottom: 16 }}>
-          <View style={styles.topContainer}>
-            <Text style={styles.heading}>Cycle Insights</Text>
-            <Text style={styles.subHeading}>
-              Your complete hormonal intelligence dashboard
-            </Text>
-          </View>
+        <View style={styles.scrollContent}>
+          <PartnerCycleInsightHeader />
           <CycleIndicatorCard
             loading={loading}
             isTracking={Boolean(cycle?.isTracking)}
@@ -993,6 +963,7 @@ export default function PartnerCycleInsight() {
             tagline={cycle?.tagline}
             widthMultiplier={0.9}
             backgroundGradientColors={['#FBFAF8', '#DFE7F7']}
+            wrapperStyle={styles.flushOuterMargin}
           />
           {isOverdue && !isPregnant && (
             <View style={styles.overdueCard}>
@@ -1000,8 +971,8 @@ export default function PartnerCycleInsight() {
                 Period later than expected
               </Text>
               <Text style={styles.overdueText}>
-                Your next period was predicted {getNextPeriodText()}. Are you
-                possibly pregnant?
+                Period was predicted {getNextPeriodText()}. This may shift as
+                more data is logged.
               </Text>
             </View>
           )}
@@ -1130,7 +1101,7 @@ export default function PartnerCycleInsight() {
                         {periodList.length === 1 ? '' : 's'}
                         {cycle?.regularityClassification === 'irregular' ||
                         cycle?.regularityClassification === 'very_irregular'
-                          ? ' • Your cycle varies. Predictions may be less accurate.'
+                          ? ` • ${partnerNamePossessive}'s cycle varies. Predictions may be less accurate.`
                           : ''}
                       </Text>
                     )}
@@ -1151,10 +1122,7 @@ export default function PartnerCycleInsight() {
               {phaseDataStatus.isPredicted && (
                 <View style={styles.predictionInfoContainer}>
                   <Text style={styles.predictionInfoText}>
-                    This information is based on our advanced cycle prediction
-                    calculations. To get the most accurate cycle tracking
-                    personalized to your body, please log your period start
-                    date.
+                    Predictions are based on logged period data.
                   </Text>
                 </View>
               )}
@@ -1375,26 +1343,10 @@ export default function PartnerCycleInsight() {
               periods={periodList}
               currentPhase={cycle?.phase}
               cycleDay={cycle?.cycleDay}
+              wrapperStyle={styles.flushOuterMargin}
             />
           )}
-          {/* <View style={styles.trackSymptomsView}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Image
-                source={images.btTrackActive}
-                style={styles.trackActiveStyle}
-              />
-              <View style={styles.marginLeft}>
-                <Text style={styles.trackText}>Track Symtoms</Text>
-                <Text style={styles.trackSubText}>
-                  Day {cycleStatus.cycleDay} • {getPhaseDisplayName(cycleStatus.phase)}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity style={styles.logNowView} activeOpacity={0.5}>
-              <Text style={styles.textBlackNormal}>Log Now</Text>
-            </TouchableOpacity>
-          </View> */}
-          {!isPregnant && <SymptomTrends />}
+          {!isPregnant && <PartnerSymptomTrendsCard />}
           <View style={styles.weeklyUpdateMaincontainer}>
             <View style={styles.headerRow}>
               <Image
@@ -1430,15 +1382,12 @@ export default function PartnerCycleInsight() {
               ))}
             </View>
           </View>
-          <PhaseGuide />
+          <PhaseGuide wrapperStyle={styles.flushOuterMargin} />
           <View
-            style={[
-              styles.weeklyUpdateMaincontainer,
-              { flexDirection: 'row', padding: 15, marginVertical: 15 },
-            ]}
+            style={[styles.weeklyUpdateMaincontainer, styles.didYouKnowCard]}
           >
             <Image source={images.ideaBulb} style={styles.ideaImage} />
-            <View style={{ marginLeft: 10 }}>
+            <View style={{ marginLeft: 10 , width: sizes.screenWidth * 0.68}}>
               <Text style={styles.infoText}>Did You Know?</Text>
               {loadingDidYouKnow && !personalizedInsight && !didYouKnow ? (
                 <Text style={styles.infoSubText}>Loading...</Text>

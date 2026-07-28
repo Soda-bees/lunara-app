@@ -4,9 +4,9 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import styles from './style';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import Button from '../../components/Button';
@@ -36,6 +36,14 @@ const WriteJournal = () => {
   const [loader, setLoader] = useState(false);
 
   const isEdit = !!journal;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isPartnerMode) {
+        navigation.goBack();
+      }
+    }, [isPartnerMode, navigation]),
+  );
 
   const handleSaveJournal = async () => {
     if (isPartnerMode) {

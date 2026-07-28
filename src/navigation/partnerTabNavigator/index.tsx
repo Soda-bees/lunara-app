@@ -7,7 +7,7 @@ import PartnerTrack from '../../screens/partner/Track/index';
 export type PartnerStackParamList = {
   Home: undefined;
   Cycle: undefined;
-  Track: { initialCategory?: 'Nutrition' | 'Movement' | 'Mindful' };
+  Track: undefined;
 };
 
 const Stack = createNativeStackNavigator<PartnerStackParamList>();

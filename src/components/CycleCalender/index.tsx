@@ -8,6 +8,8 @@ import {
   Image,
   Modal,
   Alert,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import moment from 'moment';
 import { colors } from '../../constants/colors';
@@ -35,6 +37,7 @@ type CycleCalendarProps = {
   onLogPeriodStart?: (date: Date) => void;
   onLogPeriodEnd?: (date: Date) => void;
   onViewPeriodDetails?: (date: Date) => void;
+  wrapperStyle?: StyleProp<ViewStyle>;
 };
 
 const PHASE_COLORS: Record<PhaseType, string> = {
@@ -54,6 +57,7 @@ export default function CycleCalendar({
   onLogPeriodStart,
   onLogPeriodEnd,
   onViewPeriodDetails,
+  wrapperStyle,
 }: CycleCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(moment());
   const [actionMenuVisible, setActionMenuVisible] = useState(false);
@@ -383,7 +387,7 @@ export default function CycleCalendar({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, wrapperStyle]}>
       <View style={styles.calenderMainView}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Image source={images.periodCalender} style={styles.calenderImage} />

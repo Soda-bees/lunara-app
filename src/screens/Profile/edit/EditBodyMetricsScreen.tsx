@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   StatusBar,
@@ -10,10 +10,12 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import BackButton from '../../../components/BackButton';
 import Button from '../../../components/Button';
 import { RootStackParamList } from '../../../navigation/stackNavigation';
 import { getMe, updateProfile } from '../../../services/api';
+import { usePartnerMode } from '../../../context/PartnerModeContext';
 import {
   bodyWeightKgFromInput,
   cmToInches,
@@ -33,6 +35,7 @@ import styles from './editStyles';
 type Props = NativeStackScreenProps<RootStackParamList, 'EditProfileBody'>;
 
 export default function EditBodyMetricsScreen({ navigation }: Props) {
+  const { isPartnerMode } = usePartnerMode();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [measurementSystem, setMeasurementSystem] = useState<MeasurementSystem>(
@@ -43,6 +46,14 @@ export default function EditBodyMetricsScreen({ navigation }: Props) {
   const [heightInchesText, setHeightInchesText] = useState('');
   const [weightLbText, setWeightLbText] = useState('');
   const [targetInput, setTargetInput] = useState('');
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isPartnerMode) {
+        navigation.goBack();
+      }
+    }, [isPartnerMode, navigation]),
+  );
 
   useEffect(() => {
     getMe()

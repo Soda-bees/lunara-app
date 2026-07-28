@@ -119,8 +119,7 @@ export default function PartnerHome() {
         title: 'Nutrition & movement',
         subtitle: 'Daily rituals and activity',
         icon: images.nutritionApple,
-        onPress: () =>
-          navigation.navigate('Track', { initialCategory: 'Nutrition' }),
+        onPress: () => navigation.navigate('Track', undefined),
       },
       {
         id: 'journal',

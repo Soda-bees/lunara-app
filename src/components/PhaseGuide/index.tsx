@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
@@ -224,7 +226,11 @@ const mapPhaseContentToGuideItem = (content: CyclePhaseContent): PhaseGuideItem 
   };
 };
 
-const PhaseGuide = () => {
+const PhaseGuide = ({
+  wrapperStyle,
+}: {
+  wrapperStyle?: StyleProp<ViewStyle>;
+}) => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const [phaseGuideData, setPhaseGuideData] =
     useState<PhaseGuideItem[]>(FALLBACK_PHASE_GUIDE_DATA);
@@ -280,7 +286,7 @@ const PhaseGuide = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, wrapperStyle]}>
       <Text style={styles.title}>Complete Phase Guide</Text>
       {loading && (
         <View style={{ marginBottom: 8, flexDirection: 'row', alignItems: 'center' }}>

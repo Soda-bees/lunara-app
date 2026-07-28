@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   StatusBar,
@@ -10,6 +10,7 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import BackButton from '../../../components/BackButton';
 import Button from '../../../components/Button';
 import { RootStackParamList } from '../../../navigation/stackNavigation';
@@ -18,6 +19,7 @@ import {
   getMe,
   updateProfile,
 } from '../../../services/api';
+import { usePartnerMode } from '../../../context/PartnerModeContext';
 import { colors } from '../../../constants/colors';
 import styles from './editStyles';
 
@@ -43,6 +45,7 @@ const CUISINES = [
 ];
 
 export default function EditDietaryScreen({ navigation }: Props) {
+  const { isPartnerMode } = usePartnerMode();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dietaryRestrictions, setDietaryRestrictions] =
@@ -52,6 +55,14 @@ export default function EditDietaryScreen({ navigation }: Props) {
   const [dislikedFoods, setDislikedFoods] = useState('');
   const [favoriteFoods, setFavoriteFoods] = useState('');
   const scrollRef = useRef<KeyboardAwareScrollView>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isPartnerMode) {
+        navigation.goBack();
+      }
+    }, [isPartnerMode, navigation]),
+  );
 
   useEffect(() => {
     getMe()

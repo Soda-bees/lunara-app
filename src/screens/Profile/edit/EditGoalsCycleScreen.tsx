@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   StatusBar,
@@ -11,6 +11,7 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import BackButton from '../../../components/BackButton';
 import Button from '../../../components/Button';
 import PeriodStartModal, {
@@ -18,6 +19,7 @@ import PeriodStartModal, {
 } from '../../../components/PeriodStartModal';
 import { RootStackParamList } from '../../../navigation/stackNavigation';
 import { getMe, updateProfile } from '../../../services/api';
+import { usePartnerMode } from '../../../context/PartnerModeContext';
 import {
   DEFAULT_MEASUREMENT_SYSTEM,
   kgToLb,
@@ -42,6 +44,7 @@ const CYCLE_LENGTHS = [21, 24, 26, 28, 30, 32, 35];
 const PERIOD_LENGTHS = [3, 4, 5, 6, 7];
 
 export default function EditGoalsCycleScreen({ navigation }: Props) {
+  const { isPartnerMode } = usePartnerMode();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [measurementSystem, setMeasurementSystem] =
@@ -58,6 +61,14 @@ export default function EditGoalsCycleScreen({ navigation }: Props) {
   const [showPeriodModal, setShowPeriodModal] = useState(false);
   const [periodModalType, setPeriodModalType] = useState<'start' | 'end'>(
     'start',
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isPartnerMode) {
+        navigation.goBack();
+      }
+    }, [isPartnerMode, navigation]),
   );
 
   useEffect(() => {

@@ -3,7 +3,25 @@ import { fontSize } from '../../../constants/fonts';
 import { colors } from '../../../constants/colors';
 import { sizes } from '../../../constants/sizes';
 
+const SECTION_GAP = sizes.screenHeight * 0.02;
+
 const styles = StyleSheet.create({
+  scrollContent: {
+    gap: SECTION_GAP,
+    paddingBottom: SECTION_GAP,
+  },
+
+  flushOuterMargin: {
+    marginTop: 0,
+    marginBottom: 0,
+    marginVertical: 0,
+  },
+
+  didYouKnowCard: {
+    flexDirection: 'row',
+    padding: 15,
+  },
+
   container: {
     flex: 1,
     paddingHorizontal: sizes.screenWidth * 0.05,
@@ -124,8 +142,6 @@ const styles = StyleSheet.create({
   },
 
   overdueCard: {
-    marginTop: 10,
-    marginBottom: 16,
     padding: 14,
     backgroundColor: '#FFF8EB',
     borderWidth: 1,
@@ -191,8 +207,6 @@ const styles = StyleSheet.create({
   },
 
   inProgressCard: {
-    marginTop: 8,
-    marginBottom: 16,
     padding: 12,
     borderRadius: sizes.screenWidth * 0.03,
     borderWidth: 1,
@@ -343,6 +357,13 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
+  headerRowBetween: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    justifyContent: 'space-between',
+  },
+
   calenderImage: {
     width: sizes.screenWidth * 0.04,
     height: sizes.screenWidth * 0.04,
@@ -366,8 +387,6 @@ const styles = StyleSheet.create({
     borderColor: colors.borderColor,
     borderRadius: sizes.screenWidth * 0.03,
     padding: 16,
-    marginTop: 18,
-    marginBottom: 8,
   },
 
   historyRow: {
@@ -486,7 +505,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: sizes.screenWidth * 0.1,
     paddingVertical: 9,
     borderRadius: sizes.screenWidth * 0.03,
-    marginTop: sizes.screenHeight * 0.02,
+    marginTop: SECTION_GAP,
   },
 
   bottomButtonView: {
@@ -581,8 +600,6 @@ const styles = StyleSheet.create({
     borderColor: colors.borderColor,
     borderRadius: sizes.screenWidth * 0.03,
     padding: 16,
-    marginTop: 18,
-    marginBottom: 8,
   },
 
   analyticsRow: {
@@ -872,8 +889,6 @@ const styles = StyleSheet.create({
   symptomHistorySection: {
     width: sizes.screenWidth * 0.9,
     alignSelf: 'center',
-    marginTop: 20,
-    marginBottom: 24,
     padding: 16,
     backgroundColor: colors.white,
     borderRadius: 12,
@@ -923,6 +938,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Inter-SemiBold',
     color: colors.heading,
+  },
+  symptomPatternRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  symptomPatternName: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: colors.black,
+    marginRight: 12,
   },
   noSymptomsText: {
     fontSize: 13,
