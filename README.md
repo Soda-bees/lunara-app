@@ -4,6 +4,32 @@ This is a new [**React Native**](https://reactnative.dev) project, bootstrapped 
 
 > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
 
+## Local API base URL (Lunara backend)
+
+The app reads its API host from `src/config/runtimeConfig.ts`. **Do not commit a private LAN IP.**
+
+| Build / target | Default base URL |
+|----------------|------------------|
+| Release (`!__DEV__`) | Production Heroku (`…/api`) |
+| iOS Simulator (dev) | `http://localhost:8080/api` |
+| Android Emulator (dev) | `http://10.0.2.2:8080/api` (emulator → host loopback) |
+
+Backend should listen on **PORT=8080** (see `lunara-backend-new/.env.example`).
+
+### Physical device (Android or iOS)
+
+The emulator/simulator defaults will not reach your PC. Before app init, set:
+
+```js
+globalThis.__LUNARA_API_BASE_URL__ = 'http://YOUR_LAN_IP:8080/api';
+```
+
+Example: put that line at the top of `index.js` while debugging on a device, then remove it before committing. Your PC and phone must be on the same Wi‑Fi; allow the firewall for Node on port 8080.
+
+### Override at runtime (debugging)
+
+You can also set `globalThis.__LUNARA_API_BASE_URL__` from the debugger console, then reload.
+
 ## Step 1: Start Metro
 
 First, you will need to run **Metro**, the JavaScript build tool for React Native.
