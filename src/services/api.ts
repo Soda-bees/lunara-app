@@ -702,6 +702,7 @@ export interface PeriodAnalyticsResponse {
   };
 }
 
+/** Period analytics — bounded server-side to last 50 periods (PERF-003). */
 export async function getPeriodAnalytics(): Promise<PeriodAnalyticsResponse> {
   return apiCall<PeriodAnalyticsResponse>('/periods/analytics', {
     method: 'GET',
@@ -737,6 +738,7 @@ export interface PeriodStatisticsResponse {
   };
 }
 
+/** Period statistics — bounded server-side to last 50 periods (PERF-003). */
 export async function getPeriodStatistics(): Promise<PeriodStatisticsResponse> {
   return apiCall<PeriodStatisticsResponse>('/periods/statistics', {
     method: 'GET',
@@ -1105,6 +1107,38 @@ export interface SleepFilters {
   limit?: number;
 }
 
+/** Matches backend PERF-002 default window for sleep analytics. */
+export const SLEEP_ANALYTICS_DEFAULT_DAYS = 90;
+
+export type AnalyticsDateRange = {
+  startDate: string;
+  endDate: string;
+};
+
+/** YYYY-MM-DD range for the last `days` ending today (local calendar). */
+export function getDefaultAnalyticsDateRange(
+  days: number = SLEEP_ANALYTICS_DEFAULT_DAYS,
+): AnalyticsDateRange {
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - days);
+  const toYmd = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+  return { startDate: toYmd(start), endDate: toYmd(end) };
+}
+
+function appendAnalyticsRangeParams(
+  params: URLSearchParams,
+  range?: Partial<AnalyticsDateRange> | null,
+) {
+  if (range?.startDate) params.append('startDate', range.startDate);
+  if (range?.endDate) params.append('endDate', range.endDate);
+}
+
 export async function getSleepLogs(
   filters?: SleepFilters,
 ): Promise<SleepsResponse> {
@@ -1123,22 +1157,43 @@ export async function getSleepLogs(
   );
 }
 
-export async function getSleepStatistics(): Promise<SleepStatisticsResponse> {
-  return apiCall<SleepStatisticsResponse>('/sleep/statistics', {
-    method: 'GET',
-  });
+/** Sleep statistics — pass range or omit to use server 90-day default (PERF-002). */
+export async function getSleepStatistics(
+  range?: Partial<AnalyticsDateRange>,
+): Promise<SleepStatisticsResponse> {
+  const params = new URLSearchParams();
+  appendAnalyticsRangeParams(params, range);
+  const qs = params.toString();
+  return apiCall<SleepStatisticsResponse>(
+    `/sleep/statistics${qs ? `?${qs}` : ''}`,
+    { method: 'GET' },
+  );
 }
 
-export async function getSleepPatternsByPhase(): Promise<SleepPatternsResponse> {
-  return apiCall<SleepPatternsResponse>('/sleep/patterns', {
-    method: 'GET',
-  });
+/** Sleep patterns — pass range or omit to use server 90-day default (PERF-002). */
+export async function getSleepPatternsByPhase(
+  range?: Partial<AnalyticsDateRange>,
+): Promise<SleepPatternsResponse> {
+  const params = new URLSearchParams();
+  appendAnalyticsRangeParams(params, range);
+  const qs = params.toString();
+  return apiCall<SleepPatternsResponse>(
+    `/sleep/patterns${qs ? `?${qs}` : ''}`,
+    { method: 'GET' },
+  );
 }
 
-export async function getSleepInsights(): Promise<SleepInsightsResponse> {
-  return apiCall<SleepInsightsResponse>('/sleep/insights', {
-    method: 'GET',
-  });
+/** Sleep insights — pass range or omit to use server 90-day default (PERF-002). */
+export async function getSleepInsights(
+  range?: Partial<AnalyticsDateRange>,
+): Promise<SleepInsightsResponse> {
+  const params = new URLSearchParams();
+  appendAnalyticsRangeParams(params, range);
+  const qs = params.toString();
+  return apiCall<SleepInsightsResponse>(
+    `/sleep/insights${qs ? `?${qs}` : ''}`,
+    { method: 'GET' },
+  );
 }
 
 export async function getSleep(id: string): Promise<SleepResponse> {

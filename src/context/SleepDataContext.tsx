@@ -8,6 +8,7 @@ import {
   getSleepStatistics,
   getSleepPatternsByPhase,
   getSleepInsights,
+  getDefaultAnalyticsDateRange,
 } from '../services/api';
 import { FetchState, STALE_TIME_MS } from '../types/fetchState';
 
@@ -83,12 +84,14 @@ export const SleepDataProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       try {
+        // Explicit 90-day window matches backend PERF-002 default (MOB-015).
+        const analyticsRange = getDefaultAnalyticsDateRange();
         const [statsRes, logsRes, patternsRes, insightsRes] = await Promise.all(
           [
-            getSleepStatistics(),
+            getSleepStatistics(analyticsRange),
             getSleepLogs(),
-            getSleepPatternsByPhase(),
-            getSleepInsights(),
+            getSleepPatternsByPhase(analyticsRange),
+            getSleepInsights(analyticsRange),
           ],
         );
 
