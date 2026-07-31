@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import {
   CycleStatusResponse,
   Period,
@@ -206,16 +206,19 @@ export const CycleDataProvider: React.FC<{ children: React.ReactNode }> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
+  const value = useMemo<CycleData>(
+    () => ({
+      cycleStatus,
+      periods,
+      analytics,
+      refreshCycleData,
+      applyCycleMutation,
+    }),
+    [cycleStatus, periods, analytics, refreshCycleData, applyCycleMutation],
+  );
+
   return (
-    <CycleDataContext.Provider
-      value={{
-        cycleStatus,
-        periods,
-        analytics,
-        refreshCycleData,
-        applyCycleMutation,
-      }}
-    >
+    <CycleDataContext.Provider value={value}>
       {children}
     </CycleDataContext.Provider>
   );
