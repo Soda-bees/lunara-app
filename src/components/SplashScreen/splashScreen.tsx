@@ -42,12 +42,15 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onFinish }) => {
       });
   }, []);
 
+  // Bootstrap (MOB-016): preload without force so STALE_TIME_MS / in-flight
+  // dedupe in CycleDataContext & SleepDataContext skip a duplicate analytics pack
+  // when providers already refreshed (or are refreshing) on mount.
   useEffect(() => {
     Promise.all([
-      refreshCycleData({ force: true }).catch(err => {
+      refreshCycleData().catch(err => {
         console.error('Error preloading cycle data:', err);
       }),
-      refreshSleepData({ force: true }).catch(err => {
+      refreshSleepData().catch(err => {
         console.error('Error preloading sleep data:', err);
       }),
     ]).finally(() => {

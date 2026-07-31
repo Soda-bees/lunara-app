@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect, useRef } from 'react';
 import {
   CycleStatusResponse,
   Period,
@@ -27,6 +27,12 @@ const defaultFetchState = <T,>(): FetchState<T> => ({
 
 const CycleDataContext = createContext<CycleData | undefined>(undefined);
 
+/**
+ * Bootstrap (MOB-016): Provider may start an initial refresh when empty.
+ * Splash also calls refreshCycleData() without force — STALE_TIME_MS and
+ * in-flight dedupe prevent a second full analytics pack. Use { force: true }
+ * only for pull-to-refresh / explicit user refresh.
+ */
 export const CycleDataProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -37,6 +43,7 @@ export const CycleDataProvider: React.FC<{ children: React.ReactNode }> = ({
   );
   const [analytics, setAnalytics] =
     useState<FetchState<PeriodAnalyticsResponse['data']>>(defaultFetchState);
+  const inflightRef = useRef<Promise<void> | null>(null);
 
   const refreshCycleData = useCallback(
     async (options?: { force?: boolean }) => {
@@ -51,6 +58,12 @@ export const CycleDataProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
+      // Join in-flight refresh instead of starting a duplicate pack (MOB-016).
+      if (!options?.force && inflightRef.current) {
+        return inflightRef.current;
+      }
+
+      const run = (async () => {
       // Set loading flags
       if (isColdStart) {
         setCycleStatus(prev => ({ ...prev, loading: true, error: null }));
@@ -155,6 +168,16 @@ export const CycleDataProvider: React.FC<{ children: React.ReactNode }> = ({
           error: message,
         }));
       }
+      })();
+
+      inflightRef.current = run;
+      try {
+        await run;
+      } finally {
+        if (inflightRef.current === run) {
+          inflightRef.current = null;
+        }
+      }
     },
     [cycleStatus.data, cycleStatus.lastFetchedAt, periods.data, analytics.data],
   );
@@ -173,12 +196,12 @@ export const CycleDataProvider: React.FC<{ children: React.ReactNode }> = ({
     [],
   );
 
-  // Auto-initialize data on mount if it doesn't exist
+  // Initial load when empty — no force so splash can join via inflight/stale (MOB-016).
   useEffect(() => {
     const hasNoData =
       !cycleStatus.data && !periods.data && !analytics.data;
     if (hasNoData && !cycleStatus.loading) {
-      refreshCycleData({ force: true });
+      refreshCycleData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount

@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect, useRef } from 'react';
 import {
   Sleep,
   SleepStatisticsResponse,
@@ -31,6 +31,12 @@ const defaultFetchState = <T,>(): FetchState<T> => ({
 
 const SleepDataContext = createContext<SleepData | undefined>(undefined);
 
+/**
+ * Bootstrap (MOB-016): Provider may start an initial refresh when empty.
+ * Splash also calls refreshSleepData() without force — STALE_TIME_MS and
+ * in-flight dedupe prevent a second full analytics pack. Use { force: true }
+ * only for pull-to-refresh / explicit user refresh.
+ */
 export const SleepDataProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -41,6 +47,7 @@ export const SleepDataProvider: React.FC<{ children: React.ReactNode }> = ({
   const [logs, setLogs] = useState<FetchState<Sleep[]>>(defaultFetchState);
   const [insights, setInsights] =
     useState<FetchState<string[]>>(defaultFetchState);
+  const inflightRef = useRef<Promise<void> | null>(null);
 
   const refreshSleepData = useCallback(
     async (options?: { force?: boolean }) => {
@@ -55,6 +62,12 @@ export const SleepDataProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
+      // Join in-flight refresh instead of starting a duplicate pack (MOB-016).
+      if (!options?.force && inflightRef.current) {
+        return inflightRef.current;
+      }
+
+      const run = (async () => {
       if (isColdStart) {
         setStatistics(prev => ({ ...prev, loading: true, error: null }));
         setLogs(prev => ({ ...prev, loading: true, error: null }));
@@ -192,6 +205,16 @@ export const SleepDataProvider: React.FC<{ children: React.ReactNode }> = ({
           error: message,
         }));
       }
+      })();
+
+      inflightRef.current = run;
+      try {
+        await run;
+      } finally {
+        if (inflightRef.current === run) {
+          inflightRef.current = null;
+        }
+      }
     },
     [statistics.data, statistics.lastFetchedAt, logs.data, patterns.data, insights.data],
   );
@@ -210,12 +233,12 @@ export const SleepDataProvider: React.FC<{ children: React.ReactNode }> = ({
     [],
   );
 
-  // Auto-initialize data on mount if it doesn't exist
+  // Initial load when empty — no force so splash can join via inflight/stale (MOB-016).
   useEffect(() => {
     const hasNoData =
       !statistics.data && !logs.data && !patterns.data && !insights.data;
     if (hasNoData && !statistics.loading) {
-      refreshSleepData({ force: true });
+      refreshSleepData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
