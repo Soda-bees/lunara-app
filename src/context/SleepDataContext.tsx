@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import {
   Sleep,
   SleepStatisticsResponse,
@@ -243,17 +243,27 @@ export const SleepDataProvider: React.FC<{ children: React.ReactNode }> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
+  const value = useMemo<SleepData>(
+    () => ({
+      statistics,
+      patterns,
+      logs,
+      insights,
+      refreshSleepData,
+      applySleepLogMutation,
+    }),
+    [
+      statistics,
+      patterns,
+      logs,
+      insights,
+      refreshSleepData,
+      applySleepLogMutation,
+    ],
+  );
+
   return (
-    <SleepDataContext.Provider
-      value={{
-        statistics,
-        patterns,
-        logs,
-        insights,
-        refreshSleepData,
-        applySleepLogMutation,
-      }}
-    >
+    <SleepDataContext.Provider value={value}>
       {children}
     </SleepDataContext.Provider>
   );

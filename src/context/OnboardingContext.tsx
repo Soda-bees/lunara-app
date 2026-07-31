@@ -3,6 +3,8 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useCallback,
+  useMemo,
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -112,30 +114,7 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({
   const [currentStep, setCurrentStep] = useState<OnboardingStep | null>(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-  // Load persisted data on mount
-  useEffect(() => {
-    loadPersistedData();
-  }, []);
-
-  // Persist data whenever it changes
-  useEffect(() => {
-    if (isDataLoaded) {
-      persistData();
-    }
-  }, [data, currentStep, isDataLoaded]);
-
-  const persistData = async () => {
-    try {
-      await AsyncStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(data));
-      if (currentStep) {
-        await AsyncStorage.setItem(ONBOARDING_STEP_KEY, currentStep);
-      }
-    } catch (error) {
-      console.error('Error persisting onboarding data:', error);
-    }
-  };
-
-  const loadPersistedData = async () => {
+  const loadPersistedData = useCallback(async () => {
     try {
       const [savedData, savedStep] = await Promise.all([
         AsyncStorage.getItem(ONBOARDING_STORAGE_KEY),
@@ -156,22 +135,45 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({
       console.error('Error loading persisted onboarding data:', error);
       setIsDataLoaded(true);
     }
-  };
+  }, []);
 
-  const updateData = (
-    updates: Partial<OnboardingData>,
-    step?: OnboardingStep,
-  ) => {
-    setData(prev => {
-      const newData = { ...prev, ...updates };
-      return newData;
-    });
-    if (step) {
-      setCurrentStep(step);
+  // Load persisted data on mount
+  useEffect(() => {
+    loadPersistedData();
+  }, [loadPersistedData]);
+
+  // Persist data whenever it changes
+  useEffect(() => {
+    if (!isDataLoaded) {
+      return;
     }
-  };
+    const persistData = async () => {
+      try {
+        await AsyncStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(data));
+        if (currentStep) {
+          await AsyncStorage.setItem(ONBOARDING_STEP_KEY, currentStep);
+        }
+      } catch (error) {
+        console.error('Error persisting onboarding data:', error);
+      }
+    };
+    persistData();
+  }, [data, currentStep, isDataLoaded]);
 
-  const resetData = async () => {
+  const updateData = useCallback(
+    (updates: Partial<OnboardingData>, step?: OnboardingStep) => {
+      setData(prev => {
+        const newData = { ...prev, ...updates };
+        return newData;
+      });
+      if (step) {
+        setCurrentStep(step);
+      }
+    },
+    [],
+  );
+
+  const resetData = useCallback(async () => {
     setData({});
     setCurrentStep(null);
     try {
@@ -182,19 +184,29 @@ export const OnboardingProvider: React.FC<{ children: ReactNode }> = ({
     } catch (error) {
       console.error('Error clearing onboarding data:', error);
     }
-  };
+  }, []);
+
+  const value = useMemo<OnboardingContextType>(
+    () => ({
+      data,
+      currentStep,
+      updateData,
+      resetData,
+      loadPersistedData,
+      isDataLoaded,
+    }),
+    [
+      data,
+      currentStep,
+      updateData,
+      resetData,
+      loadPersistedData,
+      isDataLoaded,
+    ],
+  );
 
   return (
-    <OnboardingContext.Provider
-      value={{
-        data,
-        currentStep,
-        updateData,
-        resetData,
-        loadPersistedData,
-        isDataLoaded,
-      }}
-    >
+    <OnboardingContext.Provider value={value}>
       {children}
     </OnboardingContext.Provider>
   );
