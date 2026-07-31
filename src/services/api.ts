@@ -1689,6 +1689,25 @@ export async function getWeeklyNutritionPlan(
   });
 }
 
+/**
+ * Force-regenerate nutrition plan(s) via POST (API-001 / MOB-021).
+ * Prefer this over GET `forceRegenerate` (deprecated).
+ * - `{ date }` → one day
+ * - `{ startDate }` → 5-day week
+ */
+export async function regenerateNutritionPlan(body?: {
+  date?: string;
+  startDate?: string;
+}): Promise<DailyMealPlanResponse | WeeklyMealPlanResponse> {
+  return apiCall<DailyMealPlanResponse | WeeklyMealPlanResponse>(
+    '/nutrition/plan/regenerate',
+    {
+      method: 'POST',
+      body: JSON.stringify(body || {}),
+    },
+  );
+}
+
 export async function swapMealOptionApi(
   date: string,
   params: { time?: string; slotIndex?: number },
@@ -1946,6 +1965,19 @@ export async function getDailyWorkoutPlan(
   const endpoint = `/workouts/plan${query ? `?${query}` : ''}`;
   return apiCall<DailyWorkoutPlanResponse>(endpoint, {
     method: 'GET',
+  });
+}
+
+/**
+ * Force-regenerate daily workout plan via POST (API-002 / MOB-021).
+ * Prefer this over GET `forceRegenerate` (deprecated).
+ */
+export async function regenerateWorkoutPlan(body?: {
+  date?: string;
+}): Promise<DailyWorkoutPlanResponse> {
+  return apiCall<DailyWorkoutPlanResponse>('/workouts/plan/regenerate', {
+    method: 'POST',
+    body: JSON.stringify(body || {}),
   });
 }
 

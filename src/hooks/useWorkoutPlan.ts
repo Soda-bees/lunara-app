@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   getDailyWorkoutPlan,
+  regenerateWorkoutPlan,
   logWorkoutApi,
   DailyWorkoutPlan,
-  DailyWorkoutPlanResponse,
-  LogWorkoutResponse,
 } from '../services/api';
 import {
   getCachedData,
@@ -18,6 +17,8 @@ interface UseWorkoutPlanReturn {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  /** Force-rebuild plan via POST /workouts/plan/regenerate (MOB-021). */
+  regenerate: () => Promise<void>;
   logWorkout: (
     workoutId?: string,
     action?: 'add' | 'remove',
@@ -31,18 +32,18 @@ export function useWorkoutPlan(date?: string): UseWorkoutPlanReturn {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  const targetDate = date || new Date().toISOString().split('T')[0];
+
   const loadPlan = useCallback(async (useCache: boolean = true) => {
     try {
       setLoading(true);
       setError(null);
 
-      const today = date || new Date().toISOString().split('T')[0];
-
       // Check cache first
       let cachedData: DailyWorkoutPlan | null = null;
       if (useCache) {
         cachedData = await getCachedData<DailyWorkoutPlan>(
-          CacheKeys.workoutPlan(today),
+          CacheKeys.workoutPlan(targetDate),
           CacheTTL.plans,
         );
       }
@@ -55,16 +56,16 @@ export function useWorkoutPlan(date?: string): UseWorkoutPlanReturn {
       }
 
       // No cache or cache expired, fetch from API
-      await fetchFreshData(today);
+      await fetchFreshData(targetDate);
     } catch (e: any) {
       setError(e?.message || 'Unable to load workout plan.');
       setLoading(false);
     }
-  }, [date]);
+  }, [targetDate]);
 
-  const fetchFreshData = async (targetDate: string) => {
+  const fetchFreshData = async (day: string) => {
     try {
-      const res = await getDailyWorkoutPlan(targetDate);
+      const res = await getDailyWorkoutPlan(day);
 
       if (!res.success || !res.data) {
         throw new Error('Invalid response from server');
@@ -72,7 +73,7 @@ export function useWorkoutPlan(date?: string): UseWorkoutPlanReturn {
 
       // Cache the response
       await setCachedData(
-        CacheKeys.workoutPlan(targetDate),
+        CacheKeys.workoutPlan(day),
         res.data,
         CacheTTL.plans,
       );
@@ -88,6 +89,29 @@ export function useWorkoutPlan(date?: string): UseWorkoutPlanReturn {
     }
   };
 
+  const regenerate = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      // MOB-021: force rebuild via POST (not GET forceRegenerate).
+      const res = await regenerateWorkoutPlan({ date: targetDate });
+      if (!res.success || !res.data) {
+        throw new Error('Invalid response from server');
+      }
+      await setCachedData(
+        CacheKeys.workoutPlan(targetDate),
+        res.data,
+        CacheTTL.plans,
+      );
+      setPlan(res.data);
+      setLoading(false);
+    } catch (e: any) {
+      setError(e?.message || 'Unable to regenerate workout plan.');
+      setLoading(false);
+      throw e;
+    }
+  }, [targetDate]);
+
   const logWorkout = useCallback(async (
     workoutId?: string,
     action: 'add' | 'remove' = 'add',
@@ -95,9 +119,8 @@ export function useWorkoutPlan(date?: string): UseWorkoutPlanReturn {
     loggedEntryId?: string,
   ) => {
     try {
-      const today = date || new Date().toISOString().split('T')[0];
       const res = await logWorkoutApi(
-        today,
+        targetDate,
         workoutId,
         action,
         durationMinutes,
@@ -114,7 +137,7 @@ export function useWorkoutPlan(date?: string): UseWorkoutPlanReturn {
       setError(e?.message || 'Unable to log workout.');
       throw e; // Re-throw so caller can handle
     }
-  }, [date, loadPlan]);
+  }, [targetDate, loadPlan]);
 
   useEffect(() => {
     loadPlan();
@@ -125,6 +148,7 @@ export function useWorkoutPlan(date?: string): UseWorkoutPlanReturn {
     loading,
     error,
     refetch: () => loadPlan(false),
+    regenerate,
     logWorkout,
   };
 }

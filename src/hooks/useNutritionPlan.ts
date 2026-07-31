@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { DailyMealPlan } from '../services/api';
+import { DailyMealPlan, regenerateNutritionPlan } from '../services/api';
 import {
   fetchWeeklyNutritionPlansForWeek,
   getMondayOfWeek,
@@ -110,8 +110,10 @@ export function useNutritionPlan(): UseNutritionPlanReturn {
   );
 
   const refreshPlan = useCallback(
-    async (_date: string) => {
+    async (date: string) => {
       try {
+        // MOB-021: force rebuild via POST regenerate (not GET forceRegenerate).
+        await regenerateNutritionPlan({ date });
         await loadWeek(false);
       } catch (e: any) {
         console.error('[useNutritionPlan] Error refreshing plan:', e);
