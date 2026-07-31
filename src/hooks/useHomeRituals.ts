@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  getCycleSymptomHistory,
   getCycleSymptomPatterns,
   getCycleSymptoms,
   setMealCompletedApi,
@@ -8,7 +7,6 @@ import {
   getRitualPreferences,
   getRitualCompletions,
   postRitualDayToggle,
-  type CycleSymptomHistoryItem,
   type CycleSymptomPattern,
   type RitualDefinitionDto,
   type RitualSection,
@@ -156,9 +154,6 @@ export function useHomeRituals() {
   const [todaySymptoms, setTodaySymptoms] = useState<
     Array<{ symptom: string; severity: string }>
   >([]);
-  const [symptomHistory, setSymptomHistory] = useState<CycleSymptomHistoryItem[]>(
-    [],
-  );
   const [symptomPatterns, setSymptomPatterns] = useState<CycleSymptomPattern[]>(
     [],
   );
@@ -176,9 +171,9 @@ export function useHomeRituals() {
   const refreshSymptoms = useCallback(async () => {
     try {
       setSymptomsLoading(true);
-      const [todayRes, historyRes, patternsRes] = await Promise.all([
+      // MOB-017: skip getCycleSymptomHistory on Home — History / Cycle Insight fetch on demand.
+      const [todayRes, patternsRes] = await Promise.all([
         getCycleSymptoms(todayISO, todayISO),
-        getCycleSymptomHistory(),
         getCycleSymptomPatterns(),
       ]);
 
@@ -198,9 +193,6 @@ export function useHomeRituals() {
 
       setSymptomsCountToday(uniqueTodaySymptoms.length);
       setTodaySymptoms(uniqueTodaySymptoms.slice(0, 3));
-      setSymptomHistory(
-        historyRes.success && Array.isArray(historyRes.data) ? historyRes.data : [],
-      );
       setSymptomPatterns(
         patternsRes.success && Array.isArray(patternsRes.data?.patterns)
           ? patternsRes.data.patterns
@@ -209,7 +201,6 @@ export function useHomeRituals() {
     } catch {
       setSymptomsCountToday(0);
       setTodaySymptoms([]);
-      setSymptomHistory([]);
       setSymptomPatterns([]);
     } finally {
       setSymptomsLoading(false);
@@ -369,10 +360,6 @@ export function useHomeRituals() {
   }, [sleepLogsState.data]);
 
   const symptomSummary = useMemo<SymptomSummary>(() => {
-    const normalizedHistory = [...symptomHistory].sort((a, b) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime(),
-    );
-    const lastLoggedDate = normalizedHistory[0]?.date ?? null;
     const topSymptoms = symptomPatterns
       .slice()
       .sort((a, b) => b.count - a.count)
@@ -383,7 +370,9 @@ export function useHomeRituals() {
       .sort((a, b) => b.count - a.count)[0];
     const trend = topPattern?.trend ?? null;
     const loggedTodayCount = symptomsCountToday ?? 0;
-    const hasAnyLogged = normalizedHistory.length > 0 || loggedTodayCount > 0;
+    // Patterns cover recent logs; full history is loaded on Symptom History / Cycle Insight.
+    const hasAnyLogged = loggedTodayCount > 0 || symptomPatterns.length > 0;
+    const lastLoggedDate = loggedTodayCount > 0 ? todayISO : null;
 
     return {
       loggedTodayCount,
@@ -399,11 +388,11 @@ export function useHomeRituals() {
       loading: symptomsLoading,
     };
   }, [
-    symptomHistory,
     symptomPatterns,
     symptomsCountToday,
     symptomsLoading,
     todaySymptoms,
+    todayISO,
   ]);
 
   const defByKey = useMemo(() => {
@@ -436,7 +425,7 @@ export function useHomeRituals() {
         description: coreSleep.description,
         completed: sleepCompleted,
         interaction: coreSleep.interaction as RitualInteraction,
-        orderIndex: coreSleep.defaultSortOrder,
+        orderIndex: coreSleep.defaultSortOrder ?? 1,
       });
     } else {
       push('morning', {
@@ -463,7 +452,7 @@ export function useHomeRituals() {
         description: coreSymptoms.description,
         completed: symptomsCompleted,
         interaction: coreSymptoms.interaction as RitualInteraction,
-        orderIndex: coreSymptoms.defaultSortOrder,
+        orderIndex: coreSymptoms.defaultSortOrder ?? 2,
       });
     } else {
       push('morning', {

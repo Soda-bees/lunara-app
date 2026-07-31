@@ -37,6 +37,7 @@ export default function SymptomHistory() {
   const [refreshing, setRefreshing] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
+  // On-demand fetch (MOB-017): full history is not loaded on Home mount.
   const fetchHistory = async () => {
     try {
       setLoading(true);
