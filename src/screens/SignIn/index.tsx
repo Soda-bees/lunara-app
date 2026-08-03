@@ -161,10 +161,15 @@ export default function SignIn() {
                 <TouchableOpacity
                   onPress={() => setSecure(!secure)}
                   style={styles.showHideContainer}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    secure ? 'Show password' : 'Hide password'
+                  }
                 >
                   <Image
                     style={styles.hideIcon}
                     source={secure ? images.hide : images.show}
+                    accessible={false}
                   />
                 </TouchableOpacity>
               </View>
@@ -173,6 +178,8 @@ export default function SignIn() {
             <TouchableOpacity
               style={styles.forgotPassContainer}
               onPress={navigateForgotPassword}
+              accessibilityRole="button"
+              accessibilityLabel="Forgot Password"
             >
               <Text style={styles.textBlack}>Forgot Password?</Text>
             </TouchableOpacity>
@@ -194,20 +201,36 @@ export default function SignIn() {
               <TouchableOpacity
                 style={styles.button}
                 onPress={onAppleButtonPress}
+                accessibilityRole="button"
+                accessibilityLabel="Sign in with Apple"
               >
-                <Image style={styles.buttonIcon} source={images.appleIcon} />
+                <Image
+                  style={styles.buttonIcon}
+                  source={images.appleIcon}
+                  accessible={false}
+                />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.button}
                 onPress={handleGoogleSignIn}
+                accessibilityRole="button"
+                accessibilityLabel="Sign in with Google"
               >
-                <Image style={styles.buttonIcon} source={images.googleIcon} />
+                <Image
+                  style={styles.buttonIcon}
+                  source={images.googleIcon}
+                  accessible={false}
+                />
               </TouchableOpacity>
             </View>
             {/* sign up link */}
             <View style={styles.row2}>
               <Text style={styles.textBlack}>Don't have an account? </Text>
-              <TouchableOpacity onPress={navigateToSignUp}>
+              <TouchableOpacity
+                onPress={navigateToSignUp}
+                accessibilityRole="button"
+                accessibilityLabel="Sign Up"
+              >
                 <Text style={styles.underlineText}>Sign Up</Text>
               </TouchableOpacity>
             </View>

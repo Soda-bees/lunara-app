@@ -12,6 +12,13 @@ export type PartnerStackParamList = {
 
 const Stack = createNativeStackNavigator<PartnerStackParamList>();
 
+/** Screen titles used for a11y / navigation announcements (MOB-023). */
+const PARTNER_SCREEN_A11Y = {
+  Home: 'Home',
+  Cycle: 'Cycle insights',
+  Track: 'Track',
+} as const;
+
 export default function PartnerStackNavigator() {
   return (
     <Stack.Navigator
@@ -21,9 +28,21 @@ export default function PartnerStackNavigator() {
         freezeOnBlur: true,
       }}
     >
-      <Stack.Screen name="Home" component={PartnerHome} />
-      <Stack.Screen name="Cycle" component={PartnerCycleInsight} />
-      <Stack.Screen name="Track" component={PartnerTrack} />
+      <Stack.Screen
+        name="Home"
+        component={PartnerHome}
+        options={{ title: PARTNER_SCREEN_A11Y.Home }}
+      />
+      <Stack.Screen
+        name="Cycle"
+        component={PartnerCycleInsight}
+        options={{ title: PARTNER_SCREEN_A11Y.Cycle }}
+      />
+      <Stack.Screen
+        name="Track"
+        component={PartnerTrack}
+        options={{ title: PARTNER_SCREEN_A11Y.Track }}
+      />
     </Stack.Navigator>
   );
 }

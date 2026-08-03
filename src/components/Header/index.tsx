@@ -25,15 +25,37 @@ export default function Header({ showBackButton = false }: HeaderProps) {
   return (
     <View style={styles.header}>
       {showBackButton ? (
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Image source={images.backIcon} style={styles.backIcon} />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Image
+            source={images.backIcon}
+            style={styles.backIcon}
+            accessible={false}
+          />
         </TouchableOpacity>
       ) : (
-        <Image source={images.logoFull} style={styles.logoFull} />
+        <Image
+          source={images.logoFull}
+          style={styles.logoFull}
+          accessibilityLabel="Lunara"
+        />
       )}
-      <TouchableOpacity style={styles.button}>
-        <Image source={images.profileIcon} style={styles.profileIcon} />
-        <Text style={styles.text}>Profile</Text>
+      <TouchableOpacity
+        style={styles.button}
+        accessibilityRole="button"
+        accessibilityLabel="Profile"
+      >
+        <Image
+          source={images.profileIcon}
+          style={styles.profileIcon}
+          accessible={false}
+        />
+        <Text style={styles.text} accessible={false}>
+          Profile
+        </Text>
       </TouchableOpacity>
     </View>
   );

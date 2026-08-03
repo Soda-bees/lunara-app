@@ -4,6 +4,9 @@ import MainStack from './src/navigation/stackNavigation';
 import AnimatedSplash from './src/components/SplashScreen/splashScreen';
 import { CycleDataProvider } from './src/context/CycleDataContext';
 import { SleepDataProvider } from './src/context/SleepDataContext';
+import ErrorBoundary, {
+  DevErrorBoundaryProbe,
+} from './src/components/ErrorBoundary';
 import type { SessionRoute } from './src/utils/resolveSessionRoute';
 
 export default function App() {
@@ -12,21 +15,24 @@ export default function App() {
     useState<SessionRoute>(null);
 
   return (
-    <CycleDataProvider>
-      <SleepDataProvider>
-        {showSplash ? (
-          <AnimatedSplash
-            onFinish={route => {
-              setInitialSessionRoute(route);
-              setShowSplash(false);
-            }}
-          />
-        ) : (
-          <NavigationContainer>
-            <MainStack initialSessionRoute={initialSessionRoute} />
-          </NavigationContainer>
-        )}
-      </SleepDataProvider>
-    </CycleDataProvider>
+    <ErrorBoundary>
+      <CycleDataProvider>
+        <SleepDataProvider>
+          <DevErrorBoundaryProbe />
+          {showSplash ? (
+            <AnimatedSplash
+              onFinish={route => {
+                setInitialSessionRoute(route);
+                setShowSplash(false);
+              }}
+            />
+          ) : (
+            <NavigationContainer>
+              <MainStack initialSessionRoute={initialSessionRoute} />
+            </NavigationContainer>
+          )}
+        </SleepDataProvider>
+      </CycleDataProvider>
+    </ErrorBoundary>
   );
 }
