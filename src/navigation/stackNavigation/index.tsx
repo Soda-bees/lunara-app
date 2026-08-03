@@ -46,7 +46,6 @@ import { DietaryPreferencesScreen } from '../../screens/onboarding/DietaryPrefer
 import { LifestyleScreen } from '../../screens/onboarding/LifestyleScreen';
 import { MedicalInfoScreen } from '../../screens/onboarding/MedicalInfoScreen';
 import { OnboardingCompleteScreen } from '../../screens/onboarding/OnboardingCompleteScreen';
-import { HomeScreen } from '../../screens/HomeScreen/HomeScreen';
 import { NutritionScreen } from '../../screens/NutritionScreen/NutritionScreen';
 import { MealDetailScreen } from '../../screens/MealDetailScreen/MealDetailScreen';
 import { ChallengesScreen } from '../../screens/ChallengesScreen/ChallengesScreen';
@@ -65,9 +64,6 @@ import PregnancyInfo from '../../screens/PregnancyInfo';
 import PregnancyHistory from '../../screens/PregnancyHistory';
 import SymptomHistory from '../../screens/SymptomHistory';
 import PostpartumTransition from '../../screens/PostpartumTransition';
-import { ProfileScreen } from '../../screens/ProfileScreen/ProfileScreen';
-import { CycleInsightsScreen } from '../../screens/CycleInsightsScreen/CycleInsightsScreen';
-import { SleepTrackingScreen } from '../../screens/SleepTrackingScreen/SleepTrackingScreen';
 import Track from '../../screens/Track';
 import { NavigationHandler } from '../../components/NavigationHandler/NavigationHandler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -94,6 +90,8 @@ import PartnerCodeEntry from '../../screens/PartnerCodeEntry';
 import { PartnerModeProvider } from '../../context/PartnerModeContext';
 
 export type RootStackParamList = {
+  // Canonical auth route (NAV-001); SignIn kept in types for existing NavigationProp generics.
+  Login: { from?: string } | undefined;
   SignIn: any;
   IntroSlider: any;
   SignUp: any;
@@ -130,7 +128,6 @@ export type RootStackParamList = {
   ChallengeHub: any;
   DetoxChallenge: any;
   Welcome: undefined;
-  Login: { from?: string } | undefined;
   AccountSetup: { googleUser?: { email: string; name: string } } | undefined;
   BasicInfo: undefined;
   Goals: undefined;
@@ -139,7 +136,6 @@ export type RootStackParamList = {
   Lifestyle: undefined;
   MedicalInfo: undefined;
   OnboardingComplete: undefined;
-  Home: undefined;
   Nutrition: undefined;
   MealDetail: undefined;
   Challenges: undefined;
@@ -155,8 +151,6 @@ export type RootStackParamList = {
   EditProfileBody: undefined;
   EditProfileGoals: undefined;
   EditProfileDietary: undefined;
-  CycleInsights: undefined;
-  SleepTracking: undefined;
   Track:
     | { initialCategory?: 'Nutrition' | 'Movement' | 'Mindful' }
     | undefined;
@@ -228,7 +222,6 @@ export default function MainStack({ initialSessionRoute }: MainStackProps) {
             name="OnboardingComplete"
             component={OnboardingCompleteScreen}
           />
-          <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="Nutrition" component={NutritionScreen} />
           <Stack.Screen name="MealDetail" component={MealDetailScreen} />
           <Stack.Screen name="Challenges" component={ChallengesScreen} />
@@ -263,8 +256,6 @@ export default function MainStack({ initialSessionRoute }: MainStackProps) {
             name="EditProfileDietary"
             component={EditDietaryScreen}
           />
-          <Stack.Screen name="CycleInsights" component={CycleInsightsScreen} />
-          <Stack.Screen name="SleepTracking" component={SleepTrackingScreen} />
           <Stack.Screen name="Track" component={Track} />
           <Stack.Screen name="LetsGetStarted" component={LetsGetStarted} />
           <Stack.Screen name="YoureDoingGreat" component={YoureDoingGreat} />
@@ -292,7 +283,6 @@ export default function MainStack({ initialSessionRoute }: MainStackProps) {
             component={PartnerStackNavigator}
           />
           <Stack.Screen name="CycleInsight" component={CycleInsight} />
-          <Stack.Screen name="SignIn" component={SignIn} />
           <Stack.Screen name="SignUp" component={SignUp} />
           <Stack.Screen name="OTP" component={OTP} />
           <Stack.Screen name="ResetSuccess" component={ResetSuccess} />

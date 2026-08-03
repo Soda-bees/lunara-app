@@ -2207,7 +2207,7 @@ export interface WorkoutDetailResponse {
 export async function getWorkoutDetail(
   id: string,
 ): Promise<WorkoutDetailResponse> {
-  return apiCall<WorkoutDetailResponse>(`/workouts/workouts/${id}`, {
+  return apiCall<WorkoutDetailResponse>(`/workouts/${id}`, {
     method: 'GET',
   });
 }
