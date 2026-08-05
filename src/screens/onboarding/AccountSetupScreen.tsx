@@ -12,7 +12,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { OnboardingHeader } from '../../components/OnboardingHeader/OnboardingHeader';
-import { colors, radius, spacing } from '../../constants/theme/theme';
+import { colors, radius, spacing } from '../../constants/colors';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import { sizes } from '../../constants/sizes';
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    color: colors.text,
+    color: colors.black,
     fontFamily: 'Inter-Regular',
     fontSize: 16,
   },
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   },
 
   inputError: {
-    borderColor: colors.error,
+    borderColor: colors.errorSolid,
     backgroundColor: '#FFF1F2',
   },
 
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   },
 
   error: {
-    color: colors.error,
+    color: colors.errorSolid,
     fontSize: 12,
     fontFamily: 'Inter-Regular',
   },

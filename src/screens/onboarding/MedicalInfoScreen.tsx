@@ -11,7 +11,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { OnboardingHeader } from '../../components/OnboardingHeader/OnboardingHeader';
-import { colors, radius, spacing } from '../../constants/theme/theme';
+import { colors, radius, spacing } from '../../constants/colors';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import { sizes } from '../../constants/sizes';
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   },
 
   infoText: {
-    color: colors.text,
+    color: colors.black,
     flex: 1,
     fontFamily: 'Inter-Regular',
     fontSize: 14,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    color: colors.text,
+    color: colors.black,
     fontSize: 16,
     fontFamily: 'Inter-Medium',
   },
@@ -243,8 +243,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   checkboxChecked: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.heading,
+    borderColor: colors.heading,
   },
   checkboxTick: {
     color: '#fff',
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   },
 
   skipText: {
-    color: colors.text,
+    color: colors.black,
     fontFamily: 'Inter-Regular',
     fontSize: 14,
   },
@@ -273,8 +273,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   conditionCardSelected: {
-    borderColor: colors.primary + '80',
-    backgroundColor: colors.lightPrimary,
+    borderColor: colors.heading + '80',
+    backgroundColor: colors.headingLight,
   },
 
   conditionText: {
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   },
 
   conditionTextSelected: {
-    color: colors.primary,
+    color: colors.heading,
     fontFamily: 'Inter-Regular',
     fontSize: 12,
   },

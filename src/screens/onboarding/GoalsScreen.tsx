@@ -12,7 +12,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { OnboardingHeader } from '../../components/OnboardingHeader/OnboardingHeader';
-import { colors, radius, spacing } from '../../constants/theme/theme';
+import { colors, radius, spacing } from '../../constants/colors';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import { sizes } from '../../constants/sizes';
@@ -214,8 +214,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     borderWidth: 1,
-    borderColor: colors.primary + '80',
-    backgroundColor: colors.lightPrimary,
+    borderColor: colors.heading + '80',
+    backgroundColor: colors.headingLight,
     borderRadius: radius.sm,
     textAlign: 'center',
     padding: spacing.sm,
@@ -232,13 +232,13 @@ const styles = StyleSheet.create({
   },
 
   goalCardSelected: {
-    borderColor: colors.primary + '80',
-    backgroundColor: colors.lightPrimary,
+    borderColor: colors.heading + '80',
+    backgroundColor: colors.headingLight,
   },
 
   goalEmoji: { fontSize: 24 },
   goalTitle: {
-    color: colors.text,
+    color: colors.black,
     fontFamily: 'Inter-Medium',
     fontSize: 14,
   },
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   },
   label: {
     // fontWeight: '700',
-    color: colors.text,
+    color: colors.black,
     fontFamily: 'Inter-Medium',
     fontSize: 14,
   },

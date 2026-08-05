@@ -11,7 +11,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { OnboardingHeader } from '../../components/OnboardingHeader/OnboardingHeader';
-import { colors, radius, spacing } from '../../constants/theme/theme';
+import { colors, radius, spacing } from '../../constants/colors';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import type { MeasurementSystem } from '../../utils/measurement';
@@ -379,8 +379,8 @@ const styles = StyleSheet.create({
   },
 
   unitPillActive: {
-    borderColor: colors.primary + '80',
-    backgroundColor: colors.lightPrimary,
+    borderColor: colors.heading + '80',
+    backgroundColor: colors.headingLight,
   },
 
   unitPillText: {
@@ -390,11 +390,11 @@ const styles = StyleSheet.create({
   },
 
   unitPillTextActive: {
-    color: colors.primary,
+    color: colors.heading,
   },
 
   label: {
-    color: colors.text,
+    color: colors.black,
     fontFamily: 'Inter-Regular',
     fontSize: 16,
     marginBottom: 4,
@@ -423,18 +423,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   optionCardSelected: {
-    borderColor: colors.primary + '80',
-    backgroundColor: colors.lightPrimary,
+    borderColor: colors.heading + '80',
+    backgroundColor: colors.headingLight,
   },
 
   optionTitle: {
-    color: colors.text,
+    color: colors.black,
     fontFamily: 'Inter-Regular',
     fontSize: 14,
   },
 
   optionTitleSelected: {
-    color: colors.primary,
+    color: colors.heading,
     fontFamily: 'Inter-Regular',
     fontSize: 14,
   },

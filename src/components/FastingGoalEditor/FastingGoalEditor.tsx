@@ -5,10 +5,14 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Dimensions,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
+
+/** Full screen height avoids a bottom gap with react-native-modal on some devices. */
+const DEVICE_SCREEN_HEIGHT = Dimensions.get('screen').height;
 
 interface FastingGoalEditorProps {
   visible: boolean;
@@ -93,6 +97,9 @@ export const FastingGoalEditor: React.FC<FastingGoalEditorProps> = ({
       swipeDirection="down"
       style={styles.modal}
       backdropOpacity={0.5}
+      statusBarTranslucent
+      deviceHeight={DEVICE_SCREEN_HEIGHT}
+      propagateSwipe
     >
       <View style={styles.container}>
         <View style={styles.handle} />
@@ -157,6 +164,7 @@ const styles = StyleSheet.create({
   modal: {
     justifyContent: 'flex-end',
     margin: 0,
+    marginBottom: 0,
   },
   container: {
     backgroundColor: colors.white,
@@ -164,7 +172,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingTop: 12,
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    // Extra bottom padding sits inside the white sheet so it still reaches the screen edge.
+    paddingBottom: 34,
     maxHeight: '80%',
   },
   handle: {

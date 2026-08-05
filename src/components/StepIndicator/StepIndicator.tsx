@@ -1,6 +1,6 @@
 // import React from 'react';
 // import { View, StyleSheet } from 'react-native';
-// import { colors, radius, spacing } from '../../constants/theme/theme';
+// import { colors, radius, spacing } from '../../constants/colors';
 
 // type Props = {
 //   currentStep: number;
@@ -34,14 +34,14 @@
 //     backgroundColor: colors.border,
 //   },
 //   dotActive: {
-//     backgroundColor: colors.primary,
+//     backgroundColor: colors.heading,
 //   },
 // });
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { colors, radius, spacing } from '../../constants/theme/theme';
+import { colors, radius, spacing } from '../../constants/colors';
 
 type Props = {
   currentStep: number;
@@ -59,7 +59,7 @@ export const StepIndicator: React.FC<Props> = ({ currentStep, totalSteps }) => {
           return (
             <LinearGradient
               key={step}
-              colors={[colors.primary, colors.primaryMuted]}
+              colors={[colors.heading, colors.primaryMuted]}
               start={{ x: 0, y: 0 }}
               end={{ x: 0.8, y: 0 }}
               style={styles.dot}

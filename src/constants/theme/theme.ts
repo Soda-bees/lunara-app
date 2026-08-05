@@ -1,34 +1,29 @@
+/**
+ * @deprecated Prefer `import { colors, spacing, radius } from '../colors'`.
+ *
+ * Compatibility shim: preserves historical `theme.colors.primary` as brand gold
+ * (`colors.heading`). Hex values live only in `constants/colors`.
+ */
+
+import { colors as tokens, spacing, radius } from '../colors';
+
 export const colors = {
-  black:'#000000',
-  background: '#F8FAFC',
-  gradientTop: '#FDF4FF',
-  gradientBottom: '#faf0ffff',
-  surface: '#FFFFFF',
-  primary: '#E4AF5D',
-  primaryMuted: '#E799AD',
-  lightPrimary: '#FFF9F0',
-  text: '#000000',
-  textMuted: '#7D7D7D',
-  placeholder: '#94A3B8',
-  border: '#E2E8F0',
-  success: '#22C55E',
-  error: '#F43F5E',
-  darkGrey: '#7D7D7D',
+  black: tokens.black,
+  background: tokens.onboardingBackground,
+  gradientTop: tokens.gradientTop,
+  gradientBottom: tokens.gradientBottom,
+  surface: tokens.surface,
+  /** Historical onboarding primary — maps to brand gold. */
+  primary: tokens.heading,
+  primaryMuted: tokens.primaryMuted,
+  lightPrimary: tokens.headingLight,
+  text: tokens.black,
+  textMuted: tokens.textMuted,
+  placeholder: tokens.placeholder,
+  border: tokens.border,
+  success: tokens.success,
+  error: tokens.errorSolid,
+  darkGrey: tokens.darkGrey,
 };
 
-export const spacing = {
-  xs: 8,
-  sm: 12,
-  md: 16,
-  lg: 20,
-  xl: 28,
-  xxl: 35
-};
-
-export const radius = {
-  sm: 10,
-  md: 14,
-  lg: 18,
-  xl: 24,
-};
-
+export { spacing, radius };

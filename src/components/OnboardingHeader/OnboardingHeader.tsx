@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { StepIndicator } from '../StepIndicator/StepIndicator';
-import { spacing, colors } from '../../constants/theme/theme';
+import { spacing, colors } from '../../constants/colors';
 
 type Props = {
   title: string;
@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    color: colors.text,
+    color: colors.black,
     fontFamily:'PlayfairDisplay-Medium'
   },
   subtitle: {

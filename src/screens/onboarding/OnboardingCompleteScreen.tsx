@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Alert, Image } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { RootStackParamList } from '../../navigation/stackNavigation';
-import { colors, radius, spacing } from '../../constants/theme/theme';
+import { colors, radius, spacing } from '../../constants/colors';
 import {
   signup,
   storeAuthSession,

@@ -1,0 +1,717 @@
+import { StyleSheet } from 'react-native';
+import { colors } from '../../constants/colors';
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.white,
+  },
+  contentContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 40,
+  },
+  header: {
+    marginBottom: 24,
+  },
+  title: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 28,
+    color: colors.text,
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: colors.darkGrey,
+  },
+  circularTimerContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  circularTimerWrapper: {
+    position: 'relative',
+    width: 280,
+    height: 280,
+    marginBottom: 24,
+  },
+  timerCenterContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  timerLabel: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: colors.darkGrey,
+  },
+  timerDisplay: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 36,
+    color: colors.black,
+    letterSpacing: 1,
+  },
+  endFastButton: {
+    marginTop: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: colors.heading,
+    backgroundColor: colors.white,
+  },
+  endFastButtonText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    color: colors.heading,
+  },
+  flameIconPositioned: {
+    position: 'absolute',
+    width: 30,
+    height: 30,
+    zIndex: 20,
+  },
+  flameIconCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: colors.heading,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flameIconText: {
+    fontSize: 16,
+  },
+  timeInfoSection: {
+    flexDirection: 'row',
+    gap: 16,
+    width: '100%',
+  },
+  timeInfoItem: {
+    flex: 1,
+  },
+  timeInfoLabel: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 13,
+    color: colors.darkGrey,
+    marginBottom: 4,
+  },
+  timeInfoValue: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 15,
+    color: colors.black,
+    marginBottom: 4,
+  },
+  editLink: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: colors.heading,
+  },
+  editLinkDisabled: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: colors.disabledText,
+  },
+  startFastContainer: {
+    width: '100%',
+    paddingVertical: 40,
+  },
+  button: {
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryButton: {
+    backgroundColor: colors.heading,
+  },
+  buttonText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+    color: colors.white,
+  },
+  milestoneCard: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.heading,
+  },
+  milestoneHeader: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  milestoneIcon: {
+    fontSize: 32,
+  },
+  milestoneContent: {
+    flex: 1,
+  },
+  milestoneTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  milestoneTitle: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 18,
+    color: colors.black,
+  },
+  activeBadge: {
+    backgroundColor: colors.green,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  activeBadgeText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 10,
+    color: colors.white,
+  },
+  milestoneDescription: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 13,
+    color: colors.darkGrey,
+  },
+  nextMilestone: {
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderColor,
+  },
+  nextMilestoneText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: colors.disabledText,
+    marginBottom: 8,
+  },
+  nextMilestoneInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  nextMilestoneIcon: {
+    fontSize: 20,
+  },
+  nextMilestoneLabel: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: colors.black,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.white,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderColor,
+    borderRadius: 20,
+  },
+  statIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  statLabel: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 11,
+    color: colors.disabledText,
+    marginBottom: 4,
+  },
+  statValue: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+    color: colors.black,
+  },
+  section: {
+    marginBottom: 24,
+  },
+
+  reentSection: {
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: colors.borderColor,
+    borderRadius: 20,
+    backgroundColor: colors.white,
+    padding: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionIcon: {
+    fontSize: 20,
+  },
+  sectionTitle: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 20,
+    color: colors.black,
+  },
+  sectionIntro: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: colors.green,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  mechanismCard: {
+    backgroundColor: colors.white,
+    marginBottom: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.borderColor,
+    borderRadius: 20,
+  },
+  mechanismHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  mechanismIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.disable,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mechanismIcon: {
+    fontSize: 20,
+  },
+  mechanismContent: {
+    flex: 1,
+  },
+  mechanismTitle: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: colors.black,
+    marginBottom: 2,
+  },
+  mechanismDescription: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: colors.green,
+  },
+
+  chevron: {
+    width: 11,
+    height: 11,
+    resizeMode: 'contain',
+    tintColor: colors.green,
+  },
+
+  chevronInverted: {
+    width: 11,
+    height: 11,
+    resizeMode: 'contain',
+    transform: [{ rotate: '90deg' }],
+    tintColor: colors.green,
+  },
+  mechanismDetail: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    paddingLeft: 68,
+  },
+  mechanismDetailText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 13,
+    color: colors.darkGrey,
+    lineHeight: 20,
+  },
+  timelineCard: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 20,
+    position: 'relative',
+  },
+  timelineLineContainer: {
+    position: 'absolute',
+    left: 20,
+    top: 0,
+    bottom: 0,
+    width: 2,
+  },
+  timelineLineBackground: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 2,
+    backgroundColor: colors.borderColor,
+  },
+  timelineLineProgress: {
+    position: 'absolute',
+    top: 0,
+    width: 2,
+    backgroundColor: colors.heading,
+  },
+  timelineStages: {
+    gap: 16,
+  },
+  timelineStage: {
+    flexDirection: 'row',
+    gap: 12,
+    position: 'relative',
+    zIndex: 1,
+  },
+  timelineStageInactive: {
+    opacity: 0.4,
+  },
+  timelineStageIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.disable,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: -9,
+  },
+  timelineStageIconReached: {
+    backgroundColor: colors.lightOranger,
+  },
+  timelineStageIconCurrent: {
+    backgroundColor: colors.heading,
+  },
+  timelineStageIconText: {
+    fontSize: 18,
+  },
+  timelineStageContent: {
+    flex: 1,
+    paddingTop: 8,
+  },
+  timelineStageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  timelineStageHours: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    color: colors.heading,
+  },
+  timelineStageLabel: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: colors.black,
+  },
+  currentBadge: {
+    backgroundColor: colors.disable,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  currentBadgeText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 10,
+    color: colors.darkGrey,
+  },
+  timelineStageDescription: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: colors.darkGrey,
+  },
+  phaseCard: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    marginBottom: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.borderColor,
+  },
+  phaseCardCurrent: {
+    borderColor: colors.heading,
+    backgroundColor: colors.headingLight,
+  },
+  phaseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  phaseEmoji: {
+    fontSize: 24,
+  },
+  phaseHeaderContent: {
+    flex: 1,
+  },
+  phaseTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  phaseTitle: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: colors.black,
+  },
+  currentPhaseBadge: {
+    backgroundColor: colors.heading,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  currentPhaseBadgeText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 10,
+    color: colors.white,
+  },
+  phaseWindow: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: colors.darkGrey,
+  },
+  phaseContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    paddingLeft: 68,
+    gap: 12,
+  },
+  phaseApproach: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.disable,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginBottom: 4,
+  },
+  phaseApproachText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    color: colors.black,
+  },
+  phaseDescription: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 13,
+    color: colors.darkGrey,
+    lineHeight: 20,
+  },
+  phaseSection: {
+    marginTop: 8,
+  },
+  phaseSectionTitle: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 13,
+    color: colors.heading,
+    marginBottom: 6,
+  },
+  phaseSectionTitleAvoid: {
+    color: colors.darkPink,
+  },
+  phaseListItem: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: colors.darkGrey,
+    lineHeight: 18,
+    marginBottom: 4,
+  },
+  phaseListBulletRecommend: {
+    color: colors.heading,
+  },
+  phaseListBulletAvoid: {
+    color: colors.darkPink,
+  },
+  phaseScience: {
+    backgroundColor: colors.disable,
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  phaseScienceTitle: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    color: colors.heading,
+    marginBottom: 4,
+  },
+  phaseScienceText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: colors.darkGrey,
+    lineHeight: 18,
+  },
+  viewAllText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: colors.heading,
+  },
+  researchCard: {
+    backgroundColor: colors.headingLight,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+  },
+  researchFinding: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: colors.black,
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  researchSource: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: colors.darkGrey,
+  },
+  phaseGuideCard: {
+    backgroundColor: colors.headingLight,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: colors.lightOranger,
+  },
+  phaseGuideHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  phaseGuideEmoji: {
+    fontSize: 32,
+  },
+  phaseGuideTitle: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 18,
+    color: colors.black,
+    marginBottom: 4,
+  },
+  phaseGuideApproach: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: colors.darkGrey,
+  },
+  phaseGuideWindow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.white,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  phaseGuideWindowIcon: {
+    fontSize: 16,
+  },
+  phaseGuideWindowText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: colors.black,
+  },
+  phaseGuideWindowBold: {
+    fontFamily: 'Inter-SemiBold',
+  },
+  phaseGuideDescription: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: colors.darkGrey,
+    lineHeight: 20,
+  },
+  educationCard: {
+    backgroundColor: colors.headingLight,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+  },
+  educationTitle: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 18,
+    color: colors.black,
+    marginBottom: 12,
+  },
+  educationText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: colors.darkGrey,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  educationQuote: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    fontStyle: 'italic',
+    color: colors.disabledText,
+    marginTop: 8,
+    paddingLeft: 12,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.borderColor,
+  },
+  historyCard: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 16,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  historyItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderColor,
+  },
+  historyItemLeft: {
+    flex: 1,
+  },
+  historyItemDate: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: colors.black,
+    marginBottom: 2,
+  },
+  historyItemPhase: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: colors.darkGrey,
+  },
+  historyItemRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  historyItemDuration: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    color: colors.heading,
+  },
+  completedBadge: {
+    width: 25,
+    height: 22,
+    borderRadius: 7,
+    backgroundColor: colors.borderPink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completedBadgeText: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 12,
+    color: colors.green,
+  },
+  emptyHistoryText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: colors.disabledText,
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+});
+
+export default styles;

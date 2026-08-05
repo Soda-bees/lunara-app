@@ -15,7 +15,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { OnboardingHeader } from '../../components/OnboardingHeader/OnboardingHeader';
-import { colors, radius, spacing } from '../../constants/theme/theme';
+import { colors, radius, spacing } from '../../constants/colors';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import { sizes } from '../../constants/sizes';
@@ -313,9 +313,9 @@ export const WomenHealthScreen: React.FC<Props> = ({ navigation }) => {
                 onValueChange={handleCycleTrackingChange}
                 trackColor={{
                   false: '#d4d0d0ff',
-                  true: colors.primary,
+                  true: colors.heading,
                 }}
-                thumbColor={isTrackingCycle ? colors.lightPrimary : '#FFFFFF'}
+                thumbColor={isTrackingCycle ? colors.headingLight : '#FFFFFF'}
                 disabled={isPregnant}
               />
             </View>
@@ -504,9 +504,9 @@ export const WomenHealthScreen: React.FC<Props> = ({ navigation }) => {
                 onValueChange={handlePregnancyChange}
                 trackColor={{
                   false: '#d4d0d0ff',
-                  true: colors.primary,
+                  true: colors.heading,
                 }}
-                thumbColor={isPregnant ? colors.lightPrimary : '#FFFFFF'}
+                thumbColor={isPregnant ? colors.headingLight : '#FFFFFF'}
                 disabled={isTrackingCycle}
               />
             </View>
@@ -656,9 +656,9 @@ export const WomenHealthScreen: React.FC<Props> = ({ navigation }) => {
                 onValueChange={setIsBreastfeeding}
                 trackColor={{
                   false: '#d4d0d0ff',
-                  true: colors.primary,
+                  true: colors.heading,
                 }}
-                thumbColor={isBreastfeeding ? colors.lightPrimary : '#FFFFFF'}
+                thumbColor={isBreastfeeding ? colors.headingLight : '#FFFFFF'}
               />
             </View>
           </View>
@@ -724,8 +724,8 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.primary + '80',
-    backgroundColor: colors.lightPrimary,
+    borderColor: colors.heading + '80',
+    backgroundColor: colors.headingLight,
     borderRadius: radius.sm,
     textAlign: 'center',
     padding: spacing.sm,
@@ -753,7 +753,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    color: colors.text,
+    color: colors.black,
     fontSize: 14,
     fontFamily: 'Inter-Medium',
   },
@@ -770,7 +770,7 @@ const styles = StyleSheet.create({
   },
 
   subLabel: {
-    color: colors.text,
+    color: colors.black,
     fontSize: 14,
     fontFamily: 'Inter-Medium',
   },
@@ -791,18 +791,18 @@ const styles = StyleSheet.create({
   },
 
   optionButtonSelected: {
-    borderColor: colors.primary + '80',
-    backgroundColor: colors.lightPrimary,
+    borderColor: colors.heading + '80',
+    backgroundColor: colors.headingLight,
   },
 
   optionButtonText: {
-    color: colors.text,
+    color: colors.black,
     fontSize: 12,
     fontFamily: 'Inter-Regular',
   },
 
   optionButtonTextSelected: {
-    color: colors.primary,
+    color: colors.heading,
     fontSize: 12,
     fontFamily: 'Inter-Regular',
   },
@@ -818,18 +818,18 @@ const styles = StyleSheet.create({
   },
 
   optionCardSelected: {
-    borderColor: colors.primary + '80',
-    backgroundColor: colors.lightPrimary,
+    borderColor: colors.heading + '80',
+    backgroundColor: colors.headingLight,
   },
 
   optionCardText: {
-    color: colors.text,
+    color: colors.black,
     fontSize: 12,
     fontFamily: 'Inter-Regular',
   },
 
   optionCardTextSelected: {
-    color: colors.primary,
+    color: colors.heading,
     fontSize: 12,
     fontFamily: 'Inter-Regular',
   },
@@ -853,8 +853,8 @@ const styles = StyleSheet.create({
   },
 
   dateButtonSelected: {
-    borderColor: colors.primary + '80',
-    backgroundColor: colors.lightPrimary,
+    borderColor: colors.heading + '80',
+    backgroundColor: colors.headingLight,
   },
 
   dateButtonText: {
@@ -864,7 +864,7 @@ const styles = StyleSheet.create({
   },
 
   dateButtonTextSelected: {
-    color: colors.primary,
+    color: colors.heading,
     fontSize: 14,
     fontFamily: 'Inter-Medium',
   },
@@ -893,7 +893,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    color: colors.text,
+    color: colors.black,
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     minHeight: 80,
@@ -907,6 +907,6 @@ const styles = StyleSheet.create({
   datePickerDoneText: {
     fontSize: 14,
     fontFamily: 'Inter-SemiBold',
-    color: colors.primary,
+    color: colors.heading,
   },
 });

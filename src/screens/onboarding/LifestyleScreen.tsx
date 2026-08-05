@@ -10,7 +10,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { OnboardingHeader } from '../../components/OnboardingHeader/OnboardingHeader';
-import { colors, radius, spacing } from '../../constants/theme/theme';
+import { colors, radius, spacing } from '../../constants/colors';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import { sizes } from '../../constants/sizes';
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    color: colors.text,
+    color: colors.black,
     fontSize: 16,
     fontFamily: 'Inter-Medium',
   },
@@ -264,18 +264,18 @@ const styles = StyleSheet.create({
   },
 
   optionCardSelected: {
-    borderColor: colors.primary + '80',
-    backgroundColor: colors.lightPrimary,
+    borderColor: colors.heading + '80',
+    backgroundColor: colors.headingLight,
   },
 
   optionTitle: {
-    color: colors.text,
+    color: colors.black,
     fontSize: 14,
     fontFamily: 'Inter-Medium',
   },
 
   optionTitleSelected: {
-    color: colors.primary,
+    color: colors.heading,
     fontSize: 14,
     fontFamily: 'Inter-Medium',
   },
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   },
 
   optionDescriptionSelected: {
-    color: colors.primary,
+    color: colors.heading,
     fontSize: 12,
     fontFamily: 'Inter-Medium',
   },
@@ -309,20 +309,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   // skillCardSelected: {
-  //   borderColor: colors.primary + '80',
-  //   backgroundColor: colors.lightPrimary,
+  //   borderColor: colors.heading + '80',
+  //   backgroundColor: colors.headingLight,
   // },
   skillEmoji: { fontSize: 20 },
 
   skillLabel: {
     marginTop: 4,
-    color: colors.text,
+    color: colors.black,
     fontSize: 12,
     fontFamily: 'Inter-Medium',
   },
 
   skillLabelSelected: {
-    color: colors.primary,
+    color: colors.heading,
     // fontWeight: '700',
     fontSize: 12,
     fontFamily: 'Inter-Medium',
@@ -345,21 +345,21 @@ const styles = StyleSheet.create({
   },
 
   // budgetCardSelected: {
-  //   borderColor: colors.primary + '80',
-  //   backgroundColor: colors.lightPrimary,
+  //   borderColor: colors.heading + '80',
+  //   backgroundColor: colors.headingLight,
   // },
 
   budgetEmoji: { fontSize: 20 },
 
   budgetLabel: {
     marginTop: 4,
-    color: colors.text,
+    color: colors.black,
     fontSize: 12,
     fontFamily: 'Inter-Medium',
   },
 
   budgetLabelSelected: {
-    color: colors.primary,
+    color: colors.heading,
     // fontWeight: '700',
     fontSize: 12,
     fontFamily: 'Inter-Medium',

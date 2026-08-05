@@ -11,7 +11,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { OnboardingHeader } from '../../components/OnboardingHeader/OnboardingHeader';
-import { colors, radius, spacing } from '../../constants/theme/theme';
+import { colors, radius, spacing } from '../../constants/colors';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import { sizes } from '../../constants/sizes';
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    color: colors.text,
+    color: colors.black,
     fontSize: 16,
     fontFamily: 'Inter-Medium',
   },
@@ -269,8 +269,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   chipSelected: {
-    borderColor: colors.primary + '80',
-    backgroundColor: colors.lightPrimary,
+    borderColor: colors.heading + '80',
+    backgroundColor: colors.headingLight,
   },
 
   chipText: {
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   },
 
   chipTextSelected: {
-    color: colors.primary,
+    color: colors.heading,
     fontSize: 12,
     fontFamily: 'Inter-Medium',
   },
