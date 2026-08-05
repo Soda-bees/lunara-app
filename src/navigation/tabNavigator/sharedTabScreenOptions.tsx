@@ -1,19 +1,22 @@
 import React from 'react';
 import { View } from 'react-native';
 import { PlatformPressable } from '@react-navigation/elements';
-import type { BottomTabNavigationOptions } from '@react-navigation/bottom-tabs';
+import type {
+  BottomTabBarButtonProps,
+  BottomTabNavigationOptions,
+} from '@react-navigation/bottom-tabs';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 import {
   getTabIcon,
   TabRouteName,
 } from '../../constants/content/tabNavigatorIcons';
-import AnimatedTabIcon from '../../components/AnimatedTabIcon/indes';
+import AnimatedTabIcon from '../../components/AnimatedTabIcon';
 
 type TabPressHandler = (
   routeName: string,
-  props: { onPress?: (e: unknown) => void },
-) => (e: unknown) => void;
+  props: Pick<BottomTabBarButtonProps, 'onPress'>,
+) => NonNullable<BottomTabBarButtonProps['onPress']>;
 
 export const MAIN_TAB_SCREENS = [
   { name: 'Home' as const, label: 'Home' },

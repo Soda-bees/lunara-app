@@ -16,7 +16,7 @@ import { usePartnerMode } from '../../../context/PartnerModeContext';
 import { useHomeRituals } from '../../../hooks/useHomeRituals';
 import { useFastingTracker } from '../../../hooks/useFastingTracker';
 import type { RootStackParamList } from '../../../navigation/stackNavigation';
-import type { PartnerStackParamList } from '../../../navigation/partnerTabNavigator';
+import type { PartnerStackParamList } from '../../../navigation/partnerStackNavigator';
 import {
   getPregnancyStatus,
   type PregnancyStatusResponse,

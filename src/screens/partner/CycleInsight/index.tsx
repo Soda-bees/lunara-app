@@ -25,7 +25,7 @@ import images from '../../../constants/images';
 import LinearGradient from 'react-native-linear-gradient';
 import GradientText from '../../../components/GradientText';
 import { fontSize } from '../../../constants/fonts';
-import CycleCalendar from '../../../components/CycleCalender';
+import CycleCalendar from '../../../components/CycleCalendar';
 import SymptomTrends from '../../../components/SymptomTrends';
 import { colors } from '../../../constants/colors';
 import PhaseGuide from '../../../components/PhaseGuide';

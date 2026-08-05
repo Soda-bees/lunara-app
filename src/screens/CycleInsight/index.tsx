@@ -16,7 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Header from '../../components/Header';
 import images from '../../constants/images';
-import CycleCalendar from '../../components/CycleCalender';
+import CycleCalendar from '../../components/CycleCalendar';
 import SymptomTrends from '../../components/SymptomTrends';
 import PhaseGuide from '../../components/PhaseGuide';
 import CycleIndicatorCard from '../../components/CycleIndicatorCard';

@@ -27,7 +27,7 @@ import PeriodDuration from '../../screens/PeriodDuration';
 import CyclePattern from '../../screens/CyclePattern';
 import QuickTracking from '../../screens/QuickTracking';
 import TabNavigator from '../tabNavigator';
-import PartnerStackNavigator from '../partnerTabNavigator';
+import PartnerStackNavigator from '../partnerStackNavigator';
 import SleepTracker from '../../screens/SleepTracker';
 import CycleInsight from '../../screens/CycleInsight';
 import FounderStory from '../../screens/FounderStory';
