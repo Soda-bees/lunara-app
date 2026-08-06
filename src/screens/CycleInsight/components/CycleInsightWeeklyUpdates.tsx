@@ -1,6 +1,6 @@
 import React from 'react';
 import { Image, Text, View } from 'react-native';
-import images from '../../../constants/images';
+import images from '../../../constants/images/cycle';
 import { WeeklyUpdate } from '../../../services/api';
 import { getIconForType } from '../../../utils/phaseGuideUtils';
 import { FALLBACK_WEEKLY_UPDATES } from '../cycleInsightConstants';

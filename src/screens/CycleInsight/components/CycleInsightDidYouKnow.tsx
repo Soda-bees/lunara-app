@@ -1,6 +1,6 @@
 import React from 'react';
 import { Image, Text, View } from 'react-native';
-import images from '../../../constants/images';
+import images from '../../../constants/images/cycle';
 import { DidYouKnow } from '../../../services/api';
 import { FALLBACK_DID_YOU_KNOW } from '../cycleInsightConstants';
 import styles from '../style';

@@ -16,7 +16,7 @@ import { colors, radius, spacing } from '../../constants/colors';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import { sizes } from '../../constants/sizes';
-import images from '../../constants/images';
+import images from '../../constants/images/onboarding';
 import {
   configureGoogleSignIn,
   onAppleButtonPress,

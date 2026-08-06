@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
 import type { HomeRitual } from '../../../hooks/useHomeRituals';
-import images from '../../../constants/images';
+import images from '../../../constants/images/home';
 import styles from '../style';
 
 type Props = {

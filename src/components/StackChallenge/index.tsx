@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import images from '../../constants/images';
+import images from '../../constants/images/challenges';
 import { sizes } from '../../constants/sizes';
 import { colors } from '../../constants/colors';
 import SupplementProtocol from '../SupplementProtocol';

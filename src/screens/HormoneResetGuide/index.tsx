@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import BackButton from '../../components/BackButton';
 import LinearGradient from 'react-native-linear-gradient';
 import { gradients } from '../../constants/gradientColors';
-import images from '../../constants/images';
+import images from '../../constants/images/cycle';
 import styles from './style';
 import GradientWrapper from '../../components/GradientWrapper';
 

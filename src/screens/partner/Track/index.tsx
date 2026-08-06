@@ -11,7 +11,7 @@ import {
 } from '@react-navigation/native';
 import Header from '../../../components/Header';
 import { CategoryButton } from '../../../components/CategoryButton';
-import images from '../../../constants/images';
+import images from '../../../constants/images/track';
 import Nutrition from '../../../components/Nutrition';
 import Mindful from '../../../components/Mindful';
 import CycleIndicatorCard from '../../../components/CycleIndicatorCard';

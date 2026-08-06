@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import styles from '../style';
 import movementGuideStyles from '../movementGuideStyles';
-import images from '../../../constants/images';
+import images from '../../../constants/images/track';
 import GradientWrapper from '../../../components/GradientWrapper';
 import MovementMap from '../../../components/MovementMap';
 import { sizes } from '../../../constants/sizes';

@@ -3,7 +3,7 @@ import { Image, Text, TouchableOpacity, View } from 'react-native';
 import GradientWrapper from '../../../components/GradientWrapper';
 import GradientText from '../../../components/GradientText';
 import LinearGradient from 'react-native-linear-gradient';
-import images from '../../../constants/images';
+import images from '../../../constants/images/cycle';
 import { fontSize } from '../../../constants/fonts';
 import { colors } from '../../../constants/colors';
 import { CycleStatusResponse, Period } from '../../../services/api';

@@ -8,36 +8,8 @@ import ForgotPassword from '../../screens/ForgotPassword';
 import OTP from '../../screens/OTP';
 import ResetPassword from '../../screens/ResetPassword';
 import ResetSuccess from '../../screens/ResetSuccess';
-import NameInput from '../../screens/NameInput';
-import GetToKnow from '../../screens/GetToKnow';
-import UploadProfile from '../../screens/UploadProfile';
-import WhoIsTheUser from '../../screens/WhoIsTheUser';
-import AboutYouTransition from '../../screens/AboutYouTransition';
-import BirthdayInput from '../../screens/BirthdayInput';
-import PregnancyStatus from '../../screens/PregnancyStatus';
-import YourJourneyTransition from '../../screens/YourJourneyTransition';
-import TrackingAnimation from '../../screens/TrackingAnimation';
-import RhythmAnimation from '../../screens/RhythmAnimation';
-import YourStrengthTransition from '../../screens/YourStrengthTransition';
-import AllSetTransition from '../../screens/AllSetTransition';
-import AboutTodayTransition from '../../screens/AboutTodayTransition';
-import Weight from '../../screens/Weight';
-import Height from '../../screens/Height';
-import PeriodDuration from '../../screens/PeriodDuration';
-import CyclePattern from '../../screens/CyclePattern';
-import QuickTracking from '../../screens/QuickTracking';
 import TabNavigator from '../tabNavigator';
 import PartnerStackNavigator from '../partnerStackNavigator';
-import SleepTracker from '../../screens/SleepTracker';
-import CycleInsight from '../../screens/CycleInsight';
-import FounderStory from '../../screens/FounderStory';
-import HormoneResetGuide from '../../screens/HormoneResetGuide';
-import Profile from '../../screens/Profile';
-import EditBodyMetricsScreen from '../../screens/Profile/edit/EditBodyMetricsScreen';
-import EditGoalsCycleScreen from '../../screens/Profile/edit/EditGoalsCycleScreen';
-import EditDietaryScreen from '../../screens/Profile/edit/EditDietaryScreen';
-import ChallengeHub from '../../screens/ChallengeHub';
-import DetoxChallenge from '../../screens/DetoxChallenge';
 import { AccountSetupScreen } from '../../screens/onboarding/AccountSetupScreen';
 import { BasicInfoScreen } from '../../screens/onboarding/BasicInfoScreen';
 import { GoalsScreen } from '../../screens/onboarding/GoalsScreen';
@@ -46,25 +18,6 @@ import { DietaryPreferencesScreen } from '../../screens/onboarding/DietaryPrefer
 import { LifestyleScreen } from '../../screens/onboarding/LifestyleScreen';
 import { MedicalInfoScreen } from '../../screens/onboarding/MedicalInfoScreen';
 import { OnboardingCompleteScreen } from '../../screens/onboarding/OnboardingCompleteScreen';
-import { NutritionScreen } from '../../screens/NutritionScreen/NutritionScreen';
-import { MealDetailScreen } from '../../screens/MealDetailScreen/MealDetailScreen';
-import { ChallengesScreen } from '../../screens/ChallengesScreen/ChallengesScreen';
-import { ChallengeDetailScreen } from '../../screens/ChallengeDetailScreen/ChallengeDetailScreen';
-import { MovementsScreen } from '../../screens/MovementsScreen/MovementsScreen';
-import { WorkoutDetailScreen } from '../../screens/WorkoutDetailScreen/WorkoutDetailScreen';
-import { SymptomsScreen } from '../../screens/SymptomsScreen/SymptomsScreen';
-import { PeriodsScreen } from '../../screens/PeriodsScreen/PeriodsScreen';
-import Journal from '../../screens/Journal';
-import Journals from '../../screens/Journals';
-import WriteJournal from '../../screens/WriteJournal';
-import CycleHistory from '../../screens/CycleHistory';
-// PregnancyDashboard is now merged into CycleInsight (Insights tab)
-// import PregnancyDashboard from '../../screens/PregnancyDashboard';
-import PregnancyInfo from '../../screens/PregnancyInfo';
-import PregnancyHistory from '../../screens/PregnancyHistory';
-import SymptomHistory from '../../screens/SymptomHistory';
-import PostpartumTransition from '../../screens/PostpartumTransition';
-import Track from '../../screens/Track';
 import { NavigationHandler } from '../../components/NavigationHandler/NavigationHandler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { OnboardingProvider } from '../../context/OnboardingContext';
@@ -78,13 +31,8 @@ import { FuelAndJoy } from '../../screens/FuelAndJoy';
 import { DailyLifeMatters } from '../../screens/DailyLifeMatters';
 import { HealthStory } from '../../screens/HealthStory';
 import { AlmostThere } from '../../screens/AlmostThere';
-import { FastingHome } from '../../screens/FastingHome/FastingHome';
 import { JournalProvider } from '../../context/JournalContext';
 import { JournalType } from '../../types';
-import WeeklyMealPlanningScreen from '../../screens/WeeklyMealPlanning';
-import GroceryListScreen from '../../screens/GroceryList';
-import WeeklyMealOverviewScreen from '../../screens/WeeklyMealOverview';
-import RitualLibraryScreen from '../../screens/RitualLibrary';
 import PartnerConnect from '../../screens/PartnerConnect';
 import PartnerCodeEntry from '../../screens/PartnerCodeEntry';
 import { PartnerModeProvider } from '../../context/PartnerModeContext';
@@ -154,7 +102,6 @@ export type RootStackParamList = {
   Track:
     | { initialCategory?: 'Nutrition' | 'Movement' | 'Mindful' }
     | undefined;
-  // PregnancyDashboard: undefined; // Merged into CycleInsight (Insights tab)
   PregnancyInfo: undefined;
   PregnancyHistory: undefined;
   PostpartumTransition: undefined;
@@ -204,6 +151,7 @@ export default function MainStack({ initialSessionRoute }: MainStackProps) {
               freezeOnBlur: true,
             }}
           >
+          {/* Eager: auth / onboarding / tabs / partner entry */}
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
           <Stack.Screen name="Login" component={SignIn} />
           <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
@@ -222,41 +170,6 @@ export default function MainStack({ initialSessionRoute }: MainStackProps) {
             name="OnboardingComplete"
             component={OnboardingCompleteScreen}
           />
-          <Stack.Screen name="Nutrition" component={NutritionScreen} />
-          <Stack.Screen name="MealDetail" component={MealDetailScreen} />
-          <Stack.Screen name="Challenges" component={ChallengesScreen} />
-          <Stack.Screen
-            name="ChallengeDetail"
-            component={ChallengeDetailScreen}
-          />
-          <Stack.Screen name="Movements" component={MovementsScreen} />
-          <Stack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
-          <Stack.Screen name="Symptoms" component={SymptomsScreen} />
-          <Stack.Screen name="Periods" component={PeriodsScreen} />
-          <Stack.Screen name="CycleHistory" component={CycleHistory} />
-          {/* PregnancyDashboard is now merged into CycleInsight (Insights tab) */}
-          {/* <Stack.Screen name="PregnancyDashboard" component={PregnancyDashboard} /> */}
-          <Stack.Screen name="PregnancyInfo" component={PregnancyInfo} />
-          <Stack.Screen name="PregnancyHistory" component={PregnancyHistory} />
-          <Stack.Screen name="SymptomHistory" component={SymptomHistory} />
-          <Stack.Screen name="PostpartumTransition" component={PostpartumTransition} />
-          <Stack.Screen name="Journal" component={Journal} />
-          <Stack.Screen name="Journals" component={Journals} />
-          <Stack.Screen name="WriteJournal" component={WriteJournal} />
-          <Stack.Screen name="Profile" component={Profile} />
-          <Stack.Screen
-            name="EditProfileBody"
-            component={EditBodyMetricsScreen}
-          />
-          <Stack.Screen
-            name="EditProfileGoals"
-            component={EditGoalsCycleScreen}
-          />
-          <Stack.Screen
-            name="EditProfileDietary"
-            component={EditDietaryScreen}
-          />
-          <Stack.Screen name="Track" component={Track} />
           <Stack.Screen name="LetsGetStarted" component={LetsGetStarted} />
           <Stack.Screen name="YoureDoingGreat" component={YoureDoingGreat} />
           <Stack.Screen name="UniqueJourney" component={UniqueJourney} />
@@ -264,77 +177,284 @@ export default function MainStack({ initialSessionRoute }: MainStackProps) {
           <Stack.Screen name="DailyLifeMatters" component={DailyLifeMatters} />
           <Stack.Screen name="HealthStory" component={HealthStory} />
           <Stack.Screen name="AlmostThere" component={AlmostThere} />
-          <Stack.Screen name="FastingHome" component={FastingHome} />
-          <Stack.Screen
-            name="WeeklyMealPlanning"
-            component={WeeklyMealPlanningScreen}
-          />
-          <Stack.Screen
-            name="WeeklyMealOverview"
-            component={WeeklyMealOverviewScreen}
-          />
-          <Stack.Screen name="RitualLibrary" component={RitualLibraryScreen} />
-          <Stack.Screen name="GroceryList" component={GroceryListScreen} />
-
           <Stack.Screen name="IntroSlider" component={IntroSlider} />
           <Stack.Screen name="TabNavigator" component={TabNavigator} />
           <Stack.Screen
             name="PartnerStackNavigator"
             component={PartnerStackNavigator}
           />
-          <Stack.Screen name="CycleInsight" component={CycleInsight} />
           <Stack.Screen name="SignUp" component={SignUp} />
           <Stack.Screen name="OTP" component={OTP} />
           <Stack.Screen name="ResetSuccess" component={ResetSuccess} />
           <Stack.Screen name="PrivacyConsent" component={PrivacyConsent} />
-          <Stack.Screen name="NameInput" component={NameInput} />
-          <Stack.Screen name="GetToKnow" component={GetToKnow} />
-          <Stack.Screen name="UploadProfile" component={UploadProfile} />
-          <Stack.Screen name="WhoIsTheUser" component={WhoIsTheUser} />
+          <Stack.Screen name="PartnerConnect" component={PartnerConnect} />
+          <Stack.Screen name="PartnerCodeEntry" component={PartnerCodeEntry} />
+
+          {/* Lazy: deep / obscure stack screens (MOB-033) */}
+          <Stack.Screen
+            name="Nutrition"
+            getComponent={() =>
+              require('../../screens/NutritionScreen/NutritionScreen')
+                .NutritionScreen
+            }
+          />
+          <Stack.Screen
+            name="MealDetail"
+            getComponent={() =>
+              require('../../screens/MealDetailScreen/MealDetailScreen')
+                .MealDetailScreen
+            }
+          />
+          <Stack.Screen
+            name="Challenges"
+            getComponent={() =>
+              require('../../screens/ChallengesScreen/ChallengesScreen')
+                .ChallengesScreen
+            }
+          />
+          <Stack.Screen
+            name="ChallengeDetail"
+            getComponent={() =>
+              require('../../screens/ChallengeDetailScreen/ChallengeDetailScreen')
+                .ChallengeDetailScreen
+            }
+          />
+          <Stack.Screen
+            name="Movements"
+            getComponent={() =>
+              require('../../screens/MovementsScreen/MovementsScreen')
+                .MovementsScreen
+            }
+          />
+          <Stack.Screen
+            name="WorkoutDetail"
+            getComponent={() =>
+              require('../../screens/WorkoutDetailScreen/WorkoutDetailScreen')
+                .WorkoutDetailScreen
+            }
+          />
+          <Stack.Screen
+            name="Symptoms"
+            getComponent={() =>
+              require('../../screens/SymptomsScreen/SymptomsScreen')
+                .SymptomsScreen
+            }
+          />
+          <Stack.Screen
+            name="Periods"
+            getComponent={() =>
+              require('../../screens/PeriodsScreen/PeriodsScreen').PeriodsScreen
+            }
+          />
+          <Stack.Screen
+            name="CycleHistory"
+            getComponent={() => require('../../screens/CycleHistory').default}
+          />
+          <Stack.Screen
+            name="PregnancyInfo"
+            getComponent={() => require('../../screens/PregnancyInfo').default}
+          />
+          <Stack.Screen
+            name="PregnancyHistory"
+            getComponent={() =>
+              require('../../screens/PregnancyHistory').default
+            }
+          />
+          <Stack.Screen
+            name="SymptomHistory"
+            getComponent={() => require('../../screens/SymptomHistory').default}
+          />
+          <Stack.Screen
+            name="PostpartumTransition"
+            getComponent={() =>
+              require('../../screens/PostpartumTransition').default
+            }
+          />
+          <Stack.Screen
+            name="Journal"
+            getComponent={() => require('../../screens/Journal').default}
+          />
+          <Stack.Screen
+            name="Journals"
+            getComponent={() => require('../../screens/Journals').default}
+          />
+          <Stack.Screen
+            name="WriteJournal"
+            getComponent={() => require('../../screens/WriteJournal').default}
+          />
+          <Stack.Screen
+            name="Profile"
+            getComponent={() => require('../../screens/Profile').default}
+          />
+          <Stack.Screen
+            name="EditProfileBody"
+            getComponent={() =>
+              require('../../screens/Profile/edit/EditBodyMetricsScreen').default
+            }
+          />
+          <Stack.Screen
+            name="EditProfileGoals"
+            getComponent={() =>
+              require('../../screens/Profile/edit/EditGoalsCycleScreen').default
+            }
+          />
+          <Stack.Screen
+            name="EditProfileDietary"
+            getComponent={() =>
+              require('../../screens/Profile/edit/EditDietaryScreen').default
+            }
+          />
+          <Stack.Screen
+            name="Track"
+            getComponent={() => require('../../screens/Track').default}
+          />
+          <Stack.Screen
+            name="FastingHome"
+            getComponent={() =>
+              require('../../screens/FastingHome/FastingHome').default
+            }
+          />
+          <Stack.Screen
+            name="WeeklyMealPlanning"
+            getComponent={() =>
+              require('../../screens/WeeklyMealPlanning').default
+            }
+          />
+          <Stack.Screen
+            name="WeeklyMealOverview"
+            getComponent={() =>
+              require('../../screens/WeeklyMealOverview').default
+            }
+          />
+          <Stack.Screen
+            name="RitualLibrary"
+            getComponent={() => require('../../screens/RitualLibrary').default}
+          />
+          <Stack.Screen
+            name="GroceryList"
+            getComponent={() => require('../../screens/GroceryList').default}
+          />
+          <Stack.Screen
+            name="CycleInsight"
+            getComponent={() => require('../../screens/CycleInsight').default}
+          />
+          <Stack.Screen
+            name="NameInput"
+            getComponent={() => require('../../screens/NameInput').default}
+          />
+          <Stack.Screen
+            name="GetToKnow"
+            getComponent={() => require('../../screens/GetToKnow').default}
+          />
+          <Stack.Screen
+            name="UploadProfile"
+            getComponent={() => require('../../screens/UploadProfile').default}
+          />
+          <Stack.Screen
+            name="WhoIsTheUser"
+            getComponent={() => require('../../screens/WhoIsTheUser').default}
+          />
           <Stack.Screen
             name="AboutYouTransition"
-            component={AboutYouTransition}
+            getComponent={() =>
+              require('../../screens/AboutYouTransition').default
+            }
           />
-          <Stack.Screen name="BirthdayInput" component={BirthdayInput} />
-          <Stack.Screen name="PregnancyStatus" component={PregnancyStatus} />
+          <Stack.Screen
+            name="BirthdayInput"
+            getComponent={() => require('../../screens/BirthdayInput').default}
+          />
+          <Stack.Screen
+            name="PregnancyStatus"
+            getComponent={() =>
+              require('../../screens/PregnancyStatus').default
+            }
+          />
           <Stack.Screen
             name="YourJourneyTransition"
-            component={YourJourneyTransition}
+            getComponent={() =>
+              require('../../screens/YourJourneyTransition').default
+            }
           />
           <Stack.Screen
             name="TrackingAnimation"
-            component={TrackingAnimation}
+            getComponent={() =>
+              require('../../screens/TrackingAnimation').default
+            }
           />
-          <Stack.Screen name="RhythmAnimation" component={RhythmAnimation} />
+          <Stack.Screen
+            name="RhythmAnimation"
+            getComponent={() =>
+              require('../../screens/RhythmAnimation').default
+            }
+          />
           <Stack.Screen
             name="YourStrengthTransition"
-            component={YourStrengthTransition}
+            getComponent={() =>
+              require('../../screens/YourStrengthTransition').default
+            }
           />
-          <Stack.Screen name="AllSetTransition" component={AllSetTransition} />
+          <Stack.Screen
+            name="AllSetTransition"
+            getComponent={() =>
+              require('../../screens/AllSetTransition').default
+            }
+          />
           <Stack.Screen
             name="AboutTodayTransition"
-            component={AboutTodayTransition}
+            getComponent={() =>
+              require('../../screens/AboutTodayTransition').default
+            }
           />
-          <Stack.Screen name="Weight" component={Weight} />
-          <Stack.Screen name="Height" component={Height} />
-          <Stack.Screen name="PeriodDuration" component={PeriodDuration} />
-          <Stack.Screen name="CyclePattern" component={CyclePattern} />
-          <Stack.Screen name="QuickTracking" component={QuickTracking} />
-          <Stack.Screen name="SleepTracker" component={SleepTracker} />
-          <Stack.Screen name="FounderStory" component={FounderStory} />
+          <Stack.Screen
+            name="Weight"
+            getComponent={() => require('../../screens/Weight').default}
+          />
+          <Stack.Screen
+            name="Height"
+            getComponent={() => require('../../screens/Height').default}
+          />
+          <Stack.Screen
+            name="PeriodDuration"
+            getComponent={() => require('../../screens/PeriodDuration').default}
+          />
+          <Stack.Screen
+            name="CyclePattern"
+            getComponent={() => require('../../screens/CyclePattern').default}
+          />
+          <Stack.Screen
+            name="QuickTracking"
+            getComponent={() => require('../../screens/QuickTracking').default}
+          />
+          <Stack.Screen
+            name="SleepTracker"
+            getComponent={() => require('../../screens/SleepTracker').default}
+          />
+          <Stack.Screen
+            name="FounderStory"
+            getComponent={() => require('../../screens/FounderStory').default}
+          />
           <Stack.Screen
             name="HormoneResetGuide"
-            component={HormoneResetGuide}
+            getComponent={() =>
+              require('../../screens/HormoneResetGuide').default
+            }
           />
-          <Stack.Screen name="UserProfile" component={Profile} />
-          <Stack.Screen name="ChallengeHub" component={ChallengeHub} />
-          <Stack.Screen name="DetoxChallenge" component={DetoxChallenge} />
-          <Stack.Screen name="PartnerConnect" component={PartnerConnect} />
-          <Stack.Screen name="PartnerCodeEntry" component={PartnerCodeEntry} />
+          <Stack.Screen
+            name="UserProfile"
+            getComponent={() => require('../../screens/Profile').default}
+          />
+          <Stack.Screen
+            name="ChallengeHub"
+            getComponent={() => require('../../screens/ChallengeHub').default}
+          />
+          <Stack.Screen
+            name="DetoxChallenge"
+            getComponent={() => require('../../screens/DetoxChallenge').default}
+          />
           </Stack.Navigator>
         </JournalProvider>
         </PartnerModeProvider>
-        {/* </NavigationContainer> */}
       </OnboardingProvider>
     </SafeAreaProvider>
   );

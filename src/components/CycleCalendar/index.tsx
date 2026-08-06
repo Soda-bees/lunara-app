@@ -12,7 +12,7 @@ import {
 import moment from 'moment';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
-import images from '../../constants/images';
+import images from '../../constants/images/cycle';
 
 type PhaseType = 'Menstrual' | 'Follicular' | 'Ovulatory' | 'Luteal';
 

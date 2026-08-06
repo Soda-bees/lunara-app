@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import moment from 'moment';
-import images from '../../constants/images';
+import images from '../../constants/images/cycle';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 import { colors as themeColors } from '../../constants/theme/theme';

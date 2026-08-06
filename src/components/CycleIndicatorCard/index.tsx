@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, StyleSheet, ActivityIndicator } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import GradientText from '../GradientText';
-import images from '../../constants/images';
+import images from '../../constants/images/cycle';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 

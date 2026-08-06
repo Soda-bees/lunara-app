@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import images from '../../../../constants/images';
+import images from '../../../../constants/images/home';
 import type { RootStackParamList } from '../../../../navigation/stackNavigation';
 import { partnerHomeStyles as styles } from '../style';
 

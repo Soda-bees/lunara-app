@@ -11,7 +11,7 @@ import moment from 'moment';
 import GradientWrapper from '../../../components/GradientWrapper';
 import GradientText from '../../../components/GradientText';
 import CycleIndicatorCard from '../../../components/CycleIndicatorCard';
-import images from '../../../constants/images';
+import images from '../../../constants/images/home';
 import { gradients } from '../../../constants/gradientColors';
 import type {
   CycleStatusResponse,

@@ -1,7 +1,7 @@
 import { View, Text, Image, StyleSheet } from 'react-native';
 import React, { useRef } from 'react';
 import styles from './style';
-import images from '../../constants/images';
+import images from '../../constants/images/onboarding';
 import GradientText from '../../components/GradientText';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import { RootStackParamList } from '../../navigation/stackNavigation';

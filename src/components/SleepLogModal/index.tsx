@@ -13,7 +13,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import moment from 'moment';
 import { logSleep } from '../../services/api';
-import images from '../../constants/images';
+import images from '../../constants/images/sleep';
 import { colors } from '../../constants/colors';
 import sleepStyles from '../../screens/SleepTracker/style';
 

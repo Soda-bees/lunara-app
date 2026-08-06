@@ -11,7 +11,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 import { fontSize } from '../../constants/fonts';
-import images from '../../constants/images';
+import images from '../../constants/images/common';
 import BackButton from '../BackButton';
 import { useNavigation } from '@react-navigation/native';
 

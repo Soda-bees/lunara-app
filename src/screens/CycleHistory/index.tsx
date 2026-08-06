@@ -27,7 +27,7 @@ import moment from 'moment';
 import PeriodListItem from '../../components/PeriodListItem';
 import styles from './style';
 import { colors } from '../../constants/colors';
-import images from '../../constants/images';
+import images from '../../constants/images/cycle';
 import PeriodStartModal, {
   PeriodLogData,
 } from '../../components/PeriodStartModal';

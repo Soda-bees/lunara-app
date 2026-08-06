@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import images from '../../constants/images';
+import images from '../../constants/images/more';
 import Header from '../../components/Header';
 import Button from '../../components/Button';
 import { clearToken } from '../../services/api';

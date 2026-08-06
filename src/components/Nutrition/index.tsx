@@ -9,7 +9,7 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import images from '../../constants/images';
+import images from '../../constants/images/track';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 import {

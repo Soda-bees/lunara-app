@@ -21,7 +21,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../components/Header';
 import GradientWrapper from '../../components/GradientWrapper';
-import images from '../../constants/images';
+import images from '../../constants/images/sleep';
 import LinearGradient from 'react-native-linear-gradient';
 import { sizes } from '../../constants/sizes';
 import Modal from 'react-native-modal';

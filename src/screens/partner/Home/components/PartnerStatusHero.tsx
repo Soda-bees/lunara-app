@@ -11,7 +11,7 @@ import moment from 'moment';
 import GradientWrapper from '../../../../components/GradientWrapper';
 import CycleIndicatorCard from '../../../../components/CycleIndicatorCard';
 import GradientText from '../../../../components/GradientText';
-import images from '../../../../constants/images';
+import images from '../../../../constants/images/home';
 import type { PregnancyStatusResponse } from '../../../../services/api';
 import type { CycleStatusResponse } from '../../../../services/api';
 import { getPhaseDisplayName } from '../partnerHomeUtils';

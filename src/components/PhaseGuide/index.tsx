@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
-import images from '../../constants/images';
+import images from '../../constants/images/cycle';
 import {
   getCyclePhaseContent,
   CyclePhaseContent,

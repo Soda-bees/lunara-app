@@ -1,6 +1,6 @@
 export type TabRouteName = 'Home' | 'Cycle' | 'Track' | 'More';
 
-import images from '../images';
+import images from '../images/tabs';
 import type { ImageSourcePropType } from 'react-native';
 
 export const tabNavigatorIcons: Record<

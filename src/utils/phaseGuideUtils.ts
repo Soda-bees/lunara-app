@@ -1,5 +1,5 @@
 import { ImageSourcePropType } from 'react-native';
-import images from '../constants/images';
+import images from '../constants/images/cycle';
 
 /**
  * Maps backend iconType to frontend image assets

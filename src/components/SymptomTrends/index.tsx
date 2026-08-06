@@ -13,7 +13,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
-import images from '../../constants/images';
+import images from '../../constants/images/cycle';
 import {
   getCycleSymptomPatterns,
   getCycleSymptomHistory,

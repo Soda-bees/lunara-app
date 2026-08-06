@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../../../constants/colors';
-import images from '../../../constants/images';
+import images from '../../../constants/images/track';
 import { fastingMechanisms } from '../fastingData';
 import styles from '../style';
 

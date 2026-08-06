@@ -3,7 +3,7 @@ import { View, StyleSheet, ImageBackground, Image } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing } from '../../constants/theme/theme';
-import images from '../../constants/images';
+import images from '../../constants/images/common';
 import { sizes } from '../../constants/sizes';
 type Props = {
   children: React.ReactNode;

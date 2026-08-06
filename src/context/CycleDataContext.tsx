@@ -8,6 +8,10 @@ import {
   getPeriodAnalytics,
 } from '../services/api';
 import { FetchState, STALE_TIME_MS } from '../types/fetchState';
+import {
+  loadCycleStatusSnapshot,
+  saveCycleStatusSnapshot,
+} from '../utils/contextSnapshotStorage';
 
 type CycleData = {
   cycleStatus: FetchState<CycleStatusResponse['data']>;
@@ -32,6 +36,8 @@ const CycleDataContext = createContext<CycleData | undefined>(undefined);
  * Splash also calls refreshCycleData() without force — STALE_TIME_MS and
  * in-flight dedupe prevent a second full analytics pack. Use { force: true }
  * only for pull-to-refresh / explicit user refresh.
+ *
+ * MOB-031: hydrate cycle status snapshot before revalidate (status only).
  */
 export const CycleDataProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -44,12 +50,17 @@ export const CycleDataProvider: React.FC<{ children: React.ReactNode }> = ({
   const [analytics, setAnalytics] =
     useState<FetchState<PeriodAnalyticsResponse['data']>>(defaultFetchState);
   const inflightRef = useRef<Promise<void> | null>(null);
+  /** True after a disk snapshot was applied — first refresh should be background. */
+  const hasStatusSnapshotRef = useRef(false);
 
   const refreshCycleData = useCallback(
     async (options?: { force?: boolean }) => {
       const now = Date.now();
       const isColdStart =
-        !cycleStatus.data && !periods.data && !analytics.data;
+        !hasStatusSnapshotRef.current &&
+        !cycleStatus.data &&
+        !periods.data &&
+        !analytics.data;
 
       if (!options?.force && cycleStatus.lastFetchedAt) {
         const age = now - cycleStatus.lastFetchedAt;
@@ -104,6 +115,9 @@ export const CycleDataProvider: React.FC<{ children: React.ReactNode }> = ({
             error: null,
             lastFetchedAt: fetchedAt,
           });
+          if (statusRes.data) {
+            void saveCycleStatusSnapshot(statusRes.data, fetchedAt);
+          }
         } else {
           setCycleStatus(prev => ({
             ...prev,
@@ -196,13 +210,31 @@ export const CycleDataProvider: React.FC<{ children: React.ReactNode }> = ({
     [],
   );
 
-  // Initial load when empty — no force so splash can join via inflight/stale (MOB-016).
+  // MOB-031: hydrate status snapshot, then revalidate (SWR).
   useEffect(() => {
-    const hasNoData =
-      !cycleStatus.data && !periods.data && !analytics.data;
-    if (hasNoData && !cycleStatus.loading) {
-      refreshCycleData();
-    }
+    let cancelled = false;
+    (async () => {
+      const snap = await loadCycleStatusSnapshot<
+        CycleStatusResponse['data']
+      >();
+      if (cancelled) return;
+      if (snap?.data) {
+        hasStatusSnapshotRef.current = true;
+        setCycleStatus({
+          data: snap.data,
+          loading: false,
+          loadingBackground: false,
+          error: null,
+          lastFetchedAt: snap.savedAt,
+        });
+      }
+      if (!cancelled) {
+        await refreshCycleData({ force: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
@@ -231,4 +263,3 @@ export const useCycleData = (): CycleData => {
   }
   return ctx;
 };
-

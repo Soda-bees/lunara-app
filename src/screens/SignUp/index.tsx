@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Button from '../../components/Button';
 import styles from './style';
-import images from '../../constants/images';
+import images from '../../constants/images/auth';
 import { colors } from '../../constants/colors';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/stackNavigation';

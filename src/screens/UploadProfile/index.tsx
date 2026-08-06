@@ -20,7 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import images from '../../constants/images';
+import images from '../../constants/images/onboarding';
 import Button from '../../components/Button';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { colors } from '../../constants/colors';

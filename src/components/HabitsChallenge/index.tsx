@@ -2,7 +2,7 @@ import { Image, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
-import images from '../../constants/images';
+import images from '../../constants/images/challenges';
 import { getChallengeHabits, ChallengePhaseHabits } from '../../services/api';
 
 type PathwayType = 'Lymphatic' | 'Liver' | 'Gut';

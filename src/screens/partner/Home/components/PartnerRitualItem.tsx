@@ -1,6 +1,6 @@
 import React from 'react';
 import { Image, Text, View } from 'react-native';
-import images from '../../../../constants/images';
+import images from '../../../../constants/images/home';
 import type { HomeRitual } from '../../../../hooks/useHomeRituals';
 import { partnerHomeStyles as styles } from '../style';
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
-import images from '../../constants/images';
+import images from '../../constants/images/track';
 import type { Workout } from '../../services/api';
 import {
   buildWorkoutMetaPills,

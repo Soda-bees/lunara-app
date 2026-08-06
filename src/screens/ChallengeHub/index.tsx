@@ -14,7 +14,7 @@ import styles from './style';
 import Header from '../../components/Header';
 import LinearGradient from 'react-native-linear-gradient';
 import { gradients } from '../../constants/gradientColors';
-import images from '../../constants/images';
+import images from '../../constants/images/challenges';
 import { useNavigation } from '@react-navigation/native';
 import { getChallengesWithStatus } from '../../hooks/useChallengeInstance';
 import { colors } from '../../constants/colors';

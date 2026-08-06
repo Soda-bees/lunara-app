@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import GradientWrapper from '../GradientWrapper';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
-import images from '../../constants/images';
+import images from '../../constants/images/challenges';
 import { getChallengePathways } from '../../services/api';
 
 interface PathwaysChallengeProps {

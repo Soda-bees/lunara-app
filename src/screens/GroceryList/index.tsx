@@ -19,7 +19,7 @@ import {
   type GroceryListItem,
 } from '../../services/api';
 import { colors } from '../../constants/colors';
-import images from '../../constants/images';
+import images from '../../constants/images/track';
 import BackButton from '../../components/BackButton';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';

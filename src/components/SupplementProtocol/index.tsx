@@ -1,7 +1,7 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 import React, { useMemo } from 'react';
 import { colors } from '../../constants/colors';
-import images from '../../constants/images';
+import images from '../../constants/images/track';
 import { sizes } from '../../constants/sizes';
 import { ChallengeStackPhase } from '../../services/api';
 

@@ -10,7 +10,7 @@ import {
   TextInput,
   ActivityIndicator,
 } from 'react-native';
-import images from '../../constants/images';
+import images from '../../constants/images/cycle';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 import { colors as themeColors } from '../../constants/theme/theme';

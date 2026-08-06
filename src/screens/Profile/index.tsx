@@ -14,7 +14,7 @@ import { RootStackParamList } from '../../navigation/stackNavigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import BackButton from '../../components/BackButton';
-import images from '../../constants/images';
+import images from '../../constants/images/more';
 import styles from './style';
 import { colors } from '../../constants/colors';
 import {

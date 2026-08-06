@@ -2,7 +2,7 @@ import { StyleSheet, Text, View, Image, TouchableOpacity, ActivityIndicator } fr
 import React from 'react';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
-import images from '../../constants/images';
+import images from '../../constants/images/challenges';
 import GradientWrapper from '../GradientWrapper';
 import LinearGradient from 'react-native-linear-gradient';
 import { gradients } from '../../constants/gradientColors';

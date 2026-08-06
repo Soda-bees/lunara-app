@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styles from './style';
 import BackButton from '../../components/BackButton';
 import GradientWrapper from '../../components/GradientWrapper';
-import images from '../../constants/images';
+import images from '../../constants/images/common';
 import { colors } from '../../constants/colors';
 
 export default function FounderStory() {

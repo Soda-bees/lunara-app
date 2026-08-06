@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
 import React, { useState, useEffect, useCallback } from 'react';
-import images from '../../constants/images';
+import images from '../../constants/images/track';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 import { getDailyWorkoutPlan, logWorkoutApi, WorkoutOption } from '../../services/api';

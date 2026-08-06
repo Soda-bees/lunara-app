@@ -21,7 +21,7 @@ import {
   getPregnancyStatus,
   type PregnancyStatusResponse,
 } from '../../../services/api';
-import images from '../../../constants/images';
+import images from '../../../constants/images/home';
 import PartnerHomeHeader from './components/PartnerHomeHeader';
 import PartnerStatusHero from './components/PartnerStatusHero';
 import PartnerSymptomCard from './components/PartnerSymptomCard';

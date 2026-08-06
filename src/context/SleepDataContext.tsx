@@ -11,6 +11,10 @@ import {
   getDefaultAnalyticsDateRange,
 } from '../services/api';
 import { FetchState, STALE_TIME_MS } from '../types/fetchState';
+import {
+  loadSleepStatisticsSnapshot,
+  saveSleepStatisticsSnapshot,
+} from '../utils/contextSnapshotStorage';
 
 type SleepData = {
   statistics: FetchState<SleepStatisticsResponse['data']>;
@@ -36,6 +40,8 @@ const SleepDataContext = createContext<SleepData | undefined>(undefined);
  * Splash also calls refreshSleepData() without force — STALE_TIME_MS and
  * in-flight dedupe prevent a second full analytics pack. Use { force: true }
  * only for pull-to-refresh / explicit user refresh.
+ *
+ * MOB-031: hydrate sleep statistics snapshot before revalidate (stats only).
  */
 export const SleepDataProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -48,12 +54,18 @@ export const SleepDataProvider: React.FC<{ children: React.ReactNode }> = ({
   const [insights, setInsights] =
     useState<FetchState<string[]>>(defaultFetchState);
   const inflightRef = useRef<Promise<void> | null>(null);
+  /** True after a disk snapshot was applied — first refresh should be background. */
+  const hasStatsSnapshotRef = useRef(false);
 
   const refreshSleepData = useCallback(
     async (options?: { force?: boolean }) => {
       const now = Date.now();
       const isColdStart =
-        !statistics.data && !logs.data && !patterns.data && !insights.data;
+        !hasStatsSnapshotRef.current &&
+        !statistics.data &&
+        !logs.data &&
+        !patterns.data &&
+        !insights.data;
 
       if (!options?.force && statistics.lastFetchedAt) {
         const age = now - statistics.lastFetchedAt;
@@ -118,6 +130,9 @@ export const SleepDataProvider: React.FC<{ children: React.ReactNode }> = ({
             error: null,
             lastFetchedAt: fetchedAt,
           });
+          if (statsRes.data) {
+            void saveSleepStatisticsSnapshot(statsRes.data, fetchedAt);
+          }
         } else {
           setStatistics(prev => ({
             ...prev,
@@ -233,13 +248,31 @@ export const SleepDataProvider: React.FC<{ children: React.ReactNode }> = ({
     [],
   );
 
-  // Initial load when empty — no force so splash can join via inflight/stale (MOB-016).
+  // MOB-031: hydrate statistics snapshot, then revalidate (SWR).
   useEffect(() => {
-    const hasNoData =
-      !statistics.data && !logs.data && !patterns.data && !insights.data;
-    if (hasNoData && !statistics.loading) {
-      refreshSleepData();
-    }
+    let cancelled = false;
+    (async () => {
+      const snap = await loadSleepStatisticsSnapshot<
+        SleepStatisticsResponse['data']
+      >();
+      if (cancelled) return;
+      if (snap?.data) {
+        hasStatsSnapshotRef.current = true;
+        setStatistics({
+          data: snap.data,
+          loading: false,
+          loadingBackground: false,
+          error: null,
+          lastFetchedAt: snap.savedAt,
+        });
+      }
+      if (!cancelled) {
+        await refreshSleepData({ force: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
@@ -276,4 +309,3 @@ export const useSleepData = (): SleepData => {
   }
   return ctx;
 };
-

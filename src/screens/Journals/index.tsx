@@ -9,7 +9,7 @@ import {
 import React, { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import styles from './style';
-import images from '../../constants/images';
+import images from '../../constants/images/journal';
 import { colors } from '../../constants/colors';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';

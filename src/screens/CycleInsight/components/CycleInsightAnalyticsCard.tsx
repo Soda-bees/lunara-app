@@ -1,6 +1,6 @@
 import React from 'react';
 import { Image, Text, View } from 'react-native';
-import images from '../../../constants/images';
+import images from '../../../constants/images/cycle';
 import { colors } from '../../../constants/colors';
 import { PeriodAnalyticsResponse } from '../../../services/api';
 import { hasAnalyticsData } from '../cycleInsightUtils';

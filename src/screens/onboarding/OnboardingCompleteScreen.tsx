@@ -13,7 +13,7 @@ import {
 } from '../../services/api';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
-import images from '../../constants/images';
+import images from '../../constants/images/onboarding';
 import { sizes } from '../../constants/sizes';
 import LottieView from 'lottie-react-native';
 import GradientText from '../../components/GradientText';

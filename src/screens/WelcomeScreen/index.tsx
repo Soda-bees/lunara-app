@@ -5,7 +5,7 @@ import { ScreenContainer } from '../../components/ScreenContainer/ScreenContaine
 import styles from './style';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import Button from '../../components/Button';
-import images from '../../constants/images';
+import images from '../../constants/images/auth';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import LottieView from 'lottie-react-native';
 import GradientText from '../../components/GradientText';

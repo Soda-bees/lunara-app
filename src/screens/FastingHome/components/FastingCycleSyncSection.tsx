@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
-import images from '../../../constants/images';
+import images from '../../../constants/images/track';
 import { cycleSyncGuidance } from '../fastingData';
 import styles from '../style';
 

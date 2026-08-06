@@ -21,7 +21,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Header from '../../../components/Header';
 import GradientWrapper from '../../../components/GradientWrapper';
-import images from '../../../constants/images';
+import images from '../../../constants/images/cycle';
 import LinearGradient from 'react-native-linear-gradient';
 import GradientText from '../../../components/GradientText';
 import { fontSize } from '../../../constants/fonts';

@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import GradientWrapper from '../../../components/GradientWrapper';
-import images from '../../../constants/images';
+import images from '../../../constants/images/home';
 import styles from '../style';
 
 type Props = {
