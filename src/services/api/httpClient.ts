@@ -50,6 +50,55 @@ function isMutatingMethod(method?: string): boolean {
   return m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE';
 }
 
+/**
+ * MOB-035 retry matrix (auto-retry on 5xx / network only):
+ * - GET/HEAD: yes, jittered backoff
+ * - POST: only when `Idempotency-Key` header is present (API-013/014)
+ * - PUT/PATCH/DELETE: unchanged (still retry; out of this ticket's scope)
+ * - POST without key: fail once (caller may retry manually)
+ */
+function getHeaderValue(
+  headers: HeadersInit | undefined,
+  name: string,
+): string | undefined {
+  if (!headers) {
+    return undefined;
+  }
+  const lower = name.toLowerCase();
+  if (typeof Headers !== 'undefined' && headers instanceof Headers) {
+    return headers.get(name) ?? headers.get(lower) ?? undefined;
+  }
+  if (Array.isArray(headers)) {
+    const hit = headers.find(([k]) => k.toLowerCase() === lower);
+    return hit?.[1];
+  }
+  const record = headers as Record<string, string>;
+  for (const key of Object.keys(record)) {
+    if (key.toLowerCase() === lower) {
+      return record[key];
+    }
+  }
+  return undefined;
+}
+
+function shouldAutoRetry(method: string, headers?: HeadersInit): boolean {
+  const m = (method || 'GET').toUpperCase();
+  if (m === 'GET' || m === 'HEAD') {
+    return true;
+  }
+  if (m === 'POST') {
+    const key = getHeaderValue(headers, 'Idempotency-Key');
+    return Boolean(key && String(key).trim());
+  }
+  return true;
+}
+
+/** Linear backoff with full jitter: [0, base] where base = 1000 * (attempt + 1). */
+function retryDelayMs(attempt: number): number {
+  const base = 1000 * (attempt + 1);
+  return Math.floor(Math.random() * (base + 1));
+}
+
 function isPartnerAllowedMutation(endpoint: string, method?: string): boolean {
   const path = endpoint.split('?')[0];
   return path === '/partner/logout' && (method || 'GET').toUpperCase() === 'POST';
@@ -95,6 +144,9 @@ export async function apiCall<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   const method = options.method || 'GET';
+  const effectiveRetries = shouldAutoRetry(method, options.headers)
+    ? retries
+    : 0;
 
   const skipAuthHeader = isUnauthenticatedAuthEndpoint(endpoint);
   const sessionType = skipAuthHeader ? 'owner' : await getStoredSessionType();
@@ -119,7 +171,7 @@ export async function apiCall<T>(
 
   let lastError: ApiError | null = null;
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
+  for (let attempt = 0; attempt <= effectiveRetries; attempt++) {
     try {
       const response = await fetch(url, {
         ...options,
@@ -208,10 +260,10 @@ export async function apiCall<T>(
           DeviceEventEmitter.emit('session_expired');
         }
 
-        // Retry on server errors (5xx) or network errors
-        if (errorObj.retryable && attempt < retries) {
+        // Retry on server errors (5xx) when policy allows
+        if (errorObj.retryable && attempt < effectiveRetries) {
           await new Promise<void>(resolve =>
-            setTimeout(() => resolve(), 1000 * (attempt + 1)),
+            setTimeout(() => resolve(), retryDelayMs(attempt)),
           );
           lastError = errorObj;
           continue;
@@ -236,10 +288,10 @@ export async function apiCall<T>(
         networkError.code = 'NETWORK_ERROR';
         networkError.retryable = true;
 
-        // Retry on network errors
-        if (attempt < retries) {
+        // Retry on network errors when policy allows
+        if (attempt < effectiveRetries) {
           await new Promise<void>(resolve =>
-            setTimeout(() => resolve(), 1000 * (attempt + 1)),
+            setTimeout(() => resolve(), retryDelayMs(attempt)),
           );
           lastError = networkError;
           continue;

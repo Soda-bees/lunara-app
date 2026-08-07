@@ -202,7 +202,6 @@ export type {
 } from './nutrition';
 export {
   getDailyNutritionPlan,
-  getWeeklyNutritionPlan,
   regenerateNutritionPlan,
   swapMealOptionApi,
   setMealCompletedApi,

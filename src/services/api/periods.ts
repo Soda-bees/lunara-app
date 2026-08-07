@@ -208,7 +208,7 @@ export interface PeriodAnalyticsResponse {
   };
 }
 
-/** Period analytics — bounded server-side to last 50 periods (PERF-003). */
+/** Period analytics — bounded server-side to last 50 periods (PERF-003). Canonical (API-011). */
 export async function getPeriodAnalytics(): Promise<PeriodAnalyticsResponse> {
   return apiCall<PeriodAnalyticsResponse>('/periods/analytics', {
     method: 'GET',
@@ -244,11 +244,42 @@ export interface PeriodStatisticsResponse {
   };
 }
 
-/** Period statistics — bounded server-side to last 50 periods (PERF-003). */
+/**
+ * Period summary for Cycle History UI.
+ * API-012: calls canonical `/periods/analytics` (does not hit deprecated `/periods/statistics`).
+ * Maps into the legacy statistics shape for existing screens.
+ */
 export async function getPeriodStatistics(): Promise<PeriodStatisticsResponse> {
-  return apiCall<PeriodStatisticsResponse>('/periods/statistics', {
-    method: 'GET',
-  });
+  const res = await getPeriodAnalytics();
+  if (!res.success || !res.data) {
+    return {
+      success: res.success,
+      data: { message: res.data?.message },
+    };
+  }
+
+  const a = res.data;
+  return {
+    success: true,
+    data: {
+      totalPeriods: a.totalPeriods,
+      // analytics has no dateRange; Cycle History shows "—" until screen migrates
+      cycleLength: {
+        average: a.cycleRange?.average ?? null,
+        longest: a.cycleRange?.max ?? null,
+        shortest: a.cycleRange?.min ?? null,
+        totalCycles: a.totalCycles ?? 0,
+      },
+      periodLength: {
+        average: a.periodRange?.average ?? null,
+        longest: a.periodRange?.max ?? null,
+        shortest: a.periodRange?.min ?? null,
+      },
+      mostCommonSymptoms: a.topSymptoms,
+      flowDistribution: a.flowDistribution,
+      message: a.message,
+    },
+  };
 }
 
 // Pregnancy API Types

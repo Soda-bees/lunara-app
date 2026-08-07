@@ -28,6 +28,7 @@ export async function generatePartnerCode(): Promise<GeneratePartnerCodeResponse
 }
 
 export async function getPartnerStatus(): Promise<PartnerStatusResponse> {
+  // Canonical partner connection status (API-011 / API-012). Do not use /auth/me for this.
   return apiCall<PartnerStatusResponse>('/partner/status', {
     method: 'GET',
   });

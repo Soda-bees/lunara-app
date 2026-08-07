@@ -132,20 +132,6 @@ export async function getDailyNutritionPlan(
   });
 }
 
-export async function getWeeklyNutritionPlan(
-  startDate?: string,
-): Promise<WeeklyMealPlanResponse> {
-  const params = new URLSearchParams();
-  if (startDate) {
-    params.append('startDate', startDate);
-  }
-  const query = params.toString();
-  const endpoint = `/nutrition/plan/week${query ? `?${query}` : ''}`;
-  return apiCall<WeeklyMealPlanResponse>(endpoint, {
-    method: 'GET',
-  });
-}
-
 /**
  * Force-regenerate nutrition plan(s) via POST (API-001 / MOB-021).
  * Prefer this over GET `forceRegenerate` (deprecated).
