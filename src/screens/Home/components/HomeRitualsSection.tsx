@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
+  SectionList,
   Text,
   TouchableOpacity,
   View,
@@ -27,6 +29,19 @@ const BLOCKS: { key: RitualSection; label: string }[] = [
   { key: 'evening', label: 'Evening' },
 ];
 
+/** MOB-036: nest virtu only when the section would exceed ~half the screen. */
+const RITUALS_LIST_MAX_HEIGHT = Math.round(
+  Math.min(560, Dimensions.get('window').height * 0.55),
+);
+/** Approx. rows that fit without needing an inner scroller. */
+const RITUALS_INLINE_THRESHOLD = 6;
+
+type RitualSectionRow = {
+  key: RitualSection;
+  title: string;
+  data: HomeRitual[];
+};
+
 export default function HomeRitualsSection({
   loading,
   completed,
@@ -36,6 +51,18 @@ export default function HomeRitualsSection({
   onLibraryPress,
   onRitualPress,
 }: Props) {
+  const sections = useMemo<RitualSectionRow[]>(
+    () =>
+      BLOCKS.map(block => ({
+        key: block.key,
+        title: block.label,
+        data: ritualsBySection[block.key],
+      })).filter(section => section.data.length > 0),
+    [ritualsBySection],
+  );
+
+  const needsInnerScroll = todayRituals.length > RITUALS_INLINE_THRESHOLD;
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -54,56 +81,42 @@ export default function HomeRitualsSection({
         </View>
       </View>
 
-      {/* TODAY'S RITUALS */}
+      {/* TODAY'S RITUALS — SectionList (MOB-036 virtualization) */}
       <View style={styles.ritualsSection}>
         {loading ? (
           <ActivityIndicator size="small" color={colors.green} />
         ) : null}
         {todayRituals.length > 0 ? (
-          <>
-            {BLOCKS.map(block => {
-              const rows = ritualsBySection[block.key];
-              if (rows.length === 0) return null;
-              return (
-                <View key={block.key}>
-                  <Text style={styles.sectionHeading}>{block.label}</Text>
-                  {rows.map(ritual => (
-                    <HomeRitualItem
-                      key={ritual.id}
-                      ritual={ritual}
-                      onPress={() => onRitualPress(ritual)}
-                    />
-                  ))}
-                </View>
-              );
-            })}
-          </>
+          <SectionList
+            sections={sections}
+            keyExtractor={item => item.id}
+            renderItem={({ item }) => (
+              <HomeRitualItem
+                ritual={item}
+                onPress={() => onRitualPress(item)}
+              />
+            )}
+            renderSectionHeader={({ section }) => (
+              <Text style={styles.sectionHeading}>{section.title}</Text>
+            )}
+            stickySectionHeadersEnabled={false}
+            nestedScrollEnabled={needsInnerScroll}
+            scrollEnabled={needsInnerScroll}
+            style={
+              needsInnerScroll ? { maxHeight: RITUALS_LIST_MAX_HEIGHT } : undefined
+            }
+            showsVerticalScrollIndicator={false}
+            initialNumToRender={8}
+            windowSize={7}
+            maxToRenderPerBatch={8}
+            removeClippedSubviews={needsInnerScroll}
+          />
         ) : (
           <Text style={{ color: colors.green, fontSize: 12 }}>
             Nothing due today
           </Text>
         )}
       </View>
-
-      {/* Bottom Gradient Button */}
-      {/* <TouchableOpacity
-        style={styles.updateButton}
-        onPress={handleUpdateRituals}
-        disabled={updatingRituals}
-      >
-        <LinearGradient
-          colors={gradients.primary}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.updateButtonGradient}
-        >
-          {updatingRituals ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : (
-            <Text style={styles.updateButtonText}>Update Rituals</Text>
-          )}
-        </LinearGradient>
-      </TouchableOpacity> */}
     </View>
   );
 }
