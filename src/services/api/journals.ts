@@ -1,49 +1,23 @@
 import { apiCall } from './httpClient';
+import type {
+  CreateJournalRequest,
+  DeleteJournalResponse,
+  JournalListParams,
+  JournalResponse,
+  JournalsResponse,
+  UpdateJournalRequest,
+} from '../../types/api';
 
-// Journal API Types
-export interface Journal {
-  _id: string;
-  user?: string;
-  title: string;
-  description: string;
-  createdAt: string;
-  updatedAt?: string;
-  pin?: boolean;
-}
-
-export interface JournalsResponse {
-  success: boolean;
-  data: Journal[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-  };
-}
-
-export interface JournalResponse {
-  success: boolean;
-  data: Journal;
-  message?: string;
-}
-
-export interface CreateJournalRequest {
-  title: string;
-  description?: string;
-}
-
-export interface UpdateJournalRequest {
-  title?: string;
-  description?: string;
-  pin?: boolean;
-}
-
-export interface JournalListParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-}
+export type {
+  CreateJournalRequest,
+  DeleteJournalResponse,
+  Journal,
+  JournalListParams,
+  JournalResponse,
+  JournalsCursorResponse,
+  JournalsResponse,
+  UpdateJournalRequest,
+} from '../../types/api';
 
 export async function getJournals(
   params?: JournalListParams,
@@ -86,8 +60,8 @@ export async function updateJournal(
 
 export async function deleteJournal(
   id: string,
-): Promise<{ success: boolean; message?: string }> {
-  return apiCall<{ success: boolean; message?: string }>(`/journals/${id}`, {
+): Promise<DeleteJournalResponse> {
+  return apiCall<DeleteJournalResponse>(`/journals/${id}`, {
     method: 'DELETE',
   });
 }

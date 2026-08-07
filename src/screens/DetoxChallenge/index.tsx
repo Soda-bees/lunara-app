@@ -1,7 +1,7 @@
 import { View, Text, StatusBar, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import React, { useState, useEffect, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRoute } from '@react-navigation/native';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import Header from '../../components/Header';
 import styles from './style';
 import GradientWrapper from '../../components/GradientWrapper';
@@ -13,11 +13,13 @@ import PathwaysChallenge from '../../components/PathwaysChallenge';
 import HabitsChallenge from '../../components/HabitsChallenge';
 import { useChallengeInstance } from '../../hooks/useChallengeInstance';
 import { colors } from '../../constants/colors';
+import { RootStackParamList } from '../../navigation/stackNavigation';
 
 type Category = 'Today' | 'Stack' | 'Pathways' | 'Habits';
+type DetoxChallengeRoute = RouteProp<RootStackParamList, 'DetoxChallenge'>;
 
 export default function DetoxChallenge() {
-  const route = useRoute<any>();
+  const route = useRoute<DetoxChallengeRoute>();
   const challengeId: string | null = route.params?.challengeId ?? null;
   const initialInstanceId: string | null = route.params?.instanceId ?? null;
 

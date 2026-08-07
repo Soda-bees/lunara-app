@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import styles from './style';
 import Button from '../../components/Button';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { heightCmFromSingleImperialInches } from '../../utils/measurement';
 import LinearGradient from 'react-native-linear-gradient';
@@ -25,10 +25,11 @@ const { width } = Dimensions.get('window');
 const ITEM_WIDTH = 20;
 const VISIBLE_ITEMS = Math.floor(width / ITEM_WIDTH);
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Height'>;
+type HeightRouteProp = RouteProp<RootStackParamList, 'Height'>;
 const Height = () => {
   const navigation = useNavigation<NavigationProp>();
-  const route = useRoute();
+  const route = useRoute<HeightRouteProp>();
   const { updateData } = useOnboarding();
 
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -124,9 +125,7 @@ const Height = () => {
   const handleContinue = () => {
     const totalInches = unit === 'in' ? selectedValue : selectedValue * 12;
     const heightCm = heightCmFromSingleImperialInches(totalInches);
-    const p = route.params as
-      | { weightKg: number; measurementSystem?: 'metric' | 'imperial' }
-      | undefined;
+    const p = route.params;
     if (
       p?.weightKg != null &&
       heightCm != null &&

@@ -16,11 +16,14 @@ import LinearGradient from 'react-native-linear-gradient';
 import { gradients } from '../../constants/gradientColors';
 import images from '../../constants/images/challenges';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getChallengesWithStatus } from '../../hooks/useChallengeInstance';
 import { colors } from '../../constants/colors';
+import { RootStackParamList } from '../../navigation/stackNavigation';
 
 export default function ChallengeHub() {
-  const navigation = useNavigation();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList, 'ChallengeHub'>>();
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,17 +71,15 @@ export default function ChallengeHub() {
   const handleStartOrContinue = (item: any) => {
     if (item.userInstance?.id) {
       // Continue existing instance
-      // @ts-ignore
-      navigation.navigate('DetoxChallenge' as never, {
+      navigation.navigate('DetoxChallenge', {
         challengeId: item.id,
         instanceId: item.userInstance.id,
-      } as never);
+      });
     } else {
       // Start new challenge; detail screen will trigger start
-      // @ts-ignore
-      navigation.navigate('DetoxChallenge' as never, {
+      navigation.navigate('DetoxChallenge', {
         challengeId: item.id,
-      } as never);
+      });
     }
   };
 

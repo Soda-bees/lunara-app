@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
+  RouteProp,
   useNavigation,
   useRoute,
   useFocusEffect,
@@ -23,15 +24,12 @@ import { showPartnerReadOnlyAlert } from '../../utils/partnerReadOnly';
 import TrackMovementSection from './components/TrackMovementSection';
 
 type Category = 'Nutrition' | 'Movement' | 'Mindful';
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
-
-type TrackRouteParams = {
-  initialCategory?: Category;
-};
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Track'>;
+type TrackRouteProp = RouteProp<RootStackParamList, 'Track'>;
 
 export default function Track() {
   const navigation = useNavigation<NavigationProp>();
-  const route = useRoute();
+  const route = useRoute<TrackRouteProp>();
   const { isPartnerMode } = usePartnerMode();
   const { cycleStatus } = useCycleData();
   const cycle = cycleStatus.data;
@@ -58,10 +56,10 @@ export default function Track() {
 
   useFocusEffect(
     useCallback(() => {
-      const params = route.params as TrackRouteParams | undefined;
+      const params = route.params;
       if (params?.initialCategory === 'Movement') {
         setSelectedCategory('Movement');
-        navigation.setParams({ initialCategory: undefined } as never);
+        navigation.setParams({ initialCategory: undefined });
       }
     }, [navigation, route.params]),
   );

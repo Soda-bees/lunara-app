@@ -2,9 +2,10 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { StatusBar, Text, View, ScrollView } from 'react-native';
 import styles from './style';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RootStackParamList } from '../../../navigation/stackNavigation';
+import { PartnerStackParamList } from '../../../navigation/partnerStackNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
+  RouteProp,
   useNavigation,
   useRoute,
   useFocusEffect,
@@ -20,15 +21,12 @@ import { useWorkoutPlan } from '../../../hooks/useWorkoutPlan';
 import TrackMovementSection from '../../Track/components/TrackMovementSection';
 
 type Category = 'Nutrition' | 'Movement' | 'Mindful';
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
-
-type TrackRouteParams = {
-  initialCategory?: Category;
-};
+type NavigationProp = NativeStackNavigationProp<PartnerStackParamList, 'Track'>;
+type TrackRouteProp = RouteProp<PartnerStackParamList, 'Track'>;
 
 export default function PartnerTrack() {
   const navigation = useNavigation<NavigationProp>();
-  const route = useRoute();
+  const route = useRoute<TrackRouteProp>();
   const { cycleStatus } = useCycleData();
   const cycle = cycleStatus.data;
   const isPregnant =
@@ -53,10 +51,10 @@ export default function PartnerTrack() {
 
   useFocusEffect(
     useCallback(() => {
-      const params = route.params as TrackRouteParams | undefined;
+      const params = route.params;
       if (params?.initialCategory === 'Movement') {
         setSelectedCategory('Movement');
-        navigation.setParams({ initialCategory: undefined } as never);
+        navigation.setParams({ initialCategory: undefined });
       }
     }, [navigation, route.params]),
   );

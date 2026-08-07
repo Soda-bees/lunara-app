@@ -2,13 +2,50 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL as RUNTIME_API_BASE_URL } from '../../config/runtimeConfig';
 import { DeviceEventEmitter } from 'react-native';
 
+/** Known encrypted-storage keys used by this module (REF-009). */
+export type EncryptedStorageKey = 'authToken';
+
+const AUTH_TOKEN_KEY: EncryptedStorageKey = 'authToken';
+
+/** Minimal typed surface for `react-native-encrypted-storage`. */
+export type EncryptedStorageModule = {
+  getItem: (key: EncryptedStorageKey) => Promise<string | null>;
+  setItem: (key: EncryptedStorageKey, value: string) => Promise<void>;
+  removeItem: (key: EncryptedStorageKey) => Promise<void>;
+};
+
+function resolveEncryptedStorage(mod: unknown): EncryptedStorageModule | null {
+  if (!mod || typeof mod !== 'object') {
+    return null;
+  }
+  const withDefault = mod as { default?: unknown };
+  const candidate =
+    withDefault.default && typeof withDefault.default === 'object'
+      ? withDefault.default
+      : mod;
+  if (!candidate || typeof candidate !== 'object') {
+    return null;
+  }
+  const storage = candidate as Partial<EncryptedStorageModule>;
+  if (
+    typeof storage.getItem !== 'function' ||
+    typeof storage.setItem !== 'function' ||
+    typeof storage.removeItem !== 'function'
+  ) {
+    return null;
+  }
+  return storage as EncryptedStorageModule;
+}
+
 // `react-native-encrypted-storage` is a native module. If it isn't correctly
 // linked/available on the device, importing it can break the entire module.
 // We use a guarded require and fall back to AsyncStorage to keep the app booting.
-let EncryptedStorage: any = null;
+let EncryptedStorage: EncryptedStorageModule | null = null;
 try {
-  const mod = require('react-native-encrypted-storage');
-  EncryptedStorage = mod?.default ?? mod;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  EncryptedStorage = resolveEncryptedStorage(
+    require('react-native-encrypted-storage'),
+  );
 } catch {
   EncryptedStorage = null;
 }
@@ -20,11 +57,51 @@ try {
 
 export const API_BASE_URL = RUNTIME_API_BASE_URL;
 
+type ApiErrorBody = {
+  message?: string;
+  error?: string;
+  errors?: Array<{ msg?: string; message?: string }>;
+};
+
 export interface ApiError extends Error {
   status?: number;
   code?: string;
-  details?: any;
+  details?: unknown;
   retryable?: boolean;
+}
+
+type ErrorLike = {
+  message: string;
+  name?: string;
+  status?: number;
+};
+
+function asErrorLike(error: unknown): ErrorLike {
+  if (error instanceof Error) {
+    const withStatus = error as ApiError;
+    return {
+      message: error.message,
+      name: error.name,
+      status:
+        typeof withStatus.status === 'number' ? withStatus.status : undefined,
+    };
+  }
+  if (typeof error === 'object' && error !== null) {
+    const o = error as Record<string, unknown>;
+    return {
+      message: typeof o.message === 'string' ? o.message : 'Unknown error',
+      name: typeof o.name === 'string' ? o.name : undefined,
+      status: typeof o.status === 'number' ? o.status : undefined,
+    };
+  }
+  return { message: String(error) };
+}
+
+function asApiErrorBody(value: unknown): ApiErrorBody {
+  if (typeof value === 'object' && value !== null) {
+    return value as ApiErrorBody;
+  }
+  return { message: 'An error occurred' };
 }
 
 /** 401 on these routes means wrong credentials / pre-auth failure, not an expired session. */
@@ -182,10 +259,10 @@ export async function apiCall<T>(
       });
 
       if (!response.ok) {
-        let errorData: any = { message: 'An error occurred' };
+        let errorData: ApiErrorBody = { message: 'An error occurred' };
 
         try {
-          errorData = await response.json();
+          errorData = asApiErrorBody(await response.json());
         } catch {
           // If response is not JSON, try to get text
           try {
@@ -238,7 +315,7 @@ export async function apiCall<T>(
           // Validation errors
           if (errorData.errors && Array.isArray(errorData.errors)) {
             errorObj.message = errorData.errors
-              .map((e: any) => e.msg || e.message)
+              .map(e => e.msg || e.message)
               .join(', ');
           } else {
             errorObj.message =
@@ -272,15 +349,17 @@ export async function apiCall<T>(
         throw errorObj;
       }
 
-      return response.json();
-    } catch (error: any) {
+      return response.json() as Promise<T>;
+    } catch (error: unknown) {
+      const err = asErrorLike(error);
+
       // Better error handling for network issues
       if (
-        error.message === 'Network request failed' ||
-        error.message.includes('Failed to connect') ||
-        error.message.includes('NetworkError') ||
-        error.name === 'TypeError' ||
-        !error.status
+        err.message === 'Network request failed' ||
+        err.message.includes('Failed to connect') ||
+        err.message.includes('NetworkError') ||
+        err.name === 'TypeError' ||
+        !err.status
       ) {
         const networkError: ApiError = new Error(
           'Network error. Please check your internet connection and try again.',
@@ -301,11 +380,14 @@ export async function apiCall<T>(
       }
 
       // If it's not a retryable error, throw immediately
-      if (error.status && error.status < 500) {
+      if (err.status && err.status < 500) {
         throw error;
       }
 
-      lastError = error;
+      lastError =
+        error instanceof Error
+          ? (error as ApiError)
+          : (new Error(err.message) as ApiError);
     }
   }
 
@@ -317,14 +399,14 @@ export async function apiCall<T>(
 export async function getStoredToken(): Promise<string | null> {
   try {
     if (EncryptedStorage?.getItem) {
-      const encryptedToken = await EncryptedStorage.getItem('authToken');
+      const encryptedToken = await EncryptedStorage.getItem(AUTH_TOKEN_KEY);
       if (encryptedToken !== null) {
         return encryptedToken;
       }
       // Migration path: older app versions stored tokens in plain AsyncStorage.
-      return await AsyncStorage.getItem('authToken');
+      return await AsyncStorage.getItem(AUTH_TOKEN_KEY);
     }
-    return await AsyncStorage.getItem('authToken');
+    return await AsyncStorage.getItem(AUTH_TOKEN_KEY);
   } catch (error) {
     console.error('Error getting token:', error);
     return null;
@@ -334,10 +416,10 @@ export async function getStoredToken(): Promise<string | null> {
 export async function storeToken(token: string): Promise<void> {
   try {
     if (EncryptedStorage?.setItem) {
-      await EncryptedStorage.setItem('authToken', token);
+      await EncryptedStorage.setItem(AUTH_TOKEN_KEY, token);
       return;
     }
-    await AsyncStorage.setItem('authToken', token);
+    await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
   } catch (error) {
     console.error('Error storing token:', error);
     throw error;
@@ -347,10 +429,10 @@ export async function storeToken(token: string): Promise<void> {
 export async function clearToken(): Promise<void> {
   try {
     if (EncryptedStorage?.removeItem) {
-      await EncryptedStorage.removeItem('authToken');
+      await EncryptedStorage.removeItem(AUTH_TOKEN_KEY);
     }
     // Always clear the fallback store as well.
-    await AsyncStorage.removeItem('authToken');
+    await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
     await clearSessionType();
   } catch (error) {
     console.error('Error clearing token:', error);
