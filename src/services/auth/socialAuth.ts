@@ -19,6 +19,53 @@ export const configureGoogleSignIn = () => {
   });
 };
 
+export type GoogleAuthUser = { email: string; name: string };
+
+/** Fresh idToken for the end of onboarding (the first one can expire). */
+export async function getFreshGoogleIdToken(): Promise<string | null> {
+  configureGoogleSignIn();
+  try {
+    const tokens = await GoogleSignin.getTokens();
+    if (tokens?.idToken) {
+      return tokens.idToken;
+    }
+  } catch {
+    // Fall through to silent sign-in
+  }
+  try {
+    const silent = await GoogleSignin.signInSilently();
+    if (silent?.type === 'success' && silent.data?.idToken) {
+      return silent.data.idToken;
+    }
+  } catch {
+    // Caller may still use the stored onboarding token
+  }
+  return null;
+}
+
+export async function runGoogleSignIn(callbacks: {
+  onNewUser: (
+    user: GoogleAuthUser,
+    googleIdToken: string,
+  ) => void | Promise<void>;
+  onExistingUser: (
+    user: GoogleAuthUser,
+    token?: string,
+  ) => void | Promise<void>;
+}): Promise<void> {
+  const result = await signInWithGoogle();
+  if (!result.success) {
+    return;
+  }
+  if (result.isNewUser && result.user && result.googleIdToken) {
+    await callbacks.onNewUser(result.user, result.googleIdToken);
+    return;
+  }
+  if (result.user) {
+    await callbacks.onExistingUser(result.user, result.token);
+  }
+}
+
 // com.googleusercontent.apps.991528142293-n4vruv8gehi741v8behd4gflj064sr3v ios-id
 
 // export const signInWithGoogle = async (): Promise<void> => {
@@ -103,6 +150,10 @@ export const signInWithGoogle = async (): Promise<{
           success: true,
           isNewUser: false,
           token: response.token,
+          user: {
+            email: response.user?.email || email,
+            name: response.user?.name || name,
+          },
           navigationTarget: 'TabNavigator',
         };
       }

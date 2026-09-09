@@ -11,24 +11,33 @@ The app reads its API host from `src/config/runtimeConfig.ts`. **Do not commit a
 | Build / target | Default base URL |
 |----------------|------------------|
 | Release (`!__DEV__`) | Production Heroku (`…/api`) |
-| iOS Simulator (dev) | `http://localhost:8080/api` |
-| Android Emulator (dev) | `http://10.0.2.2:8080/api` (emulator → host loopback) |
+| Dev (emulator, USB, or Wi‑Fi device) | `http://<Metro host>:<Metro port>/api` (same origin as the JS bundle) |
 
-Backend should listen on **PORT=8080** (see `lunara-backend-new/.env.example`).
+In development, Metro **proxies `/api` → `http://127.0.0.1:8080`**. The phone never needs to open backend port 8080 on the firewall. Confirm Metro printed:
 
-### Physical device (Android or iOS)
-
-The emulator/simulator defaults will not reach your PC. Before app init, set:
-
-```js
-globalThis.__LUNARA_API_BASE_URL__ = 'http://YOUR_LAN_IP:8080/api';
+```text
+[metro] Proxying /api → http://127.0.0.1:8080 (wired + wireless device support)
 ```
 
-Example: put that line at the top of `index.js` while debugging on a device, then remove it before committing. Your PC and phone must be on the same Wi‑Fi; allow the firewall for Node on port 8080.
+On app launch in `__DEV__`, Metro / logcat also shows `[Lunara] API_BASE_URL=...`.
+
+Backend should listen on **HOST=0.0.0.0** and **PORT=8080** (see `lunara-backend-new/.env.example`).
+
+### Physical device — USB or wireless adb
+
+`npm run android` also runs `adb reverse tcp:8080 tcp:8080` as a backup tunnel. If the phone was connected after Metro started, run `npm run adb:reverse`, then reload.
+
+### Physical device — same Wi‑Fi (no USB)
+
+Phone and PC must be on the same Wi‑Fi (not a guest network with AP isolation). Start Metro with `npm start` (`--host 0.0.0.0`) so the packager accepts LAN connections.
 
 ### Override at runtime (debugging)
 
-You can also set `globalThis.__LUNARA_API_BASE_URL__` from the debugger console, then reload.
+If auto-detect is wrong, set this from the debugger console, then reload:
+
+```js
+globalThis.__LUNARA_API_BASE_URL__ = 'http://YOUR_LAN_IP:8081/api';
+```
 
 ## Step 1: Start Metro
 

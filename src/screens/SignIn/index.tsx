@@ -21,10 +21,11 @@ import { RootStackParamList } from '../../navigation/stackNavigation';
 import {
   configureGoogleSignIn,
   onAppleButtonPress,
-  signInWithGoogle,
+  runGoogleSignIn,
 } from '../../services/auth/socialAuth';
 import { login, storeAuthSession } from '../../services/api';
 import { useOnboarding } from '../../context/OnboardingContext';
+import { useUserIdentity } from '../../context/UserIdentityContext';
 import { Alert } from 'react-native';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn' | 'Login'>;
@@ -32,6 +33,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn' | '
 export default function SignIn() {
   const navigation = useNavigation<NavigationProp>();
   const { updateData } = useOnboarding();
+  const { setDisplayName } = useUserIdentity();
 
   const [secure, setSecure] = useState(true);
   const [email, setEmail] = useState('');
@@ -60,6 +62,9 @@ export default function SignIn() {
       if (response.success && response.token) {
         // Store auth token
         await storeAuthSession(response.token, 'owner');
+        if (response.user?.name) {
+          await setDisplayName(response.user.name);
+        }
 
         navigation.reset({
           index: 0,
@@ -84,28 +89,27 @@ export default function SignIn() {
 
   const handleGoogleSignIn = async () => {
     try {
-      const result = await signInWithGoogle();
-
-      if (result.success) {
-        if (result.isNewUser && result.user && result.googleIdToken) {
-          // New user - store Google ID token in onboarding context
+      await runGoogleSignIn({
+        onNewUser: async (user, googleIdToken) => {
           updateData({
-            email: result.user.email,
-            fullName: result.user.name,
-            googleIdToken: result.googleIdToken,
+            email: user.email,
+            fullName: user.name,
+            googleIdToken,
           });
-
-          // Navigate to AccountSetup with pre-filled email/name
           navigation.navigate('AccountSetup', {
-            googleUser: result.user,
-          } as any);
-        } else {
+            googleUser: user,
+          });
+        },
+        onExistingUser: async user => {
+          if (user.name) {
+            await setDisplayName(user.name);
+          }
           navigation.reset({
             index: 0,
             routes: [{ name: 'TabNavigator' }],
           });
-        }
-      }
+        },
+      });
     } catch (error: any) {
       console.error('Google sign-in error:', error);
     }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFastingData } from '../context/FastingDataContext';
 import {
   endFastingSession,
-  getFastingCurrent,
   startFastingSession,
   type FastingSession,
 } from '../services/api';
@@ -25,23 +25,23 @@ export const formatFastingTimer = (totalSeconds: number): string => {
 };
 
 export function useFastingTracker() {
-  const [currentSession, setCurrentSession] = useState<FastingSession | null>(
-    null,
-  );
+  const {
+    current,
+    refreshFasting,
+    applyCurrentSession,
+    refreshInsightsAndHistory,
+  } = useFastingData();
+  const currentSession = current.data;
   const [loading, setLoading] = useState(false);
   const [showGoalEditor, setShowGoalEditor] = useState(false);
   const [tick, setTick] = useState(0);
 
-  const refresh = useCallback(async () => {
-    try {
-      const res = await getFastingCurrent();
-      if (res.success) {
-        setCurrentSession(res.data || null);
-      }
-    } catch {
-      // silent — card shows idle
-    }
-  }, []);
+  const refresh = useCallback(
+    async (options?: { force?: boolean }) => {
+      await refreshFasting(options);
+    },
+    [refreshFasting],
+  );
 
   useEffect(() => {
     refresh().catch(() => {});
@@ -98,14 +98,15 @@ export function useFastingTracker() {
           customDurationMinutes: targetDurationMinutes,
         });
         if (res.success && res.data) {
-          setCurrentSession(res.data);
+          applyCurrentSession(res.data);
           setShowGoalEditor(false);
+          await refreshInsightsAndHistory();
         }
       } finally {
         setLoading(false);
       }
     },
-    [],
+    [applyCurrentSession, refreshInsightsAndHistory],
   );
 
   const endFast = useCallback(async () => {
@@ -113,12 +114,13 @@ export function useFastingTracker() {
       setLoading(true);
       const res = await endFastingSession({});
       if (res.success && res.data) {
-        setCurrentSession(res.data);
+        applyCurrentSession(res.data);
+        await refreshInsightsAndHistory();
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyCurrentSession, refreshInsightsAndHistory]);
 
   return {
     currentSession,

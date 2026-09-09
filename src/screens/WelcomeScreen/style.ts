@@ -21,13 +21,13 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: colors.black,
+    color: colors.primary,
     textAlign: 'center',
     fontFamily: 'Inter-Medium',
   },
   body: {
     fontSize: 16,
-    color: colors.darkGrey,
+    color: '#717660',
     textAlign: 'center',
     fontFamily: 'Inter-Regular',
   },

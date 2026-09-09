@@ -28,11 +28,15 @@ export function useChallengeToday(
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(
-    async (useCache: boolean = true) => {
+    async (options?: { useCache?: boolean; silent?: boolean }) => {
       if (!instanceId) return;
+      const useCache = options?.useCache !== false;
+      const silent = options?.silent === true;
 
       try {
-        setLoading(true);
+        if (!silent) {
+          setLoading(true);
+        }
         setError(null);
 
         let cached: ChallengeDay | null = null;
@@ -46,12 +50,11 @@ export function useChallengeToday(
         if (cached) {
           setDay(cached);
           setLoading(false);
-          // Refresh in background
-          fetchFresh(instanceId);
+          fetchFresh(instanceId, true).catch(() => undefined);
           return;
         }
 
-        await fetchFresh(instanceId);
+        await fetchFresh(instanceId, silent);
       } catch (e: any) {
         setError(e?.message || 'Unable to load challenge day.');
         setLoading(false);
@@ -60,7 +63,7 @@ export function useChallengeToday(
     [instanceId],
   );
 
-  const fetchFresh = async (id: string) => {
+  const fetchFresh = async (id: string, silent = false) => {
     const res: GetChallengeTodayResponse = await getChallengeToday(id);
     if (!res.success || !res.data) {
       throw new Error('Invalid response from server');
@@ -72,14 +75,15 @@ export function useChallengeToday(
       res.data,
       CacheTTL.dynamicContent,
     );
-    setLoading(false);
+    if (!silent) {
+      setLoading(false);
+    }
   };
 
   const toggleTask = useCallback(
     async (taskId: string) => {
       if (!instanceId || !day) return;
 
-      // Optimistic update
       const prev = day;
       const updatedTasks = prev.tasks.map(task =>
         task._id === taskId ? { ...task, completed: !task.completed } : task,
@@ -96,19 +100,20 @@ export function useChallengeToday(
       setDay(optimistic);
 
       try {
-        setLoading(true);
         const res = await completeChallengeTask(instanceId, taskId);
         if (!res.success || !res.data) {
           throw new Error('Failed to update task');
         }
-
-        // Refetch latest day state from server
-        await load(false);
       } catch (e: any) {
         setError(e?.message || 'Unable to update task.');
-        // Revert on error
         setDay(prev);
-        setLoading(false);
+        return;
+      }
+
+      try {
+        await load({ useCache: false, silent: true });
+      } catch {
+        // Keep the optimistic checkbox if the follow-up fetch fails.
       }
     },
     [instanceId, day, load],
@@ -123,7 +128,7 @@ export function useChallengeToday(
     loading,
     error,
     toggleTask,
-    refetch: () => load(false),
+    refetch: () => load({ useCache: false }),
   };
 }
 

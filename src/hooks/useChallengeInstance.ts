@@ -14,6 +14,7 @@ import {
   CacheKeys,
   CacheTTL,
   getCachedData,
+  removeCachedData,
   setCachedData,
 } from '../services/cache';
 
@@ -132,12 +133,36 @@ export function useChallengeInstance(
           CacheTTL.dynamicContent,
         );
 
-        // Also cache instance meta by startDate if needed later
         await setCachedData(
           CacheKeys.challengeInstance(instanceId),
           { challengeId: targetChallengeId, startDate },
           CacheTTL.plans,
         );
+
+        const listKey = CacheKeys.challengeList();
+        const cachedList = await getCachedData<ChallengeListItem[]>(
+          listKey,
+          CacheTTL.dynamicContent,
+        );
+        if (cachedList && cachedList.length > 0) {
+          const updatedList = cachedList.map(item =>
+            item.id === targetChallengeId
+              ? {
+                  ...item,
+                  userInstance: {
+                    id: instanceId,
+                    status: 'active' as const,
+                    currentDay: 1,
+                    streak: 0,
+                    progress: 0,
+                  },
+                }
+              : item,
+          );
+          await setCachedData(listKey, updatedList, CacheTTL.dynamicContent);
+        } else {
+          await removeCachedData(listKey);
+        }
 
         setLoading(false);
       } catch (e: any) {
@@ -162,27 +187,18 @@ export function useChallengeInstance(
   };
 }
 
-export async function getChallengesWithStatus(): Promise<ChallengeListItem[]> {
-  const cached = await getCachedData<ChallengeListItem[]>(
-    CacheKeys.challengeList(),
-    CacheTTL.dynamicContent,
-  );
+export async function getChallengesWithStatus(
+  options?: { force?: boolean },
+): Promise<ChallengeListItem[]> {
+  if (!options?.force) {
+    const cached = await getCachedData<ChallengeListItem[]>(
+      CacheKeys.challengeList(),
+      CacheTTL.dynamicContent,
+    );
 
-  if (cached && cached.length > 0) {
-    // Fire and forget refresh
-    getAllChallenges()
-      .then(res => {
-        if (res.success && Array.isArray(res.data)) {
-          setCachedData(
-            CacheKeys.challengeList(),
-            res.data,
-            CacheTTL.dynamicContent,
-          ).catch(() => undefined);
-        }
-      })
-      .catch(() => undefined);
-
-    return cached;
+    if (cached && cached.length > 0) {
+      return cached;
+    }
   }
 
   const res: GetAllChallengesResponse = await getAllChallenges();
@@ -195,6 +211,10 @@ export async function getChallengesWithStatus(): Promise<ChallengeListItem[]> {
     return res.data;
   }
 
-  return [];
+  const fallback = await getCachedData<ChallengeListItem[]>(
+    CacheKeys.challengeList(),
+    CacheTTL.dynamicContent,
+  );
+  return fallback && fallback.length > 0 ? fallback : [];
 }
 

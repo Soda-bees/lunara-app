@@ -11,6 +11,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { useOnboarding } from '../../context/OnboardingContext';
+import { useUserIdentity } from '../../context/UserIdentityContext';
 import { OnboardingHeader } from '../../components/OnboardingHeader/OnboardingHeader';
 import { colors, radius, spacing } from '../../constants/colors';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
@@ -20,13 +21,14 @@ import images from '../../constants/images/onboarding';
 import {
   configureGoogleSignIn,
   onAppleButtonPress,
-  signInWithGoogle,
+  runGoogleSignIn,
 } from '../../services/auth/socialAuth';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AccountSetup'>;
 
 export const AccountSetupScreen: React.FC<Props> = ({ navigation, route }) => {
   const { updateData, data } = useOnboarding();
+  const { setDisplayName } = useUserIdentity();
   const googleUser = route.params?.googleUser;
 
   // Pre-fill with Google user data if available
@@ -56,22 +58,54 @@ export const AccountSetupScreen: React.FC<Props> = ({ navigation, route }) => {
   const isEmailValid = /\S+@\S+\.\S+/.test(email);
   const isPasswordStrong = password.length >= 8;
   const passwordsMatch = password === confirmPassword;
-  // For Google users, password is optional (they'll complete onboarding without password)
-  // Password will be set during final signup
+  const googlePasswordOk =
+    !password && !confirmPassword
+      ? true
+      : isPasswordStrong && passwordsMatch;
   const canProceed = isGoogleUser
-    ? fullName && isEmailValid
-    : fullName && isEmailValid && isPasswordStrong && passwordsMatch;
+    ? Boolean(fullName && isEmailValid && googlePasswordOk)
+    : Boolean(fullName && isEmailValid && isPasswordStrong && passwordsMatch);
 
   useEffect(() => {
     configureGoogleSignIn();
   }, []);
 
+  const handleGoogleContinue = async () => {
+    try {
+      await runGoogleSignIn({
+        onNewUser: async (user, googleIdToken) => {
+          updateData({
+            email: user.email,
+            fullName: user.name,
+            googleIdToken,
+          });
+          setIsGoogleUser(true);
+          setEmail(user.email);
+          setFullName(user.name);
+        },
+        onExistingUser: async user => {
+          if (user.name) {
+            await setDisplayName(user.name);
+          }
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'TabNavigator' }],
+          });
+        },
+      });
+    } catch (error: any) {
+      console.error('Google sign-in error:', error);
+    }
+  };
+
   const handleContinue = () => {
     if (canProceed) {
-      // For Google users, don't save password (they'll complete signup at the end)
-      // Google ID token is already stored in onboarding context from SignIn/SignUp
       const dataToSave = isGoogleUser
-        ? { fullName, email }
+        ? {
+            fullName,
+            email,
+            ...(isPasswordStrong && passwordsMatch ? { password } : {}),
+          }
         : { fullName, email, password };
       updateData(dataToSave, 'LetsGetStarted');
       navigation.navigate('LetsGetStarted');
@@ -156,7 +190,9 @@ export const AccountSetupScreen: React.FC<Props> = ({ navigation, route }) => {
               </TouchableOpacity>
             </View>
             <Text style={styles.helper}>
-              Use 8+ characters with a mix of letters and numbers.
+              {isGoogleUser
+                ? 'Optional — add a password if you also want to sign in with email.'
+                : 'Use 8+ characters with a mix of letters and numbers.'}
             </Text>
           </View>
 
@@ -203,7 +239,7 @@ export const AccountSetupScreen: React.FC<Props> = ({ navigation, route }) => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.socialButton}
-                  onPress={signInWithGoogle}
+                  onPress={handleGoogleContinue}
                 >
                   <Image
                     style={styles.socialButtonIcon}

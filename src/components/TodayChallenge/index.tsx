@@ -104,7 +104,7 @@ export default function TodayChallenge({ instanceId }: TodayChallengeProps) {
             <Text style={styles.daysText}>Complete</Text>
           </View>
         </View>
-        {loading && (
+        {loading && !day && (
           <View style={{ paddingVertical: 20, alignItems: 'center' }}>
             <ActivityIndicator size="small" color={colors.heading} />
             <Text
@@ -131,8 +131,7 @@ export default function TodayChallenge({ instanceId }: TodayChallengeProps) {
             {error}
           </Text>
         )}
-        {!loading &&
-          day?.tasks.map(task => {
+        {day?.tasks.map(task => {
             return (
               <View style={styles.flexRowAnotherContainer} key={task._id}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>

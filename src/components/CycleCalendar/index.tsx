@@ -661,6 +661,7 @@ const styles = StyleSheet.create({
   legendContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap : 4
   },
 
   legendRow: {
@@ -669,14 +670,14 @@ const styles = StyleSheet.create({
   },
 
   legendDot: {
-    width: 14,
-    height: 14,
+    width: 12,
+    height: 12,
     borderRadius: 7,
-    marginRight: 5,
+    marginRight: 4,
   },
 
   legendText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: colors.black,
   },

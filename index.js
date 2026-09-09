@@ -15,9 +15,14 @@ import { enableScreens } from 'react-native-screens';
 import * as Sentry from '@sentry/react-native';
 import App from './App';
 import { name as appName } from './app.json';
+import { API_BASE_URL } from './src/config/runtimeConfig';
 
 // Improves navigation performance by using native screens.
 enableScreens();
+
+if (__DEV__) {
+  console.log(`[Lunara] API_BASE_URL=${API_BASE_URL}`);
+}
 
 const sentryDsn =
   typeof globalThis.__LUNARA_SENTRY_DSN__ === 'string'

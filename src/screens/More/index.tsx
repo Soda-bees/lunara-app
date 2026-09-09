@@ -18,12 +18,16 @@ import Header from '../../components/Header';
 import Button from '../../components/Button';
 import { clearToken } from '../../services/api';
 import { useOnboarding } from '../../context/OnboardingContext';
+import { useUserIdentity } from '../../context/UserIdentityContext';
+import { useProfile } from '../../context/ProfileContext';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
 
 export default function More() {
   const navigation = useNavigation<NavigationProp>();
   const { resetData } = useOnboarding();
+  const { clearDisplayName } = useUserIdentity();
+  const { clearProfile } = useProfile();
 
   const mainFeatures = [
     {
@@ -64,12 +68,12 @@ export default function More() {
       icon: images.journal,
       navigateTo: 'HormoneResetGuide' as const,
     },
-    {
-      id: 6,
-      title: '60-Day Social Media Plan',
-      subtitle: 'Complete content calendar for promotion',
-      icon: images.socialMediaPlan,
-    },
+    // {
+    //   id: 6,
+    //   title: '60-Day Social Media Plan',
+    //   subtitle: 'Complete content calendar for promotion',
+    //   icon: images.socialMediaPlan,
+    // },
     {
       id: 7,
       title: 'Fasting Tracker',
@@ -98,6 +102,8 @@ export default function More() {
           onPress: async () => {
             try {
               await clearToken();
+              await clearDisplayName();
+              clearProfile();
               resetData();
               navigation.reset({
                 index: 0,

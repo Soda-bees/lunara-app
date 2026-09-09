@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import images from '../../../../constants/images/home';
 import type { RootStackParamList } from '../../../../navigation/stackNavigation';
+import InitialsAvatar from '../../../../components/InitialsAvatar';
 import { partnerHomeStyles as styles } from '../style';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -25,7 +26,7 @@ export default function PartnerHomeHeader({ primaryUserName }: Props) {
           onPress={() => navigation.navigate('Profile')}
           activeOpacity={0.7}
         >
-          <Image source={images.profileIcon} style={styles.profileIcon} />
+          <InitialsAvatar name={primaryUserName} size={26} />
           <Text style={styles.profileButtonText}>Profile</Text>
         </TouchableOpacity>
       </View>

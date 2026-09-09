@@ -162,7 +162,7 @@ export default function PartnerCycleInsight() {
       setIsPregnant(false);
       setPregnancyStatus(null);
 
-      await refreshCycleData();
+      await refreshCycleData({ force: true });
 
       if (cycleStatus.data && cycleStatus.data.isTracking) {
         if (cycleStatus.data.lastPeriodStartDate) {
@@ -184,12 +184,30 @@ export default function PartnerCycleInsight() {
     }
   }, [refreshCycleData, cycleStatus.data]);
 
-  // Background refresh on focus (only if stale) - silent, no loaders
   useFocusEffect(
     React.useCallback(() => {
-      fetchCycleData();
-    }, [fetchCycleData]),
+      void refreshCycleData();
+    }, [refreshCycleData]),
   );
+
+  useEffect(() => {
+    void fetchCycleData();
+    // Pregnancy + cycle pack once on mount; later focuses skip via STALE_TIME_MS.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (cycle?.lastPeriodStartDate) {
+      setLastPeriodStart(new Date(cycle.lastPeriodStartDate));
+    }
+    if (cycle?.isTracking && cycle.phase) {
+      void fetchPhaseContent(cycle.phase);
+    } else if (cycle && !cycle.isTracking) {
+      setWeeklyUpdates(FALLBACK_WEEKLY_UPDATES);
+      setDidYouKnow(FALLBACK_DID_YOU_KNOW);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cycle?.lastPeriodStartDate, cycle?.isTracking, cycle?.phase]);
 
   // Pull-to-refresh handler
   const onRefresh = useCallback(async () => {

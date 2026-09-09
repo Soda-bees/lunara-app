@@ -21,15 +21,17 @@ import { RootStackParamList } from '../../navigation/stackNavigation';
 import {
   configureGoogleSignIn,
   onAppleButtonPress,
-  signInWithGoogle,
+  runGoogleSignIn,
 } from '../../services/auth/socialAuth';
 import { useOnboarding } from '../../context/OnboardingContext';
+import { useUserIdentity } from '../../context/UserIdentityContext';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignUp'>;
 
 export default function SignUp() {
   const navigation = useNavigation<NavigationProp>();
   const { updateData } = useOnboarding();
+  const { setDisplayName } = useUserIdentity();
 
   const [secure, setSecure] = useState(true);
   const [secure2, setSecure2] = useState(true);
@@ -54,26 +56,27 @@ export default function SignUp() {
 
   const handleGoogleSignIn = async () => {
     try {
-      const result = await signInWithGoogle();
-
-      if (result.success) {
-        if (result.isNewUser && result.user && result.googleIdToken) {
-          // New user - store Google ID token in onboarding context
+      await runGoogleSignIn({
+        onNewUser: async (user, googleIdToken) => {
           updateData({
-            email: result.user.email,
-            fullName: result.user.name,
-            googleIdToken: result.googleIdToken,
+            email: user.email,
+            fullName: user.name,
+            googleIdToken,
           });
-
-          // Navigate to AccountSetup with pre-filled email/name
           navigation.navigate('AccountSetup', {
-            googleUser: result.user,
-          } as any);
-        } else {
-          // Existing user - navigate to main app
-          navigation.navigate('TabNavigator');
-        }
-      }
+            googleUser: user,
+          });
+        },
+        onExistingUser: async user => {
+          if (user.name) {
+            await setDisplayName(user.name);
+          }
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'TabNavigator' }],
+          });
+        },
+      });
     } catch (error: any) {
       console.error('Google sign-in error:', error);
     }

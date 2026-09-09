@@ -6,16 +6,15 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import styles from './style';
 import Header from '../../components/Header';
 import LinearGradient from 'react-native-linear-gradient';
 import { gradients } from '../../constants/gradientColors';
 import images from '../../constants/images/challenges';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getChallengesWithStatus } from '../../hooks/useChallengeInstance';
 import { colors } from '../../constants/colors';
@@ -28,45 +27,40 @@ export default function ChallengeHub() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [challenges, setChallenges] = useState<any[]>([]);
+  const hasLoadedRef = useRef(false);
 
-  useEffect(() => {
-    let isMounted = true;
-    const load = async () => {
-      try {
+  const loadChallenges = useCallback(async (force: boolean) => {
+    try {
+      if (!hasLoadedRef.current) {
         setLoading(true);
-        setError(null);
-        const data = await getChallengesWithStatus();
-        if (isMounted) {
-          const mapped = data.map(item => ({
-            id: item.id,
-            title: item.title,
-            subtitle: item.subtitle,
-            days: `${item.duration} Days`,
-            phases: `${item.phases?.length || 0} Phases`,
-            gradient: item.gradientColors?.length
-              ? item.gradientColors
-              : gradients.lightOrage,
-            userInstance: item.userInstance,
-          }));
-          setChallenges(mapped);
-        }
-      } catch (e: any) {
-        if (isMounted) {
-          setError(e?.message || 'Unable to load challenges.');
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
       }
-    };
-
-    load();
-
-    return () => {
-      isMounted = false;
-    };
+      setError(null);
+      const data = await getChallengesWithStatus({ force });
+      const mapped = data.map(item => ({
+        id: item.id,
+        title: item.title,
+        subtitle: item.subtitle,
+        days: `${item.duration} Days`,
+        phases: `${item.phases?.length || 0} Phases`,
+        gradient: item.gradientColors?.length
+          ? item.gradientColors
+          : gradients.lightOrage,
+        userInstance: item.userInstance,
+      }));
+      hasLoadedRef.current = true;
+      setChallenges(mapped);
+    } catch (e: any) {
+      setError(e?.message || 'Unable to load challenges.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadChallenges(true);
+    }, [loadChallenges]),
+  );
 
   const handleStartOrContinue = (item: any) => {
     if (item.userInstance?.id) {

@@ -5,17 +5,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../../components/BackButton';
 import { FastingGoalEditor } from '../../components/FastingGoalEditor/FastingGoalEditor';
 import { useCycleData } from '../../context/CycleDataContext';
+import { useFastingData } from '../../context/FastingDataContext';
 import { usePartnerMode } from '../../context/PartnerModeContext';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import {
   endFastingSession,
-  getFastingCurrent,
-  getFastingHistory,
-  getFastingInsights,
   startFastingSession,
   updateFastingSession,
-  FastingInsights,
-  FastingSession,
 } from '../../services/api';
 import { showPartnerReadOnlyAlert } from '../../utils/partnerReadOnly';
 import FastingCycleSyncSection from './components/FastingCycleSyncSection';
@@ -36,11 +32,17 @@ type Props = NativeStackScreenProps<RootStackParamList, 'FastingHome'>;
 export const FastingHome: React.FC<Props> = () => {
   const { cycleStatus } = useCycleData();
   const { isPartnerMode } = usePartnerMode();
-  const [currentSession, setCurrentSession] = useState<FastingSession | null>(
-    null,
-  );
-  const [insights, setInsights] = useState<FastingInsights | null>(null);
-  const [history, setHistory] = useState<FastingSession[]>([]);
+  const {
+    current,
+    insights: insightsState,
+    history: historyState,
+    refreshFasting,
+    applyCurrentSession,
+    refreshInsightsAndHistory,
+  } = useFastingData();
+  const currentSession = current.data;
+  const insights = insightsState.data;
+  const history = historyState.data || [];
   const [loading, setLoading] = useState(false);
   const [showGoalEditor, setShowGoalEditor] = useState(false);
   const [, setGoalEditorMode] = useState<'start' | 'update'>('update');
@@ -93,24 +95,11 @@ export const FastingHome: React.FC<Props> = () => {
     cycleSyncGuidance.find(g => g.phase === currentPhase) ||
     cycleSyncGuidance[1];
 
-  const loadData = async () => {
-    try {
-      const [currentRes, insightsRes, historyRes] = await Promise.all([
-        getFastingCurrent(),
-        getFastingInsights(7),
-        getFastingHistory({ limit: 5 }),
-      ]);
-      setCurrentSession(currentRes.data || null);
-      setInsights(insightsRes.data);
-      setHistory(historyRes.data || []);
-    } catch (error) {
-      console.error('Error loading fasting data', error);
-    }
-  };
-
   useEffect(() => {
-    loadData();
-  }, []);
+    refreshFasting().catch(error => {
+      console.error('Error loading fasting data', error);
+    });
+  }, [refreshFasting]);
 
   const handleStart = () => {
     if (isPartnerMode) {
@@ -131,8 +120,9 @@ export const FastingHome: React.FC<Props> = () => {
       const res = await startFastingSession({
         customDurationMinutes: targetDurationMinutes,
       });
-      setCurrentSession(res.data);
+      applyCurrentSession(res.data);
       setShowGoalEditor(false);
+      await refreshInsightsAndHistory();
     } catch (error) {
       console.error('Error starting fast', error);
     } finally {
@@ -148,8 +138,8 @@ export const FastingHome: React.FC<Props> = () => {
     try {
       setLoading(true);
       const res = await endFastingSession({});
-      setCurrentSession(res.data);
-      await loadData();
+      applyCurrentSession(res.data);
+      await refreshInsightsAndHistory();
     } catch (error) {
       console.error('Error ending fast', error);
     } finally {
@@ -165,8 +155,9 @@ export const FastingHome: React.FC<Props> = () => {
     try {
       setLoading(true);
       const res = await updateFastingSession({ targetDurationMinutes });
-      setCurrentSession(res.data);
+      applyCurrentSession(res.data);
       setShowGoalEditor(false);
+      await refreshInsightsAndHistory();
     } catch (error) {
       console.error('Error updating goal', error);
     } finally {
@@ -192,7 +183,7 @@ export const FastingHome: React.FC<Props> = () => {
   const circleSize = 280;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top','bottom']}>
       <BackButton />
 
       <ScrollView

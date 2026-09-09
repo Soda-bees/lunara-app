@@ -1,26 +1,24 @@
-import React, { useState } from 'react';
-import {
-  Text,
-  ActivityIndicator,
-  TouchableOpacity,
-  StyleSheet,
-  View,
-  Image,
-} from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import React from 'react';
+import { Text, TouchableOpacity, StyleSheet, View, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 import { fontSize } from '../../constants/fonts';
 import images from '../../constants/images/common';
-import BackButton from '../BackButton';
-import { useNavigation } from '@react-navigation/native';
+import type { RootStackParamList } from '../../navigation/stackNavigation';
+import InitialsAvatar from '../InitialsAvatar';
+import { useDisplayName } from '../../hooks/useDisplayName';
 
 type HeaderProps = {
   showBackButton?: boolean;
 };
 
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 export default function Header({ showBackButton = false }: HeaderProps) {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
+  const displayName = useDisplayName();
 
   return (
     <View style={styles.header}>
@@ -45,14 +43,11 @@ export default function Header({ showBackButton = false }: HeaderProps) {
       )}
       <TouchableOpacity
         style={styles.button}
+        onPress={() => navigation.navigate('Profile')}
         accessibilityRole="button"
         accessibilityLabel="Profile"
       >
-        <Image
-          source={images.profileIcon}
-          style={styles.profileIcon}
-          accessible={false}
-        />
+        <InitialsAvatar name={displayName} size={26} />
         <Text style={styles.text} accessible={false}>
           Profile
         </Text>
@@ -85,11 +80,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     gap: 6,
     backgroundColor: '#F0F0F0',
-  },
-
-  profileIcon: {
-    height: 26,
-    width: 26,
   },
 
   text: {

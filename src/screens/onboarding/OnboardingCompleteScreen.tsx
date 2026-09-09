@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, Alert, Image } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useOnboarding } from '../../context/OnboardingContext';
+import { useUserIdentity } from '../../context/UserIdentityContext';
 import { RootStackParamList } from '../../navigation/stackNavigation';
 import { colors, radius, spacing } from '../../constants/colors';
 import {
@@ -11,6 +12,7 @@ import {
   createPeriod,
   type SignupRequest,
 } from '../../services/api';
+import { getFreshGoogleIdToken } from '../../services/auth/socialAuth';
 import { ScreenContainer } from '../../components/ScreenContainer/ScreenContainer';
 import EmpatheticButton from '../../components/EmpatheticButton/EmpatheticButton';
 import images from '../../constants/images/onboarding';
@@ -23,6 +25,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'OnboardingComplete'>;
 
 export const OnboardingCompleteScreen: React.FC<Props> = ({ navigation }) => {
   const { data, resetData } = useOnboarding();
+  const { setDisplayName } = useUserIdentity();
   const [isLoading, setIsLoading] = useState(false);
   const ref = useRef<LottieView>(null);
 
@@ -36,8 +39,7 @@ export const OnboardingCompleteScreen: React.FC<Props> = ({ navigation }) => {
       return;
     }
 
-    // Check if this is a Google user (no password but has Google ID token)
-    const isGoogleUser = !data.password && data.googleIdToken;
+    const isGoogleUser = Boolean(data.googleIdToken);
 
     if (!isGoogleUser && !data.password) {
       Alert.alert(
@@ -90,11 +92,13 @@ export const OnboardingCompleteScreen: React.FC<Props> = ({ navigation }) => {
       let response;
 
       if (isGoogleUser && data.googleIdToken) {
-        // Google user - call Google auth with onboarding data
+        const idToken =
+          (await getFreshGoogleIdToken()) || data.googleIdToken;
         response = await googleAuth({
-          idToken: data.googleIdToken,
+          idToken,
           email: data.email,
           name: data.fullName,
+          ...(data.password ? { password: data.password } : {}),
           ...onboardingData,
         });
       } else {
@@ -114,6 +118,10 @@ export const OnboardingCompleteScreen: React.FC<Props> = ({ navigation }) => {
       if (response.success && response.token) {
         // Store auth token
         await storeAuthSession(response.token, 'owner');
+        const name = response.user?.name || data.fullName;
+        if (name) {
+          await setDisplayName(name);
+        }
 
         // Create first period if cycle tracking is enabled and we have start/end dates
         if (
@@ -158,7 +166,7 @@ export const OnboardingCompleteScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <ScreenContainer color="#FFE4E8">
+    <ScreenContainer color="#FFE4E899">
       <View style={styles.container}>
         <View style={styles.mainView}>
           {/* <Image

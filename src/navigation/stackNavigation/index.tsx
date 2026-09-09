@@ -36,6 +36,8 @@ import { JournalType } from '../../types';
 import PartnerConnect from '../../screens/PartnerConnect';
 import PartnerCodeEntry from '../../screens/PartnerCodeEntry';
 import { PartnerModeProvider } from '../../context/PartnerModeContext';
+import { UserIdentityProvider } from '../../context/UserIdentityContext';
+import { ProfileProvider } from '../../context/ProfileContext';
 
 export type RootStackParamList = {
   // Canonical auth route (NAV-001); SignIn kept in types for existing NavigationProp generics.
@@ -143,6 +145,8 @@ export default function MainStack({ initialSessionRoute }: MainStackProps) {
     <SafeAreaProvider>
       <OnboardingProvider>
         <PartnerModeProvider>
+        <UserIdentityProvider>
+        <ProfileProvider>
         <StatusBar barStyle="dark-content" />
         <NavigationHandler initialSessionRoute={initialSessionRoute} />
         <JournalProvider>
@@ -456,6 +460,8 @@ export default function MainStack({ initialSessionRoute }: MainStackProps) {
           />
           </Stack.Navigator>
         </JournalProvider>
+        </ProfileProvider>
+        </UserIdentityProvider>
         </PartnerModeProvider>
       </OnboardingProvider>
     </SafeAreaProvider>

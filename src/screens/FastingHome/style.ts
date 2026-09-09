@@ -8,8 +8,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 20,
-    paddingTop: 40,
-    paddingBottom: 40,
+    paddingVertical: 16,
   },
   header: {
     marginBottom: 24,

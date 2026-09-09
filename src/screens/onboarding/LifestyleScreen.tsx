@@ -20,7 +20,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Lifestyle'>;
 export const LifestyleScreen: React.FC<Props> = ({ navigation }) => {
   const { updateData, data } = useOnboarding();
   const [mealFrequency, setMealFrequency] = useState<string | null>(
-    data.mealFrequency || null,
+    data.mealFrequency === 'intermittent_fasting'
+      ? null
+      : data.mealFrequency || null,
   );
   const [cookingSkill, setCookingSkill] = useState<string | null>(
     data.cookingSkill || null,
@@ -40,11 +42,6 @@ export const LifestyleScreen: React.FC<Props> = ({ navigation }) => {
     },
     { value: '4_meals', label: '4 Meals', description: '3 meals + 1 snack' },
     { value: '5_meals', label: '5 Meals', description: '3 meals + 2 snacks' },
-    {
-      value: 'intermittent_fasting',
-      label: 'Intermittent Fasting',
-      description: 'Time-restricted eating',
-    },
   ];
 
   const cookingSkills = [

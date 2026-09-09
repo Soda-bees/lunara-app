@@ -5,6 +5,7 @@ import MainStack from './src/navigation/stackNavigation';
 import AnimatedSplash from './src/components/SplashScreen/splashScreen';
 import OfflineBanner from './src/components/OfflineBanner';
 import { CycleDataProvider } from './src/context/CycleDataContext';
+import { FastingDataProvider } from './src/context/FastingDataContext';
 import { SleepDataProvider } from './src/context/SleepDataContext';
 import ErrorBoundary, {
   DevErrorBoundaryProbe,
@@ -21,20 +22,22 @@ export default function App() {
       <SafeAreaProvider>
         <CycleDataProvider>
           <SleepDataProvider>
-            <DevErrorBoundaryProbe />
-            <OfflineBanner />
-            {showSplash ? (
-              <AnimatedSplash
-                onFinish={route => {
-                  setInitialSessionRoute(route);
-                  setShowSplash(false);
-                }}
-              />
-            ) : (
-              <NavigationContainer>
-                <MainStack initialSessionRoute={initialSessionRoute} />
-              </NavigationContainer>
-            )}
+            <FastingDataProvider>
+              <DevErrorBoundaryProbe />
+              <OfflineBanner />
+              {showSplash ? (
+                <AnimatedSplash
+                  onFinish={route => {
+                    setInitialSessionRoute(route);
+                    setShowSplash(false);
+                  }}
+                />
+              ) : (
+                <NavigationContainer>
+                  <MainStack initialSessionRoute={initialSessionRoute} />
+                </NavigationContainer>
+              )}
+            </FastingDataProvider>
           </SleepDataProvider>
         </CycleDataProvider>
       </SafeAreaProvider>

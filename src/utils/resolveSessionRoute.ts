@@ -6,6 +6,7 @@ import {
   storeSessionType,
   type SessionType,
 } from '../services/api';
+import { persistDisplayName } from './displayNameStorage';
 
 /** Where to land after splash when a stored session exists. */
 export type SessionRoute = 'TabNavigator' | 'PartnerStackNavigator' | null;
@@ -46,6 +47,9 @@ async function verifySessionWithServer(): Promise<SessionRoute> {
     const sessionType = me.sessionType ?? (await getStoredSessionType());
     if (me.sessionType) {
       await storeSessionType(me.sessionType);
+    }
+    if (me.user?.fullName) {
+      await persistDisplayName(me.user.fullName);
     }
     return routeForSessionType(sessionType);
   } catch (error: unknown) {

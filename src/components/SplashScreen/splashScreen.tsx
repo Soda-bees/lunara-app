@@ -1,7 +1,16 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, StyleSheet, StatusBar } from 'react-native';
+import {
+  Image,
+  StyleSheet,
+  StatusBar,
+  Text,
+  View,
+  useColorScheme,
+} from 'react-native';
 import Video from 'react-native-video';
 import SplashScreen from 'react-native-splash-screen';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '../../constants/colors';
 import { sizes } from '../../constants/sizes';
 import { useCycleData } from '../../context/CycleDataContext';
 import { useSleepData } from '../../context/SleepDataContext';
@@ -17,6 +26,8 @@ interface AnimatedSplashProps {
 }
 
 const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onFinish }) => {
+  const insets = useSafeAreaInsets();
+  const isDark = useColorScheme() === 'dark';
   const { refreshCycleData } = useCycleData();
   const { refreshSleepData } = useSleepData();
   const [videoEnded, setVideoEnded] = useState(false);
@@ -101,11 +112,16 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onFinish }) => {
   }, [videoEnded]);
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: isDark ? '#000000' : '#FFFFFF' },
+      ]}
+    >
       <StatusBar
         translucent
         backgroundColor="transparent"
-        barStyle="dark-content"
+        barStyle={isDark ? 'light-content' : 'dark-content'}
         hidden
       />
 
@@ -117,6 +133,21 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onFinish }) => {
         repeat={false}
         onEnd={handleVideoEnd}
       />
+
+      <View
+        style={[
+          styles.poweredBy,
+          { paddingBottom: Math.max(insets.bottom, 16) + 8 },
+        ]}
+        pointerEvents="none"
+      >
+        <Text style={styles.poweredByText}>Powered by</Text>
+        <Image
+          source={require('../../assets/images/sodabeesIcon.png')}
+          style={styles.poweredByLogo}
+          resizeMode="contain"
+        />
+      </View>
     </View>
   );
 };
@@ -129,6 +160,26 @@ const styles = StyleSheet.create({
   video: {
     width: sizes.screenWidth,
     height: sizes.screenHeight,
+  },
+  poweredBy: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  poweredByText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: colors.primary,
+    letterSpacing: 0.2,
+  },
+  poweredByLogo: {
+    width: 56,
+    height: 24,
+    resizeMode: 'contain',
   },
 });
 

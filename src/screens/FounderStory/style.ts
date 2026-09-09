@@ -190,10 +190,11 @@ const styles = StyleSheet.create({
 
     bottomText: {
     fontSize: 14,
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'Inter-Medium',
     color: colors.green,
     lineHeight: 18,
-    textAlign:'center'
+    textAlign:'center',
+    marginTop: 16
   },
 
 });

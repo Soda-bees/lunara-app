@@ -56,13 +56,13 @@ export default function FounderStory() {
       />
       <BackButton />
       <View style={styles.mainContainer}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 10 }}>
         <Text style={styles.ourStoryTopView}>Our Story</Text>
         <Text style={styles.forgotText}>Why I Built Lunara</Text>
         <Text style={styles.paraText}>
           From struggling with my own cycle to creating a{'\n'}movement of women
           who understand their bodies
         </Text>
-        <ScrollView contentContainerStyle={{ paddingBottom: 10 }}>
           <GradientWrapper variant="basic">
             <View style={styles.gradientMainView}>
               <View style={styles.movementMainView}>
@@ -188,8 +188,10 @@ export default function FounderStory() {
             </Text>
           </View>
           <GradientWrapper variant="basic">
+            <View style={{paddingHorizontal: 16}}>
+
             <Text style={styles.mainHeading}>Join the Movement</Text>
-            <Text style={[styles.myStory, { textAlign: 'center' }]}>
+            <Text style={[styles.myStory]}>
               Lunara is more than an app—it's a revolution in women's health. A
               community of women who refuse to fight their bodies anymore. Who
               understand that our cycles aren't curses—they're superpowers.
@@ -198,10 +200,11 @@ export default function FounderStory() {
               like your body is working against you, if you want to finally
               understand what's happening inside you—Lunara is for you.
             </Text>
-            <TouchableOpacity style={styles.logButton} activeOpacity={0.8}>
+            {/* <TouchableOpacity style={styles.logButton} activeOpacity={0.8}>
               <Text style={styles.text}>Start Your Journey</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <Text style={styles.bottomText}>With love and lunar cycles,{'\n'}The Lunara Founder</Text>
+            </View>
           </GradientWrapper>
         </ScrollView>
       </View>

@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL as RUNTIME_API_BASE_URL } from '../../config/runtimeConfig';
 import { DeviceEventEmitter } from 'react-native';
+import { clearStoredDisplayName } from '../../utils/displayNameStorage';
+import { clearStoredPartnerCode } from '../../utils/partnerCodeStorage';
 
 /** Known encrypted-storage keys used by this module (REF-009). */
 export type EncryptedStorageKey = 'authToken';
@@ -50,11 +52,7 @@ try {
   EncryptedStorage = null;
 }
 
-// API configuration
-// For Android emulator, use 10.0.2.2 instead of localhost
-// For iOS simulator, localhost works fine
-// For physical devices, use your computer's IP address (e.g., http://192.168.1.100:3000/api)
-
+// Resolved in runtimeConfig: Metro host in __DEV__, production URL in release.
 export const API_BASE_URL = RUNTIME_API_BASE_URL;
 
 type ApiErrorBody = {
@@ -135,7 +133,7 @@ function isMutatingMethod(method?: string): boolean {
  * - POST without key: fail once (caller may retry manually)
  */
 function getHeaderValue(
-  headers: HeadersInit | undefined,
+  headers: RequestInit['headers'] | undefined,
   name: string,
 ): string | undefined {
   if (!headers) {
@@ -158,7 +156,10 @@ function getHeaderValue(
   return undefined;
 }
 
-function shouldAutoRetry(method: string, headers?: HeadersInit): boolean {
+function shouldAutoRetry(
+  method: string,
+  headers?: RequestInit['headers'],
+): boolean {
   const m = (method || 'GET').toUpperCase();
   if (m === 'GET' || m === 'HEAD') {
     return true;
@@ -321,6 +322,12 @@ export async function apiCall<T>(
             errorObj.message =
               errorData.message || 'Validation error. Please check your input.';
           }
+        } else if (response.status === 429) {
+          errorObj.message =
+            errorData.message ||
+            'Too many requests. Please try again later.';
+          errorObj.code = 'RATE_LIMITED';
+          errorObj.retryable = false;
         } else if (response.status >= 500) {
           errorObj.message = 'Server error. Please try again later.';
           errorObj.retryable = true;
@@ -335,6 +342,11 @@ export async function apiCall<T>(
             // Token clearing is best-effort; navigation still follows.
           }
           DeviceEventEmitter.emit('session_expired');
+        }
+
+        // Never retry rate limits — one 429 must not become three requests.
+        if (response.status === 429) {
+          throw errorObj;
         }
 
         // Retry on server errors (5xx) when policy allows
@@ -352,6 +364,10 @@ export async function apiCall<T>(
       return response.json() as Promise<T>;
     } catch (error: unknown) {
       const err = asErrorLike(error);
+
+      if (err.status === 429) {
+        throw error;
+      }
 
       // Better error handling for network issues
       if (
@@ -434,6 +450,8 @@ export async function clearToken(): Promise<void> {
     // Always clear the fallback store as well.
     await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
     await clearSessionType();
+    await clearStoredDisplayName();
+    await clearStoredPartnerCode();
   } catch (error) {
     console.error('Error clearing token:', error);
   }

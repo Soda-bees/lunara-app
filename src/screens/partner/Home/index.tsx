@@ -90,9 +90,9 @@ export default function PartnerHome() {
     setRefreshing(true);
     try {
       await Promise.all([
-        refreshAll(),
+        refreshAll({ force: true }),
         refreshCycleData({ force: true }),
-        fastingTracker.refresh(),
+        fastingTracker.refresh({ force: true }),
         loadPregnancyStatus(),
       ]);
     } finally {
@@ -133,15 +133,15 @@ export default function PartnerHome() {
         id: 'profile',
         title: 'Profile & stats',
         subtitle: 'Account and wellness overview',
-        icon: images.profileIcon,
+        avatarName: primaryUserName || '',
         onPress: () => navigation.navigate('Profile'),
       },
     ],
-    [navigation],
+    [navigation, primaryUserName],
   );
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <PartnerHomeHeader primaryUserName={primaryUserName} />
       <ScrollView

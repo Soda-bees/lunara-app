@@ -123,7 +123,7 @@ export default function HormoneResetGuide() {
   );
 
   return (
-    <SafeAreaView style={styles.mainContainer} edges={['top']}>
+    <SafeAreaView style={styles.mainContainer} edges={['top','bottom']}>
       <StatusBar
         translucent
         backgroundColor="transparent"

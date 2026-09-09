@@ -10,7 +10,7 @@ export const partnerHomeStyles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: sizes.screenWidth * 0.05,
-    paddingBottom: 24,
+    paddingBottom: 8,
     gap: 16,
   },
   header: {

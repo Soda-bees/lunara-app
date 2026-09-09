@@ -42,7 +42,7 @@ import HomeSleepCard from './components/HomeSleepCard';
 import HomeJournalSection from './components/HomeJournalSection';
 import styles from './style';
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SignIn'>;
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function Home() {
   const navigation = useNavigation<NavigationProp>();
@@ -81,11 +81,11 @@ export default function Home() {
   const [updatingPregnancy, setUpdatingPregnancy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const handleSleepConfirm = () => {
-    void refreshAll();
+    void refreshAll({ force: true });
   };
 
   const handleSymptomsConfirm = () => {
-    void refreshAll();
+    void refreshAll({ force: true });
   };
 
   const handlePeriodConfirm = async (data: PeriodLogData) => {
@@ -100,7 +100,7 @@ export default function Home() {
 
       if (response.success) {
         setPeriodModalVisible(false);
-        await refreshAll();
+        await refreshAll({ force: true });
         Alert.alert('Success', 'Period logged successfully!');
       } else {
         Alert.alert('Error', response.message || 'Failed to log period.');
@@ -266,7 +266,10 @@ export default function Home() {
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([refreshAll(), refreshFasting()]);
+      await Promise.all([
+        refreshAll({ force: true }),
+        refreshFasting({ force: true }),
+      ]);
       // Also refresh pregnancy status
       const pregnancyResponse = await getPregnancyStatus();
       if (pregnancyResponse.success) {

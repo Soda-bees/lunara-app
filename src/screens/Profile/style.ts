@@ -10,7 +10,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: sizes.screenWidth * 0.05,
-    paddingBottom: sizes.screenHeight * 0.03,
+    paddingBottom: sizes.screenHeight * 0.01,
   },
   profileInfoSection: {
     alignItems: 'center',

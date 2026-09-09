@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Alert,
   Keyboard,
   Platform,
+  Pressable,
   StatusBar,
   Text,
   TextInput,
@@ -18,6 +19,7 @@ import GradientText from '../../components/GradientText';
 import type { RootStackParamList } from '../../navigation/stackNavigation';
 import { connectWithPartnerCode, storeAuthSession } from '../../services/api';
 import { usePartnerMode } from '../../context/PartnerModeContext';
+import { useUserIdentity } from '../../context/UserIdentityContext';
 import styles from '../PartnerConnect/style';
 
 type NavigationProp = NativeStackNavigationProp<
@@ -36,8 +38,10 @@ function formatCodeInput(value: string): string {
 export default function PartnerCodeEntry() {
   const navigation = useNavigation<NavigationProp>();
   const { refreshSessionType } = usePartnerMode();
+  const { setDisplayName } = useUserIdentity();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const inputRef = useRef<TextInput>(null);
 
   const handleConnect = async () => {
     const normalized = code.replace(/[^a-zA-Z0-9]/g, '');
@@ -53,6 +57,9 @@ export default function PartnerCodeEntry() {
         throw new Error(response.message || 'Could not connect');
       }
       await storeAuthSession(response.token, 'partner');
+      if (response.primaryUserName) {
+        await setDisplayName(response.primaryUserName);
+      }
       await refreshSessionType();
       navigation.reset({
         index: 0,
@@ -90,18 +97,27 @@ export default function PartnerCodeEntry() {
               </Text>
             </View>
 
-            <View style={styles.inputContainer}>
+            <Pressable
+              style={styles.inputContainer}
+              onPress={() => inputRef.current?.focus()}
+            >
+              {code.length === 0 && (
+                <Text style={styles.inputPlaceholder} pointerEvents="none">
+                  ABCD-EFGH-IJKL
+                </Text>
+              )}
               <TextInput
+                ref={inputRef}
                 style={styles.input}
                 value={code}
                 onChangeText={text => setCode(formatCodeInput(text))}
-                placeholder="ABCD-EFGH-IJKL"
                 placeholderTextColor="#B0B0B0"
                 autoCapitalize="characters"
                 autoCorrect={false}
                 maxLength={14}
+                textAlign="center"
               />
-            </View>
+            </Pressable>
           </View>
 
           <View style={styles.bottomButton}>

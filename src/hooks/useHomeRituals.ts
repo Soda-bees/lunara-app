@@ -87,10 +87,11 @@ export function useHomeRituals() {
     refreshRitualPackRef.current = refreshRitualPack;
   }, [refreshRitualPack]);
 
-  const refreshAll = useCallback(async () => {
+  const refreshAll = useCallback(async (options?: { force?: boolean }) => {
+    const cycleSleepOpts = options?.force ? { force: true as const } : undefined;
     await Promise.all([
-      refreshSleepDataRef.current({ force: true }),
-      refreshCycleDataRef.current({ force: true }),
+      refreshSleepDataRef.current(cycleSleepOpts),
+      refreshCycleDataRef.current(cycleSleepOpts),
       refetchNutritionRef.current(),
       refetchWorkoutRef.current(),
       refreshSymptomsRef.current(),

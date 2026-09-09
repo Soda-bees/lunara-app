@@ -163,6 +163,8 @@ export interface GoogleAuthRequest {
   budgetRange?: string;
   medicalConditions?: string[];
   medications?: string;
+  /** Optional password so a Google account can also sign in with email */
+  password?: string;
 }
 
 export interface GoogleAuthResponse {

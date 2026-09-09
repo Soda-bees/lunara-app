@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -19,6 +19,12 @@ import {
   getPartnerStatus,
   type PartnerStatusResponse,
 } from '../../services/api';
+import { STALE_TIME_MS } from '../../types/fetchState';
+import {
+  clearStoredPartnerCode,
+  getStoredPartnerCode,
+  persistPartnerCode,
+} from '../../utils/partnerCodeStorage';
 import styles from './style';
 
 function formatDate(iso: string | null): string {
@@ -36,14 +42,50 @@ export default function PartnerConnect() {
   const [status, setStatus] = useState<PartnerStatusResponse | null>(null);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [codeExpiresAt, setCodeExpiresAt] = useState<string | null>(null);
+  const statusRef = useRef<PartnerStatusResponse | null>(null);
+  const lastFetchedAtRef = useRef<number | null>(null);
+  statusRef.current = status;
 
-  const loadStatus = useCallback(async () => {
-    setLoading(true);
+  const loadStatus = useCallback(async (options?: { force?: boolean }) => {
+    const cached = statusRef.current;
+    const now = Date.now();
+    if (
+      !options?.force &&
+      cached &&
+      lastFetchedAtRef.current &&
+      now - lastFetchedAtRef.current < STALE_TIME_MS
+    ) {
+      return;
+    }
+
+    if (!cached) {
+      setLoading(true);
+    }
     try {
       const res = await getPartnerStatus();
       setStatus(res);
+      lastFetchedAtRef.current = Date.now();
+
+      if (res.partnerSessionActive || !res.hasActiveCode) {
+        await clearStoredPartnerCode();
+        setGeneratedCode(null);
+        setCodeExpiresAt(null);
+      } else {
+        const stored = await getStoredPartnerCode();
+        if (stored) {
+          setGeneratedCode(stored.code);
+          setCodeExpiresAt(stored.expiresAt);
+        } else {
+          setCodeExpiresAt(res.codeExpiresAt);
+        }
+      }
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Could not load partner status.');
+      if (!cached) {
+        Alert.alert(
+          'Error',
+          error?.message || 'Could not load partner status.',
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -62,7 +104,8 @@ export default function PartnerConnect() {
         const res = await generatePartnerCode();
         setGeneratedCode(res.code);
         setCodeExpiresAt(res.expiresAt);
-        await loadStatus();
+        await persistPartnerCode(res.code, res.expiresAt);
+        await loadStatus({ force: true });
         Alert.alert(
           regenerate ? 'New code generated' : 'Code generated',
           regenerate
@@ -126,7 +169,7 @@ export default function PartnerConnect() {
           onPress: async () => {
             try {
               await disconnectPartner();
-              await loadStatus();
+              await loadStatus({ force: true });
               Alert.alert('Disconnected', 'Partner access has been revoked.');
             } catch (error: any) {
               Alert.alert('Error', error?.message || 'Could not disconnect.');

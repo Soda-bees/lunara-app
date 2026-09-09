@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,18 +14,13 @@ import { RootStackParamList } from '../../navigation/stackNavigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import BackButton from '../../components/BackButton';
+import InitialsAvatar from '../../components/InitialsAvatar';
 import images from '../../constants/images/more';
 import styles from './style';
 import { colors } from '../../constants/colors';
 import {
   clearToken,
-  getAllChallenges,
-  getCurrentCycleStatus,
-  getFastingInsights,
-  getMe,
-  getSleepStatistics,
   updateProfile,
-  type MeUser,
   isOwnerMeUser,
 } from '../../services/api';
 import { useOnboarding } from '../../context/OnboardingContext';
@@ -36,170 +31,41 @@ import {
 import { formatBodySummary } from './edit/EditBodyMetricsScreen';
 import { formatGoalLabel } from './edit/EditGoalsCycleScreen';
 import { formatDietarySummary } from './edit/EditDietaryScreen';
-import { formatDaysUntilPeriodStat } from '../../utils/cycleUtils';
 import { usePartnerMode } from '../../context/PartnerModeContext';
+import { useUserIdentity } from '../../context/UserIdentityContext';
+import { useProfile } from '../../context/ProfileContext';
 import { showPartnerReadOnlyAlert } from '../../utils/partnerReadOnly';
+import { useDisplayName } from '../../hooks/useDisplayName';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Profile'>;
-
-type ProfileStats = {
-  cycleLabel: string;
-  cycleDetail: string;
-  fastingLabel: string;
-  fastingDetail: string;
-  challengeLabel: string;
-  challengeDetail: string;
-  sleepLabel: string;
-  sleepDetail: string;
-  nextPeriodLabel: string;
-  nextPeriodDetail: string;
-  avgFastLabel: string;
-  avgFastDetail: string;
-};
-
-const EMPTY_STATS: ProfileStats = {
-  cycleLabel: '—',
-  cycleDetail: 'Not available',
-  fastingLabel: '—',
-  fastingDetail: 'Not available',
-  challengeLabel: '—',
-  challengeDetail: 'Not available',
-  sleepLabel: 'No logs',
-  sleepDetail: 'Sleep tracker',
-  nextPeriodLabel: '—',
-  nextPeriodDetail: 'Not tracking',
-  avgFastLabel: 'No fasts',
-  avgFastDetail: 'Last 7 days',
-};
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function formatMinutesAsHours(minutes: number | null | undefined): string | null {
-  if (minutes == null || Number.isNaN(minutes)) {
-    return null;
-  }
-  const hours = Math.round((minutes / 60) * 10) / 10;
-  return `${hours}h`;
-}
 
 export default function Profile() {
   const navigation = useNavigation<NavigationProp>();
   const { resetData } = useOnboarding();
   const { isPartnerMode, primaryUserName } = usePartnerMode();
-  const [user, setUser] = useState<MeUser | null>(null);
-  const [stats, setStats] = useState<ProfileStats>(EMPTY_STATS);
-  const [statEmptyFlags, setStatEmptyFlags] = useState({
-    sleep: true,
-    avgFast: true,
-  });
-  const [loading, setLoading] = useState(true);
-
-  const loadProfile = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [meRes, cycleRes, fastingRes, challengesRes, sleepRes] =
-        await Promise.allSettled([
-          getMe(),
-          getCurrentCycleStatus(),
-          getFastingInsights(7),
-          getAllChallenges(),
-          getSleepStatistics(),
-        ]);
-
-      if (meRes.status === 'fulfilled' && meRes.value.success && meRes.value.user) {
-        setUser(meRes.value.user);
-      }
-
-      const nextStats: ProfileStats = { ...EMPTY_STATS };
-
-      if (
-        cycleRes.status === 'fulfilled' &&
-        cycleRes.value.success &&
-        cycleRes.value.data
-      ) {
-        const cycle = cycleRes.value.data;
-        if (cycle.isTracking && cycle.phase) {
-          nextStats.cycleLabel = capitalize(cycle.phase);
-          nextStats.cycleDetail =
-            cycle.cycleDay != null ? `Day ${cycle.cycleDay}` : 'Tracking active';
-        } else {
-          nextStats.cycleLabel = 'Off';
-          nextStats.cycleDetail = cycle.message || 'Not tracking';
-        }
-
-        if (cycle.isTracking && cycle.daysUntilNextPeriod != null) {
-          const periodStat = formatDaysUntilPeriodStat(cycle.daysUntilNextPeriod);
-          nextStats.nextPeriodLabel = periodStat.label;
-          nextStats.nextPeriodDetail = periodStat.detail;
-        }
-      }
-
-      let hasSleepData = false;
-      if (
-        sleepRes.status === 'fulfilled' &&
-        sleepRes.value.success &&
-        sleepRes.value.data
-      ) {
-        const sleep = sleepRes.value.data;
-        if (sleep.averages.duration != null && sleep.totalLogs > 0) {
-          hasSleepData = true;
-          nextStats.sleepLabel = `${Math.round(sleep.averages.duration * 10) / 10}h`;
-          nextStats.sleepDetail = '7-day avg';
-        }
-      }
-
-      let hasAvgFastData = false;
-      if (
-        fastingRes.status === 'fulfilled' &&
-        fastingRes.value.success &&
-        fastingRes.value.data
-      ) {
-        const fasting = fastingRes.value.data;
-        nextStats.fastingLabel = String(fasting.currentStreakDays ?? 0);
-        nextStats.fastingDetail = 'Day streak';
-
-        const avgFast = formatMinutesAsHours(fasting.averageDurationMinutes);
-        if (avgFast) {
-          hasAvgFastData = true;
-          nextStats.avgFastLabel = avgFast;
-          nextStats.avgFastDetail = 'Avg fast (7d)';
-        }
-      }
-
-      if (
-        challengesRes.status === 'fulfilled' &&
-        challengesRes.value.success &&
-        challengesRes.value.data
-      ) {
-        const active = challengesRes.value.data.find(
-          item => item.userInstance?.status === 'active',
-        );
-        if (active?.userInstance) {
-          nextStats.challengeLabel = active.title;
-          nextStats.challengeDetail = `Day ${active.userInstance.currentDay}/${active.duration}`;
-        } else {
-          nextStats.challengeLabel = 'None';
-          nextStats.challengeDetail = 'No active challenge';
-        }
-      }
-
-      setStats(nextStats);
-      setStatEmptyFlags({
-        sleep: !hasSleepData,
-        avgFast: !hasAvgFastData,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { clearDisplayName, setDisplayName } = useUserIdentity();
+  const identityName = useDisplayName();
+  const {
+    user,
+    stats,
+    statEmptyFlags,
+    loading,
+    refreshProfile,
+    applyUser,
+    clearProfile,
+  } = useProfile();
 
   useFocusEffect(
     useCallback(() => {
-      loadProfile();
-    }, [loadProfile]),
+      void refreshProfile();
+    }, [refreshProfile]),
   );
+
+  useEffect(() => {
+    if (user?.fullName) {
+      void setDisplayName(user.fullName);
+    }
+  }, [user?.fullName, setDisplayName]);
 
   const sys: MeasurementSystem =
     user && isOwnerMeUser(user)
@@ -216,7 +82,7 @@ export default function Profile() {
     try {
       const res = await updateProfile({ measurementSystem: next });
       if (res.success && res.user && isOwnerMeUser(res.user)) {
-        setUser(res.user);
+        applyUser(res.user);
       }
     } catch {
       Alert.alert('Error', 'Could not update unit preference.');
@@ -232,6 +98,8 @@ export default function Profile() {
         onPress: async () => {
           try {
             await clearToken();
+            await clearDisplayName();
+            clearProfile();
             resetData();
             navigation.reset({
               index: 0,
@@ -251,8 +119,8 @@ export default function Profile() {
       : 'Add height and weight';
 
   const displayName = isPartnerMode
-    ? primaryUserName || user?.fullName || 'Partner view'
-    : user?.fullName || 'Your profile';
+    ? identityName || primaryUserName || user?.fullName || 'Partner view'
+    : identityName || user?.fullName || 'Your profile';
 
   const displayEmailLine = isPartnerMode
     ? 'Partner access (read-only)'
@@ -262,8 +130,10 @@ export default function Profile() {
     ? 'Health summary via shared APIs'
     : bodySummary;
 
+  const showHeaderLoader = loading && !user && !identityName;
+
   return (
-    <SafeAreaView style={styles.mainContainer} edges={['top']}>
+    <SafeAreaView style={styles.mainContainer} edges={['top', 'bottom']}>
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -274,9 +144,14 @@ export default function Profile() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.contentContainer}>
           <View style={styles.profileInfoSection}>
-            <Image source={images.profileIcon} style={styles.profilePicture} />
-            {loading && !user ? (
-              <ActivityIndicator color={colors.maroonText} style={{ marginVertical: 12 }} />
+            <View style={styles.profilePicture}>
+              <InitialsAvatar name={identityName} size={100} />
+            </View>
+            {showHeaderLoader ? (
+              <ActivityIndicator
+                color={colors.maroonText}
+                style={{ marginVertical: 12 }}
+              />
             ) : (
               <>
                 <Text style={styles.profileName}>{displayName}</Text>

@@ -39,12 +39,16 @@ const Journals = () => {
     }, [refreshJournals]),
   );
 
-  const sortJournals = (journals: JournalType[]) => {
-    return [...journals]
-      .reverse()
-      .sort((a, b) => (a.pin === b.pin ? 0 : a.pin ? -1 : 1));
-  };
-  const allJournals = useMemo(() => sortJournals(journals), [journals]);
+  const allJournals = useMemo(() => {
+    return [...journals].sort((a, b) => {
+      if (Boolean(a.pin) !== Boolean(b.pin)) {
+        return a.pin ? -1 : 1;
+      }
+      const aTime = new Date(a.createdAt).getTime();
+      const bTime = new Date(b.createdAt).getTime();
+      return bTime - aTime;
+    });
+  }, [journals]);
 
   function formatDate(dateString: string): string {
     const date = new Date(dateString);
